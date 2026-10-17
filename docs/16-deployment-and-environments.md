@@ -35,7 +35,7 @@ Facts below were checked while writing these documents. Anything not listed here
 | --- | --- | --- |
 | Vercel Hobby | Cron jobs run at most once per day with hourly precision | No sub-minute scheduled work on Vercel. Offer expiry runs in the database. |
 | Vercel | WebSocket support is in public beta, Socket.IO works only with the WebSocket transport forced | Reason Supabase Realtime is used instead of Socket.IO |
-| Supabase Free | Projects with low activity for about a week are paused | See section 6 |
+| Supabase Free | Projects with low activity for about a week are paused. The free plan allows 2 active projects per account. | See section 6 |
 | Twilio trial | Sends only to verified numbers, up to 5 recipients | Demo contacts are limited to those numbers |
 | Mapbox | Terms about using routing results with another map provider's map not yet verified | Check before WP-5 |
 | MapTiler free tier | Terms and quota not yet verified | Check at WP-0 |

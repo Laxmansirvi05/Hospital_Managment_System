@@ -53,4 +53,4 @@ Emergency ambulance web app that connects the patient, the ambulance, the hospit
 
 ## Commands
 
-None on `main`. Earlier WP-0 and WP-1 code is kept on the local-only branch `archive/wp0-wp1-code` and must not be pushed or restored without the owner's instruction.
+None. There is no application code. Only `main` exists. Do not start building until the owner says so.
