@@ -37,6 +37,11 @@ Rule for agents and contributors: never turn an OPEN item into a PROPOSED or LOC
 | D-18 | Two Supabase projects: one for development and previews, one for production. | Answers Q-15. Added 2026-10-17. |
 | D-19 | Approved proposals P-01, P-02, P-06, P-13, P-14, P-15, P-16, P-17. | Single API function with a router, pnpm, plain CSS with custom elements, public config endpoint, vendored libraries, JSDoc, the technology rule, and "dynamic" meaning live data and state. Added 2026-10-17. |
 | D-20 | Icons are custom SVGs only, domain and generic. No icon library. | Replaces the generic-icon part of P-08. Added 2026-10-17. |
+| D-21 | Only `patient` self-registers in production. Privileged roles self-register only when `ALLOW_PRIVILEGED_SIGNUP=true` (local and preview, so the collection passes). Production privileged accounts are created by a server-side script. | Answers Q-01. Added 2026-10-17. |
+| D-22 | Access token lasts 15 minutes. A rotating refresh token keeps the session. Reusing an old refresh token revokes the whole session. Sessions are stored, so logout revokes immediately. Login still returns `token`. | Answers Q-04. Added 2026-10-17. |
+| D-23 | The browser keeps both tokens in httpOnly, SameSite=Lax cookies (Secure on HTTPS). Writes authenticated by cookie need a same-origin `Origin` and the `x-careroute-csrf` header. Bearer tokens still work for API clients. | Answers Q-19. Added 2026-10-17. |
+| D-24 | Passwords use scrypt and JWTs use HMAC-SHA256, both from Node's built-in `node:crypto`. | Replaces P-05 (argon2id). Added 2026-10-17. |
+| D-25 | Rate-limit counters live in a Postgres table, cleaned by pg_cron. | Answers Q-13. Added 2026-10-17. |
 
 ## 2. Changes forced by locked decisions
 
@@ -51,7 +56,7 @@ These are places where the Postman collection says one thing and a locked decisi
 
 ## 3. Proposed decisions (need owner approval)
 
-Approved on 2026-10-17 (now LOCKED as D-19): P-01, P-02, P-06, P-13, P-14, P-15, P-16, P-17. Still proposed: P-03, P-04, P-05, P-07, P-08 (changed by D-20), P-09, P-10, P-11, P-12.
+Approved on 2026-10-17 (now LOCKED as D-19): P-01, P-02, P-06, P-13, P-14, P-15, P-16, P-17. Still proposed: P-03, P-04, P-07, P-08 (changed by D-20), P-09, P-10, P-11, P-12.
 
 | ID | Proposal | Reason |
 | --- | --- | --- |
@@ -79,10 +84,8 @@ Each of these blocks specific work. The "Blocks" column says what cannot start u
 
 | ID | Question | Blocks |
 | --- | --- | --- |
-| Q-01 | How are privileged roles verified? The collection lets any caller register with `role` set to `driver`, `hospital_admin` or `dispatcher`. That means anyone can become a dispatcher. Recommendation: only `patient` self-registers, and other roles are created or approved by an admin. This changes the contract, so it needs approval. | Auth work, security review |
 | Q-02 | How is a hospital admin linked to one hospital? The collection does not say. Without a link, any hospital admin could edit any hospital's beds. | Hospital work |
 | Q-03 | Can a driver own more than one ambulance? | Ambulance work |
-| Q-04 | JWT lifetime, and whether refresh tokens exist. The collection returns only `token`. | Auth work |
 | Q-05 | Full list of `emergencyType` values. The collection shows `cardiac`, `accident` and `other`. | Emergency work |
 | Q-06 | Name of the status for an SOS that nobody accepted. The collection mentions "failed matches" in analytics but no state name. | Lifecycle, analytics |
 | Q-07 | How many offer attempts before a request is marked failed, and what the dispatcher can do about it. The collection has no manual assignment endpoint. | Matching work |
@@ -91,12 +94,10 @@ Each of these blocks specific work. The "Blocks" column says what cannot start u
 | Q-10 | Data retention periods and the deletion process for accounts, emergencies and reports. | Privacy doc, reports |
 | Q-11 | Medical report limits: allowed file types, maximum size, and who can see a report during an emergency. | Reports work |
 | Q-12 | How to prevent accidental SOS taps without slowing a real emergency. Options in `11-design-system.md`. | SOS screen |
-| Q-13 | Where rate-limit counters are stored on Vercel. | Security work |
 | Q-14 | How Supabase Realtime private channels are authorized, given that login uses our own JWT and not Supabase Auth. | Realtime work |
 | Q-16 | Domain name and security contact address. | SECURITY.md, launch |
 | Q-17 | Whether the Gemini, Groq and OpenRouter plans in use allow the provider to train on submitted text. | AI triage |
 | Q-18 | Custom domain, and whether Vercel's Hobby plan terms allow this demo's intended use. | Deployment |
-| Q-19 | Where the browser keeps the login token: httpOnly cookie or a header token. See `09-security.md` section 4. | Auth work |
 
 ## 5. How to change this file
 

@@ -1,6 +1,6 @@
 # CareRoute
 
-Emergency ambulance web app that connects the patient, the ambulance, the hospital and the patient's medical reports. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation (no TypeScript, no Next.js), a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. Other technology only where really required and approved (`docs/02-trd.md` section 1.2). Project phase right now: WP-0 foundation.
+Emergency ambulance web app that connects the patient, the ambulance, the hospital and the patient's medical reports. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation (no TypeScript, no Next.js), a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. Other technology only where really required and approved (`docs/02-trd.md` section 1.2). Project phase right now: documentation and setup (cloud Supabase, accounts and keys). No application code on `main`. Do not start building until the owner says so.
 
 ## Read in this order
 
@@ -53,16 +53,4 @@ Emergency ambulance web app that connects the patient, the ambulance, the hospit
 
 ## Commands
 
-| Command | Does |
-| --- | --- |
-| `pnpm dev` | Local server on port 4000: `public/` plus `/api/v1`, with production headers. Reads `.env.local` if present. |
-| `pnpm test` | Vitest suite |
-| `pnpm lint` | ESLint |
-| `pnpm check` | Style lint (banned patterns, em dashes, raw CSS values) and the `public/` secret scan |
-| `pnpm check:env` | Validates every configuration group, prints names only |
-| `pnpm verify` | lint, check and test. Must pass before any commit. |
-| `pnpm db:start` / `pnpm db:stop` | Local Supabase in Docker (colima), trimmed to database, Realtime, Storage and gateway |
-| `pnpm db:reset` | Rebuild the local database from `supabase/migrations` and `supabase/seed.sql` |
-| `pnpm test:db` | Database tests against the local database, using `.env.local` |
-
-Styleguide for visual checks: `http://localhost:4000/styleguide`.
+None on `main`. Earlier WP-0 and WP-1 code is kept on the local-only branch `archive/wp0-wp1-code` and must not be pushed or restored without the owner's instruction.

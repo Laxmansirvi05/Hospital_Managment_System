@@ -60,7 +60,8 @@ This is the section the owner flagged. Treat it as the highest-priority rule set
 | `TWILIO_ACCOUNT_SID` | Server only | No | |
 | `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` | Server only | No | Use an API key pair rather than the account auth token (PROPOSED) |
 | `TWILIO_FROM_NUMBER` | Server only | No | |
-| `TRACKING_TOKEN_PEPPER` | Server only | No | Used when hashing tracking tokens (PROPOSED) |
+| `TRACKING_TOKEN_PEPPER` | Server only | No | Pepper for hashing refresh tokens now, tracking tokens later |
+| `ALLOW_PRIVILEGED_SIGNUP` | Server only | No | Not a secret. `true` lets non-patient roles self-register. Never set in production (D-21). |
 
 Only variables starting with `PUBLIC_` are returned to the browser, and only by `GET /api/v1/config`, which returns a fixed list of names and nothing else. The allow-list above is the complete list. Adding a new `PUBLIC_` variable needs a security review.
 
@@ -87,9 +88,13 @@ Only variables starting with `PUBLIC_` are returned to the browser, and only by 
 
 ## 4. Authentication
 
-- Passwords hashed with argon2id (P-05). Minimum length and breach checks are OPEN.
-- Login tokens are JWTs. Lifetime and refresh are OPEN (Q-04).
-- Where the browser stores the token is OPEN (Q-19 in `00-decisions.md`). An httpOnly cookie protects against script theft but needs CSRF protection. A header token in memory or storage avoids CSRF but is exposed to XSS. Decide before WP-1.
+- Passwords hashed with scrypt (N=2^17, r=8, p=1, the OWASP minimum) from `node:crypto` (D-24). Length 8 to 128 (PROPOSED). A breach-list check is OPEN.
+- Access tokens are HS256 JWTs signed with `node:crypto`, valid 15 minutes. The header is compared byte for byte, so `alg: none` and algorithm switching are impossible. Each request also confirms the session is live and reads the role from the database, so logout and role changes apply at once (D-22).
+- Refresh tokens rotate on every use and are stored only as peppered hashes. Presenting an already rotated token revokes the session (D-22).
+- The browser holds both tokens in httpOnly, SameSite=Lax cookies, Secure over HTTPS. Page scripts cannot read them (D-23).
+- CSRF: any write that cookies could authenticate needs the same `Origin` and the `x-careroute-csrf: 1` header. A foreign `Origin` is refused on every write, which also blocks login CSRF. Requests with an `Authorization` header are API clients and skip the header check.
+- Privileged roles self-register only when `ALLOW_PRIVILEGED_SIGNUP=true`, which must never be set in production. Production accounts are created by a server-side script run by the owner (D-21).
+- Unknown email and wrong password take the same time (a dummy scrypt check) and return the same message.
 - Same error text for unknown email and wrong password.
 - The role claim is verified server side on every request. A client-supplied role is never trusted.
 
@@ -122,7 +127,7 @@ A 404 is returned instead of 403 when revealing that a resource exists would its
 
 ## 7. Rate limits and abuse
 
-Limits are OPEN in value, required in kind. Storage for counters is OPEN (Q-13).
+Counters are stored in Postgres (D-25). Values designed for WP-1, all PROPOSED: register 10 per hour per IP, login 30 per 15 minutes per IP and 10 per 15 minutes per account, refresh 60 per 15 minutes per session. Values for other surfaces are set when they are built.
 
 | Surface | Limit by |
 | --- | --- |

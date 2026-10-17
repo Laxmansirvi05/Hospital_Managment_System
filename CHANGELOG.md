@@ -4,6 +4,21 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-17
 
+### Building paused, code removed from main
+
+- On the owner's request, all application code was removed from `main` (docs, Postman contract, agents and skills stay). Next: cloud Supabase projects, then accounts and keys setup, before any more building.
+- The removed WP-0 and WP-1 code, including the WP-1 work that was never pushed, is kept on the local-only branch `archive/wp0-wp1-code`. It is not on GitHub. The commits that added WP-0 remain in GitHub history.
+- Decisions D-18 to D-25 stay in force. The WP-0 and WP-1 entries below describe work that now lives only on the archive branch.
+
+### WP-1 accounts and roles
+
+- Decided: D-21 to D-25 (privileged signup flag, 15 minute tokens with rotating refresh, httpOnly cookies with CSRF checks, `node:crypto` scrypt and HMAC, Postgres rate limits). Q-01, Q-04, Q-13, Q-19 closed. P-05 replaced.
+- Added: migration `20261017010000_wp1_accounts.sql` with `users`, `sessions`, `rate_limits`, `hit_rate_limit()` and two pg_cron cleanup jobs.
+- Added: `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (collection folder 1), and new `POST /auth/refresh`, `POST /auth/logout`.
+- Added: `scripts/create-user.js` for production privileged accounts, with a hidden password prompt.
+- Added: pages `/signin`, `/signup` (patients only), `/account`. The browser API client sends the CSRF header and refreshes an expired token once.
+- Tests: 27 new unit tests, 15 new database tests. Login and register measured at about 0.4 s locally.
+
 ### WP-0 foundation (in progress)
 
 - Added: `package.json` (zod, postgres; vitest, eslint), `.gitignore`, `.env.example`, `vercel.json` with security headers.

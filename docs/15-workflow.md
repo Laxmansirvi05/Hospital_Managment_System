@@ -14,7 +14,7 @@ How work is planned, built, reviewed and shipped. Written to be followed by the 
 | WP | Scope | Collection folder | Blocked by |
 | --- | --- | --- | --- |
 | WP-0 | Foundation: project scaffold (`public/`, `api/`, `server/`), config validation, logger, design tokens, base components, CI with secret scan and `public/` file scan, local Supabase, health endpoint | 0 | none (Q-15 answered, icons decided) |
-| WP-1 | Accounts and roles | 1 | Q-01, Q-04, Q-19 |
+| WP-1 | Accounts and roles | 1 | none (answered: D-21 to D-25) |
 | WP-2 | Medical ID and emergency contacts | 2 | none |
 | WP-3 | Hospitals, doctors and beds, nearby search | 3 | Q-02 |
 | WP-4 | Ambulances, status, pings, nearby | 4 | Q-03 |

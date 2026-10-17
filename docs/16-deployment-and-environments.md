@@ -6,7 +6,7 @@ Hosting is Vercel plus Supabase only (D-10). No separate server.
 
 | Environment | Web and API | Database | Keys |
 | --- | --- | --- | --- |
-| Local | Local dev server on port 4000 serving `public/` and the API function (`pnpm dev`, a small Node script that applies the same headers as `vercel.json`) | Supabase CLI local stack in Docker (colima), started with `pnpm db:start`. The CLI is the pinned `supabase` dev dependency. | `.env.local`, untracked |
+| Local | Local dev server on port 4000 serving `public/` and the API function (to be rebuilt when building starts) | Supabase CLI local stack in Docker (colima). Optional once the cloud development project exists. | `.env.local`, untracked |
 | Preview | Vercel preview deployment per branch | Supabase development project (D-18) | Vercel preview variables, never production keys |
 | Production | Vercel production | Supabase production project (D-18) | Vercel production variables, marked sensitive |
 
@@ -19,7 +19,7 @@ The authoritative list and browser exposure rules are in `09-security.md` sectio
 | Scope | Variables |
 | --- | --- |
 | Browser (public by design, returned only by `/api/v1/config`) | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_MAPTILER_KEY` |
-| Server only | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
+| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
 
 Rules:
 

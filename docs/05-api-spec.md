@@ -20,7 +20,20 @@ Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/a
 | --- | --- | --- | --- |
 | POST `/auth/register` | none | `name`, `email`, `phone`, `password`, `role` | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. See Q-01. |
 | POST `/auth/login` | none | `email`, `password` | 200 `{ token, ... }` |
-| GET `/auth/me` | any role | none | 200 user including `role` |
+| GET `/auth/me` | any role | none | 200 `{ id, name, email, phone, role, createdAt }`, role at the top level as the collection reads it |
+| POST `/auth/refresh` | refresh cookie | none | 200 `{ token, user }` and new cookies. Rotates the refresh token. 401 if unknown, expired, revoked or reused. New (D-22). |
+| POST `/auth/logout` | any role | none | 204, session revoked, cookies cleared. New (D-22). |
+
+Auth rules decided for WP-1 (designed, not built on `main`):
+
+- Register and login also set two httpOnly cookies: `cr_access` (15 minutes, path `/`) and `cr_refresh` (7 days, path `/api/v1/auth`). The JSON `token` is the same access token, for API clients (D-22, D-23).
+- `role` defaults to `patient`. Other roles return 403 `role_not_allowed` unless `ALLOW_PRIVILEGED_SIGNUP=true` (D-21).
+- Email is stored lower case. A 10-digit Indian mobile number becomes `+91` followed by the number. Other numbers must be in `+` country code form (PROPOSED).
+- Passwords are 8 to 128 characters (PROPOSED, NIST SP 800-63B minimum).
+- Wrong password and unknown email give the same 401 `invalid_credentials`.
+- An expired access token gives 401 `token_expired`, so the browser knows to refresh.
+- Too many attempts give 429 `rate_limited` with `Retry-After` (D-25).
+- Writes authenticated by cookie need the same `Origin` and the header `x-careroute-csrf: 1`, otherwise 403 `csrf_failed` (D-23).
 
 ### 2. Patient medical ID and contacts
 

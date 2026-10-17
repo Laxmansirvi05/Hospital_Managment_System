@@ -47,17 +47,17 @@ Tools are PROPOSED (P-09). The aim is simple: a change that breaks safety, secur
 
 ## 5. Running
 
-Commands that exist now are marked built. The rest are added when their suites exist.
+No commands exist on `main` yet. This is the intended set.
 
 | Purpose | Intended command |
 | --- | --- |
-| Unit and integration (built) | `pnpm test` |
-| Database tests (built) | `pnpm test:db` |
+| Unit and integration | `pnpm test` |
+| Database tests | `pnpm test:db` |
 | Contract tests | `pnpm test:contract` |
 | End to end and accessibility | `pnpm test:e2e` |
-| Lint (built) | `pnpm lint` |
-| Style lint and public secret scan (built) | `pnpm check` |
-| Everything before a commit (built) | `pnpm verify` |
+| Lint | `pnpm lint` |
+| Style lint and public secret scan | `pnpm check` |
+| Everything before a commit | `pnpm verify` |
 
 ## 6. Rules for writing and changing tests
 

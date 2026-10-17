@@ -24,15 +24,31 @@ Status: PROPOSED. Field names that appear in the Postman collection are kept exa
 
 ## 3. Tables
 
-### users
+### users (designed for WP-1)
 
 | Column | Notes |
 | --- | --- |
-| id | |
-| name, email, phone | email unique |
-| password_hash | argon2id |
-| role | `user_role` |
-| created_at | |
+| id | uuid |
+| name | 1 to 100 characters |
+| email | lower case, unique |
+| phone | E.164, for example `+919876500000` |
+| password_hash | `scrypt$N$r$p$salt$hash` (D-24) |
+| role | `user_role`, default `patient` |
+| created_at, updated_at | |
+
+### sessions (designed for WP-1, D-22)
+
+| Column | Notes |
+| --- | --- |
+| id, user_id | one row per signed-in device |
+| refresh_hash | SHA-256 of the current refresh token with a pepper. The token itself is never stored. |
+| previous_refresh_hash | the rotated-out token, so reuse can be detected and the session revoked |
+| created_at, last_used_at, expires_at | expiry moves forward 7 days on each refresh |
+| revoked_at, revoked_reason | `logout`, `refresh_reuse` |
+
+### rate_limits (designed for WP-1, D-25)
+
+Fixed-window counters keyed by a SHA-256 hash of the kind and value, so no email or IP is stored in clear. Written by `hit_rate_limit(key, limit, window_seconds)`. pg_cron deletes rows older than a day.
 
 ### patient_profiles (medical ID)
 
