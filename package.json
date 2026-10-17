@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "CareRoute: connects the patient, the ambulance, the hospital and medical reports during an emergency.",
+  "packageManager": "pnpm@11.2.2",
   "engines": {
     "node": ">=22"
   },
