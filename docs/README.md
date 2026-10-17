@@ -23,6 +23,7 @@ Read [`00-decisions.md`](00-decisions.md) first. It says what is decided, what i
 | [`16-deployment-and-environments.md`](16-deployment-and-environments.md) | Environments, variables, limits, release steps |
 | [`17-observability-and-runbook.md`](17-observability-and-runbook.md) | What we watch, runbook, incident template |
 | [`18-glossary.md`](18-glossary.md) | Terms |
+| [`19-setup-checklist.md`](19-setup-checklist.md) | Accounts and keys to create before building, how keys are stored, current status |
 
 Outside `docs/`: [`../CLAUDE.md`](../CLAUDE.md) (rules for AI sessions), [`../SECURITY.md`](../SECURITY.md), [`../CHANGELOG.md`](../CHANGELOG.md), [`../postman/`](../postman) (API contract), [`../.claude/agents`](../.claude/agents) and [`../.claude/skills`](../.claude/skills).
 

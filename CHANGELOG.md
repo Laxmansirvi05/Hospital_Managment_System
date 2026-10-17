@@ -4,6 +4,12 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-17
 
+### Setup
+
+- Added `docs/19-setup-checklist.md`: every account and key needed before building, how keys are stored, and status.
+- Vercel project `careroute` created and linked to the GitHub repository, function region `bom1` (PROPOSED).
+- Supabase projects not created yet: waiting for the owner's new Supabase account.
+
 ### Building paused, code removed from main
 
 - On the owner's request, all application code was removed from `main` (docs, Postman contract, agents and skills stay). Next: cloud Supabase projects, then accounts and keys setup, before any more building.
