@@ -52,7 +52,7 @@ Commands that exist now are marked built. The rest are added when their suites e
 | Purpose | Intended command |
 | --- | --- |
 | Unit and integration (built) | `pnpm test` |
-| Database tests | `pnpm test:db` |
+| Database tests (built) | `pnpm test:db` |
 | Contract tests | `pnpm test:contract` |
 | End to end and accessibility | `pnpm test:e2e` |
 | Lint (built) | `pnpm lint` |

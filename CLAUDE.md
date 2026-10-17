@@ -61,5 +61,8 @@ Emergency ambulance web app that connects the patient, the ambulance, the hospit
 | `pnpm check` | Style lint (banned patterns, em dashes, raw CSS values) and the `public/` secret scan |
 | `pnpm check:env` | Validates every configuration group, prints names only |
 | `pnpm verify` | lint, check and test. Must pass before any commit. |
+| `pnpm db:start` / `pnpm db:stop` | Local Supabase in Docker (colima), trimmed to database, Realtime, Storage and gateway |
+| `pnpm db:reset` | Rebuild the local database from `supabase/migrations` and `supabase/seed.sql` |
+| `pnpm test:db` | Database tests against the local database, using `.env.local` |
 
 Styleguide for visual checks: `http://localhost:4000/styleguide`.

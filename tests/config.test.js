@@ -20,6 +20,14 @@ describe('config', () => {
     }
   });
 
+  it('rejects .env.example placeholders', () => {
+    expect(() => getConfig('routing', { MAPBOX_SECRET_TOKEN: 'replace-me' })).toThrow(/placeholder/);
+    expect(() => getConfig('auth', {
+      JWT_SECRET: 'replace-with-at-least-32-random-characters',
+      TRACKING_TOKEN_PEPPER: 'b'.repeat(32),
+    })).toThrow(/placeholder/);
+  });
+
   it('rejects a database URL that is not a URL', () => {
     expect(() => getConfig('database', { DATABASE_URL: 'not a url' })).toThrow(ConfigError);
   });

@@ -1,0 +1,2 @@
+-- Synthetic data for local and preview only. Never real people. docs/10-privacy-and-data.md section 1.
+-- Seed rows are added with the tables they belong to, from WP-1 on.

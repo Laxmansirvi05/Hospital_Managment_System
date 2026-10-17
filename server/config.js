@@ -4,9 +4,13 @@ import { z } from 'zod';
 // has not been built yet (SMS, triage) does not block startup of the parts that exist.
 // `pnpm check:env` validates every group before a deploy.
 
-const required = z.string().trim().min(1, 'is required');
+// Values copied from .env.example must not count as configured.
+const notPlaceholder = (value) => !/^replace-(me|with)/i.test(value);
+const placeholderMessage = 'is still the .env.example placeholder';
+
+const required = z.string().trim().min(1, 'is required').refine(notPlaceholder, placeholderMessage);
 const url = z.url('must be a URL');
-const longSecret = z.string().min(32, 'must be at least 32 characters');
+const longSecret = z.string().min(32, 'must be at least 32 characters').refine(notPlaceholder, placeholderMessage);
 
 const groups = {
   database: z.object({ DATABASE_URL: url }),

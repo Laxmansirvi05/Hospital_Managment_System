@@ -6,7 +6,7 @@ Hosting is Vercel plus Supabase only (D-10). No separate server.
 
 | Environment | Web and API | Database | Keys |
 | --- | --- | --- | --- |
-| Local | Local dev server on port 4000 serving `public/` and the API function (`pnpm dev`, a small Node script that applies the same headers as `vercel.json`) | Supabase CLI local stack (needs Docker) | `.env.local`, untracked |
+| Local | Local dev server on port 4000 serving `public/` and the API function (`pnpm dev`, a small Node script that applies the same headers as `vercel.json`) | Supabase CLI local stack in Docker (colima), started with `pnpm db:start`. The CLI is the pinned `supabase` dev dependency. | `.env.local`, untracked |
 | Preview | Vercel preview deployment per branch | Supabase development project (D-18) | Vercel preview variables, never production keys |
 | Production | Vercel production | Supabase production project (D-18) | Vercel production variables, marked sensitive |
 

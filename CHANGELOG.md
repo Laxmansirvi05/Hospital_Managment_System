@@ -12,6 +12,9 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 - Added: `scripts/dev.js`, `scripts/lint-style.js`, `scripts/scan-public.js`, `scripts/check-env.js`, and 100 tests.
 - Added: dark tokens `--border` `#38383A` and `--primary-hover` `#5AB0FF` to the design system (PROPOSED).
 - Git initialised with remote `origin` set to the GitHub repository. Nothing pushed.
+- Local database: Supabase CLI 2.121.0 as a pinned dev dependency (Homebrew needed newer Xcode tools). Stack runs in Docker through colima, trimmed with `pnpm db:start`.
+- Migration `20261017000000_wp0_foundation.sql`: PostGIS, pg_cron, no default privileges for `anon` and `authenticated` in `public`, event trigger that enables Row Level Security on every new public table. Verified locally only; confirm on the hosted projects before the first remote migration.
+- `tests/db.test.js` (5 tests, `pnpm test:db`). Config now rejects `.env.example` placeholder values.
 
 ### Decided
 
