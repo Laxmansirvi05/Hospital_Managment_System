@@ -36,10 +36,13 @@ Facts below were checked while writing these documents. Anything not listed here
 | Vercel Hobby | Cron jobs run at most once per day with hourly precision | No sub-minute scheduled work on Vercel. Offer expiry runs in the database. |
 | Vercel | WebSocket support is in public beta, Socket.IO works only with the WebSocket transport forced | Reason Supabase Realtime is used instead of Socket.IO |
 | Supabase Free | Projects with low activity for about a week are paused. The free plan allows 2 active projects per account. | See section 6 |
-| Twilio trial | Sends only to verified numbers, up to 5 recipients | Demo contacts are limited to those numbers |
-| Mapbox | Terms about using routing results with another map provider's map not yet verified | Check before WP-5 |
-| MapTiler free tier | Terms and quota not yet verified | Check at WP-0 |
-| Model providers | Free-tier data use and rate limits not yet verified | Check before WP-6 (Q-17) |
+| Twilio trial | Sends only to verified numbers, up to 5 recipients. Twilio's India page says the international route needs no DLT registration, while the domestic route needs company and sender ID registration on the operators' DLT portal. The page does not mention trial accounts, so delivery to Indian numbers on a trial is still unconfirmed. | Demo contacts are limited to verified numbers. Test one Indian number early. |
+| Mapbox | Matrix API: at most 25 input coordinates and 60 requests per minute (Mapbox documentation). The Terms of Service page has no clause restricting use with another provider's map, and requires telling end users when Directions is used in an app. The separate Product Terms were not read. | Pre-filter with PostGIS to 25 candidates or fewer. Show the Directions disclosure. Read the Product Terms before WP-5. |
+| MapTiler free tier | 100,000 API requests and 5,000 sessions per month. Free plan is non-commercial use and research and development only. Going over can suspend the account. The commercial plan starts at 25 US dollars a month. | Fine for a demo. A commercial launch needs a paid plan, which is a cost decision for the owner (Q-20). |
+| Gemini API | Google's terms for unpaid services allow using inputs and outputs to improve its products, with human review. Paid usage is excluded. AI Studio counts as unpaid even with billing set up. | Demo uses synthetic symptom text only. Real use needs paid usage. See Q-17. |
+| Groq | Secondary sources say no training on API data and no default retention, with up to 30 days of reliability logs. Not confirmed from Groq's own pages. | Read Groq's data policy before WP-6 |
+| OpenRouter | Some free models run on hosts whose terms allow training. A data collection setting set to deny excludes them. Secondary sources. | Send the deny setting on every request, confirm in OpenRouter's docs before WP-6 |
+| pg_cron | Verified on `careroute-dev`: a 30 second schedule is accepted and ran twice, 30 seconds apart, both succeeded. | Offer expiry design stands (D-12). The extension is now installed on dev with no jobs. |
 | Supabase Free | Storage size, database size and Realtime connection and message limits not yet verified | Check before WP-5 and WP-9 |
 | Vercel | Function duration and invocation limits for the plan in use not yet verified | Check before WP-5 |
 | Vercel Hobby | Sources disagree on how many functions one deployment may hold (one reports 12, another says it depends on the framework) | The API is one function with a router, so this should not matter. Confirm in WP-0. |

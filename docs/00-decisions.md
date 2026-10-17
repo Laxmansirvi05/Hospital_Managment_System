@@ -24,7 +24,7 @@ Rule for agents and contributors: never turn an OPEN item into a PROPOSED or LOC
 | D-05 | English only for now. | The triage `language` field stays in the API but only `en` is built. |
 | D-06 | Medical reports are a new feature. | Patients upload lab reports, prescriptions and scans. Detail is in `08-medical-reports.md`. |
 | D-07 | Triage language model order: Gemini API first, Groq second, OpenRouter third. | A fixed red-flag rule layer runs before any model. See `07-ai-triage.md`. |
-| D-08 | Map tiles come from MapTiler's free tier, rendered with MapLibre. | Free-plan terms have not been verified. Check at setup. |
+| D-08 | Map tiles come from MapTiler's free tier, rendered with MapLibre. | Checked 2026-10-17: the free plan is non-commercial and research only, 100,000 requests a month. See Q-20. |
 | D-09 | Routing, road ETA and distance matrix come from Mapbox, called from the server only. | Replaces the earlier OSRM choice because OSRM needs an always-on server. Mapbox terms about using its routing results with a non-Mapbox map have not been verified. Check before build. |
 | D-10 | Hosting is Vercel plus Supabase only. No separate server. | Supabase provides PostgreSQL with PostGIS and file Storage. |
 | D-11 | Realtime uses Supabase Realtime, not Socket.IO. | Consequence of D-10. Vercel is not a reliable host for long-lived connections. |
@@ -96,7 +96,8 @@ Each of these blocks specific work. The "Blocks" column says what cannot start u
 | Q-12 | How to prevent accidental SOS taps without slowing a real emergency. Options in `11-design-system.md`. | SOS screen |
 | Q-14 | How Supabase Realtime private channels are authorized, given that login uses our own JWT and not Supabase Auth. | Realtime work |
 | Q-16 | Domain name and security contact address. | SECURITY.md, launch |
-| Q-17 | Whether the Gemini, Groq and OpenRouter plans in use allow the provider to train on submitted text. | AI triage |
+| Q-17 | Partly answered 2026-10-17. Gemini's unpaid terms allow Google to use and human-review inputs. Groq and OpenRouter free routes were checked only through secondary sources. Decision needed: the demo sends synthetic symptom text only, and real patient text waits for a paid Gemini plan or a different provider order. Is that acceptable? | AI triage |
+| Q-20 | MapTiler's free plan is for non-commercial use. A real launch needs the paid plan (about 25 US dollars a month) or another tile source. Decide before any launch. | Launch |
 | Q-18 | Custom domain, and whether Vercel's Hobby plan terms allow this demo's intended use. | Deployment |
 
 ## 5. How to change this file

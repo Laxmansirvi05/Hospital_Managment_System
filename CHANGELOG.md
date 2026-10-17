@@ -6,6 +6,8 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ### Setup
 
+- Research recorded: MapTiler free plan is non-commercial (new Q-20), Gemini unpaid terms allow Google to use and review inputs (Q-17 partly answered), Mapbox Matrix limits, Twilio India rules. pg_cron 30 second schedule verified on the dev Supabase project, test job removed.
+
 - Added `docs/19-setup-checklist.md`: every account and key needed before building, how keys are stored, and status.
 - Vercel project `careroute` created and linked to the GitHub repository, function region `bom1` (PROPOSED).
 - Supabase: owner's new account connected. `careroute-dev` and `careroute-prod` created in `ap-south-1` (D-18). The default Tokyo project was deleted by the owner to free the slot.

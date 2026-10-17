@@ -189,8 +189,8 @@ All server configuration is environment variables. The full matrix with scope is
 | Function count limits | A Vercel plan may cap how many functions a deployment can hold. Sources disagree on the Hobby limit. | The design uses one function with an internal router, so the cap does not matter. Confirm in WP-0. |
 | Cold starts of the single API function | One larger function loads all routes | Keep imports light, lazy load adapters, measure the SOS path against the 2 second rule |
 | Realtime authorization with a custom JWT | Supabase private channels check Postgres policies against the JWT | Open question Q-14. Decide before WP-5 |
-| pg_cron interval | Offer expiry needs a schedule shorter than a minute | Confirm the installed pg_cron version supports second-level schedules before relying on it |
-| Mapbox matrix size limits | A request can hold only a limited number of coordinates | Check the current limit in Mapbox documentation, pre-filter with PostGIS |
+| pg_cron interval | Offer expiry needs a schedule shorter than a minute | Verified on the hosted dev project (pg_cron 1.6.4): a 30 second schedule runs. Repeat once on production before relying on it. |
+| Mapbox matrix size limits | Mapbox documents at most 25 input coordinates per request and 60 requests per minute | Pre-filter with PostGIS to 24 ambulances or fewer plus the patient, and stay under the request rate |
 | Free Supabase project pausing | Projects with low activity pause | See `16-deployment-and-environments.md` section 6 |
 | No compile step | Mistakes that a type checker would catch appear at runtime | Zod at every boundary, JSDoc checking in the editor, ESLint, and the tests in `14-testing-strategy.md` |
 | Public HTML | Every page file can be fetched by anyone | Pages hold no data or secrets. The API enforces access. |

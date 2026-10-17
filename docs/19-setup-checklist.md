@@ -80,6 +80,19 @@ All three are server only. Symptom text is the only health data they ever receiv
 | --- | --- |
 | `JWT_SECRET`, `TRACKING_TOKEN_PEPPER` | At least 32 random characters each, different per environment. Generate locally, for example with `openssl rand -base64 48`, and paste straight into `.env.local` and Vercel. |
 
+## Research findings (checked 2026-10-17)
+
+Where a finding came only from secondary sources, it says so. Details by service are in `16-deployment-and-environments.md` section 3.
+
+| Item | Finding |
+| --- | --- |
+| pg_cron on Supabase | Verified by running it on `careroute-dev`. A 30 second schedule works. |
+| Mapbox | No clause found limiting use with another map provider. Product Terms still unread. Matrix API allows 25 coordinates and 60 requests a minute. |
+| MapTiler | Free plan is non-commercial. Fine for the demo, paid for launch (Q-20). |
+| Gemini | Free and AI Studio usage may be used and human-reviewed by Google. The demo must use synthetic symptom text only (Q-17). |
+| Groq, OpenRouter | Secondary sources only. Read their own policies before WP-6. |
+| Twilio India | Domestic route needs DLT registration, international does not. Trial delivery to Indian numbers unconfirmed. Test one number. |
+
 ## Done means
 
 Every row in the status table says Done, every variable in `16-deployment-and-environments.md` section 2 exists in `.env.local` and in Vercel for the right environments, and the unverified items above are checked and recorded.
