@@ -8,7 +8,7 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 - Added `docs/19-setup-checklist.md`: every account and key needed before building, how keys are stored, and status.
 - Vercel project `careroute` created and linked to the GitHub repository, function region `bom1` (PROPOSED).
-- Supabase: owner's new account connected. `careroute-dev` created in `ap-south-1`. `careroute-prod` waits for a free slot (the account's default Tokyo project uses the second one).
+- Supabase: owner's new account connected. `careroute-dev` and `careroute-prod` created in `ap-south-1` (D-18). The default Tokyo project was deleted by the owner to free the slot.
 - The local archive branch with the earlier WP-0 and WP-1 code was deleted on the owner's request, along with local `node_modules`, `supabase/` and `.env.local`. The earlier commits that added WP-0 still exist in GitHub history. Removing them needs a force push, which has not been done.
 
 ### Building paused, code removed from main

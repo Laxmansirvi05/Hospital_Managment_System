@@ -17,7 +17,7 @@ Everything that must exist before building restarts. Each row says what to creat
 | # | Service | Needed for | Status |
 | --- | --- | --- | --- |
 | 1 | GitHub | Code and CI | Done. Repository `Laxmansirvi05/Hospital_Managment_System`, public, `main` is docs only. |
-| 2 | Supabase | Database, Storage, Realtime | Partly done. New account connected. `careroute-dev` created in `ap-south-1` (project ref `jelepdfgdxbkbmocrnnx`). `careroute-prod` not created: the account's default project (Tokyo, named after the owner's email) uses the second free slot. The owner decides what to do with it. |
+| 2 | Supabase | Database, Storage, Realtime | Projects done. `careroute-dev` (ref `jelepdfgdxbkbmocrnnx`) and `careroute-prod` (ref `qbiltbhqtesdidjxpscf`), both in `ap-south-1`, free plan, new account. Keys and database passwords still to be copied by the owner into `.env.local` and Vercel. Account is at the 2 project free limit. |
 | 3 | Vercel | Hosting | Project `careroute` created on the Hobby plan, linked to the GitHub repository, function region `bom1` Mumbai (PROPOSED, next to Supabase `ap-south-1`). Vercel Authentication protects deployments. GitHub link confirmed by the first deploy. No environment variables yet. |
 | 4 | MapTiler | Map tiles | To do |
 | 5 | Mapbox | Road ETA and matrix | To do |
@@ -35,7 +35,7 @@ Everything that must exist before building restarts. Each row says what to creat
 - Variables, per project: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server only, bypasses Row Level Security), `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` (public by design).
 - Free projects pause after about a week of low activity. Plan in `16-deployment-and-environments.md` section 6.
 - Checked on `careroute-dev`: PostGIS 3.3.7 and pg_cron 1.6.4 are available to install. Not yet checked: that pg_cron accepts a schedule shorter than a minute, and the Row Level Security event trigger from the earlier foundation work. Check before the first remote migration.
-- The project URL is `https://jelepdfgdxbkbmocrnnx.supabase.co`. It is public information, not a secret. Keys and the database password are not recorded anywhere in this repository.
+- Project URLs: dev `https://jelepdfgdxbkbmocrnnx.supabase.co`, prod `https://qbiltbhqtesdidjxpscf.supabase.co`. It is public information, not a secret. Keys and the database password are not recorded anywhere in this repository.
 
 ### 3. Vercel (D-10)
 
