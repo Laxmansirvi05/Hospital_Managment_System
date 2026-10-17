@@ -1,0 +1,12 @@
+# Secrets: only .env.example is committed. docs/09-security.md section 3.2.
+.env
+.env.*
+!.env.example
+
+node_modules/
+.vercel/
+coverage/
+supabase/.temp/
+supabase/.branches/
+.DS_Store
+*.log

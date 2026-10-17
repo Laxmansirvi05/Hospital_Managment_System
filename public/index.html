@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="CareRoute connects the patient, the ambulance, the hospital and medical reports during an emergency.">
+  <title>CareRoute</title>
+  <script src="/js/theme-init.js"></script>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/card.css">
+  <link rel="stylesheet" href="/css/components/status.css">
+  <link rel="stylesheet" href="/css/pages/home.css">
+  <script type="module" src="/js/pages/home.js"></script>
+</head>
+<body>
+  <main class="cr-page">
+    <div class="cr-home cr-stack cr-stack--loose">
+      <header class="cr-stack">
+        <h1>CareRoute</h1>
+        <p class="cr-home__lead">Connects the patient, the ambulance, the hospital and medical reports during an emergency.</p>
+      </header>
+
+      <section class="cr-card cr-stack" aria-labelledby="status-title">
+        <h2 id="status-title" class="cr-card__title">Service status</h2>
+        <p role="status" aria-live="polite">
+          <span id="service-status" class="cr-status">Checking</span>
+        </p>
+        <p id="service-checked" class="cr-footnote cr-text-2"></p>
+        <div class="cr-row">
+          <button id="recheck" class="cr-button cr-button--secondary" type="button">Check again</button>
+          <button id="theme-toggle" class="cr-button cr-button--text" type="button">Theme: system</button>
+        </div>
+      </section>
+
+      <p class="cr-footnote cr-text-2">Development build. Not available for real emergencies.</p>
+    </div>
+  </main>
+</body>
+</html>

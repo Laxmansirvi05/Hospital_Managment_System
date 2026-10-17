@@ -1,0 +1,71 @@
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  img, svg { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    font-weight: var(--fw-regular);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1 { font-size: var(--fs-large-title); line-height: var(--lh-large-title); font-weight: var(--fw-bold); letter-spacing: var(--tracking-tight); }
+  h2 { font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: var(--fw-semibold); }
+  h3 { font-size: var(--fs-title-3); line-height: var(--lh-title-3); font-weight: var(--fw-semibold); }
+
+  p { max-width: var(--measure); }
+
+  a { color: var(--primary); text-underline-offset: var(--underline-offset); }
+  @media (hover: hover) {
+    a:hover { color: var(--primary-hover); }
+  }
+
+  :focus-visible {
+    outline: var(--focus-width) solid var(--primary);
+    outline-offset: var(--focus-width);
+  }
+
+  .cr-page {
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding: var(--space-32) var(--gutter) var(--space-64);
+  }
+
+  .cr-stack { display: flex; flex-direction: column; gap: var(--space-16); }
+  .cr-stack--loose { gap: var(--space-48); }
+  .cr-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+  .cr-text-2 { color: var(--text-2); }
+  .cr-footnote { font-size: var(--fs-footnote); line-height: var(--lh-footnote); }
+  .cr-numeric { font-variant-numeric: tabular-nums; }
+
+  .cr-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

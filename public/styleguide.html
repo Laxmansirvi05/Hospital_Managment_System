@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>CareRoute styleguide</title>
+  <script src="/js/theme-init.js"></script>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components/button.css">
+  <link rel="stylesheet" href="/css/components/card.css">
+  <link rel="stylesheet" href="/css/components/field.css">
+  <link rel="stylesheet" href="/css/components/status.css">
+  <link rel="stylesheet" href="/css/pages/styleguide.css">
+  <script type="module" src="/js/pages/styleguide.js"></script>
+</head>
+<body>
+  <main class="cr-page cr-stack cr-stack--loose">
+    <header class="cr-stack">
+      <h1>Styleguide</h1>
+      <p class="cr-text-2">Tokens and base components from docs/11-design-system.md. Check both themes.</p>
+      <div><button id="theme-toggle" class="cr-button cr-button--secondary" type="button">Theme: system</button></div>
+    </header>
+
+    <section class="cr-stack" aria-labelledby="color-title">
+      <h2 id="color-title">Color</h2>
+      <div class="sg-grid">
+        <div class="sg-swatch"><span class="sg-chip sg-chip--bg"></span><code>--bg</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--surface"></span><code>--surface</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--elevated"></span><code>--elevated</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--text-1"></span><code>--text-1</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--text-2"></span><code>--text-2</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--border"></span><code>--border</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--border-strong"></span><code>--border-strong</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--primary"></span><code>--primary</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--primary-hover"></span><code>--primary-hover</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--danger"></span><code>--danger</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--danger-tint"></span><code>--danger-tint</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--success"></span><code>--success</code></div>
+        <div class="sg-swatch"><span class="sg-chip sg-chip--warning"></span><code>--warning</code></div>
+      </div>
+    </section>
+
+    <section class="cr-stack" aria-labelledby="type-title">
+      <h2 id="type-title">Type</h2>
+      <p class="sg-type-large-title">Large title 34</p>
+      <p class="sg-type-title-1">Title 1 28</p>
+      <p class="sg-type-title-2">Title 2 22</p>
+      <p class="sg-type-title-3">Title 3 20</p>
+      <p class="sg-type-headline">Headline 17</p>
+      <p class="sg-type-body">Body 17. The ambulance is 6 min away, 2.4 km from you.</p>
+      <p class="sg-type-callout">Callout 16</p>
+      <p class="sg-type-subhead">Subhead 15</p>
+      <p class="sg-type-footnote">Footnote 13. Updated 12 s ago.</p>
+      <p class="sg-type-caption">Caption 12</p>
+      <p class="sg-type-title-2 cr-numeric">ETA 08:42 · 12 of 30 beds</p>
+    </section>
+
+    <section class="cr-stack" aria-labelledby="space-title">
+      <h2 id="space-title">Spacing</h2>
+      <div class="sg-space"><span class="sg-bar sg-bar--4"></span><code>4</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--8"></span><code>8</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--12"></span><code>12</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--16"></span><code>16</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--20"></span><code>20</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--24"></span><code>24</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--32"></span><code>32</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--40"></span><code>40</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--48"></span><code>48</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--64"></span><code>64</code></div>
+      <div class="sg-space"><span class="sg-bar sg-bar--80"></span><code>80</code></div>
+    </section>
+
+    <section class="cr-stack" aria-labelledby="buttons-title">
+      <h2 id="buttons-title">Buttons</h2>
+      <div class="cr-row">
+        <button class="cr-button cr-button--primary" type="button">Send request</button>
+        <button class="cr-button cr-button--secondary" type="button">Check again</button>
+        <button class="cr-button cr-button--text" type="button">View details</button>
+        <button class="cr-button cr-button--destructive" type="button">Cancel request</button>
+        <button class="cr-button cr-button--primary" type="button" disabled>Accept</button>
+      </div>
+      <button class="cr-button cr-button--primary cr-button--large cr-button--block" type="button">Large block button</button>
+    </section>
+
+    <section class="cr-stack" aria-labelledby="fields-title">
+      <h2 id="fields-title">Fields</h2>
+      <div class="cr-field">
+        <label class="cr-field__label" for="sg-phone">Phone number</label>
+        <input class="cr-input" id="sg-phone" type="tel" autocomplete="tel" aria-describedby="sg-phone-hint">
+        <p class="cr-field__hint" id="sg-phone-hint">We text the tracking link to this number.</p>
+      </div>
+      <div class="cr-field">
+        <label class="cr-field__label" for="sg-lat">Latitude</label>
+        <input class="cr-input" id="sg-lat" type="text" value="200" aria-invalid="true" aria-describedby="sg-lat-error">
+        <p class="cr-field__error" id="sg-lat-error">Latitude must be between -90 and 90.</p>
+      </div>
+    </section>
+
+    <section class="cr-stack" aria-labelledby="status-title">
+      <h2 id="status-title">Status labels and card</h2>
+      <div class="cr-row">
+        <span class="cr-status">Not chosen yet</span>
+        <span class="cr-status cr-status--info">En route</span>
+        <span class="cr-status cr-status--success">Completed</span>
+        <span class="cr-status cr-status--warning">Estimate</span>
+        <span class="cr-status cr-status--danger">No ambulance found</span>
+      </div>
+      <article class="cr-card cr-stack">
+        <h3 class="cr-card__title">Demo City Hospital</h3>
+        <span class="cr-status cr-status--success">Emergency open</span>
+        <p class="cr-numeric">ICU 4 of 12 · General 29 of 80</p>
+        <p class="cr-footnote cr-text-2">Updated 4 min ago</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

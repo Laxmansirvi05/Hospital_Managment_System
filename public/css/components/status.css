@@ -1,0 +1,26 @@
+/* A dot plus text. The text is always present, so color is never the only signal. */
+@layer components {
+  .cr-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    font-size: var(--fs-subhead);
+    line-height: var(--lh-subhead);
+    font-weight: var(--fw-semibold);
+    color: var(--text-2);
+  }
+
+  .cr-status::before {
+    content: "";
+    flex: none;
+    width: var(--space-8);
+    height: var(--space-8);
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .cr-status--info { color: var(--primary); }
+  .cr-status--success { color: var(--success); }
+  .cr-status--warning { color: var(--warning); }
+  .cr-status--danger { color: var(--danger); }
+}

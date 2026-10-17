@@ -1,0 +1,29 @@
+/* Label above, hint below, error names the problem. Never placeholder-only. */
+@layer components {
+  .cr-field { display: flex; flex-direction: column; gap: var(--space-8); }
+
+  .cr-field__label {
+    font-size: var(--fs-subhead);
+    line-height: var(--lh-subhead);
+    font-weight: var(--fw-semibold);
+  }
+
+  .cr-input {
+    min-height: var(--target-min);
+    padding: 0 var(--space-12);
+    background: var(--surface);
+    color: var(--text-1);
+    border: var(--border-width) solid var(--border-strong);
+    border-radius: var(--radius-m);
+  }
+
+  .cr-input[aria-invalid="true"] { border-color: var(--danger); }
+
+  .cr-field__hint,
+  .cr-field__error {
+    font-size: var(--fs-footnote);
+    line-height: var(--lh-footnote);
+  }
+  .cr-field__hint { color: var(--text-2); }
+  .cr-field__error { color: var(--danger); }
+}
