@@ -1,0 +1,674 @@
+/* Application layer: motion, auth pages, dashboard widgets and forms.
+   Motion follows docs/11-design-system.md section 6: it explains a change and never decorates.
+   No scroll reveals, no cursor effects, no opacity on buttons. */
+
+/* Page to page: a short cross-fade so moving between pages feels continuous. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-toggle);
+  animation-timing-function: var(--ease-enter);
+}
+
+.sidebar {
+  view-transition-name: sidebar;
+}
+
+/* Interactive cards lift slightly on hover and settle on press. */
+.card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-toggle) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter), border-color var(--dur-toggle) linear;
+}
+
+@media (hover: hover) {
+  .card-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-raised);
+    border-color: var(--border);
+    text-decoration: none;
+  }
+
+  .list-row.lift:hover {
+    transform: translateX(2px);
+  }
+}
+
+.card-link:active {
+  transform: translateY(0);
+}
+
+.list-row {
+  transition: background-color var(--dur-press) linear, transform var(--dur-toggle) var(--ease-enter);
+}
+
+/* Loading skeletons pulse in place, matching the final layout. */
+.skeleton {
+  border-radius: var(--radius-s);
+  background: var(--border-soft);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-line { height: 14px; }
+.skeleton-title { height: 22px; width: 50%; }
+.skeleton-row { height: 64px; border-radius: var(--radius-m); }
+.skeleton-hero { height: 40px; width: 40%; }
+.skeleton-block { height: 180px; border-radius: var(--radius-l); }
+.skeleton-block-l { height: 240px; }
+.notice-flat { border-radius: 0; }
+.auth-center { text-align: center; justify-items: center; }
+
+@keyframes pulse {
+  0%, 100% { background-color: var(--border-soft); }
+  50% { background-color: var(--bg); }
+}
+
+/* Toast slides up from the bottom edge. */
+.toast {
+  animation: toast-in var(--dur-sheet) var(--ease-enter);
+}
+
+@keyframes toast-in {
+  from { transform: translate(-50%, var(--space-16)); }
+  to { transform: translate(-50%, 0); }
+}
+
+/* Dialogs scale in from 96 percent. */
+dialog.sheet[open] {
+  animation: sheet-in var(--dur-sheet) var(--ease-enter);
+}
+
+@keyframes sheet-in {
+  from { transform: scale(0.96) translateY(var(--space-8)); }
+  to { transform: none; }
+}
+
+/* Inline progress for button work. */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+  .skeleton { animation: none; }
+}
+
+/* Sign in and sign up */
+.auth {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-24) var(--space-16);
+  background: var(--bg);
+}
+
+.auth-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: var(--space-24);
+  padding: var(--space-32) var(--space-24);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-raised);
+}
+
+.auth-head {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-12);
+  text-align: center;
+}
+
+.auth-head .brand-mark {
+  width: 56px;
+  height: 56px;
+}
+
+.form-error {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-start;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-m);
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: var(--fs-subhead);
+  line-height: var(--lh-subhead);
+}
+
+.field-error {
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--danger);
+}
+
+.input[aria-invalid="true"],
+.select[aria-invalid="true"],
+.textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* Dashboard */
+.greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-size: var(--fs-title-3);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--border-soft), 0 6px 14px rgba(16, 24, 40, 0.10);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-l {
+  width: 96px;
+  height: 96px;
+  font-size: var(--fs-title-1);
+}
+
+.dash-grid {
+  display: grid;
+  gap: var(--space-24);
+}
+
+@media (min-width: 1024px) {
+  .dash-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+@media (min-width: 640px) {
+  .stat-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.stat {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-16);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.stat-value {
+  font-size: var(--fs-title-1);
+  line-height: var(--lh-title-1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Today's doses: a raised disc with a progress ring, plus a timeline. */
+.dose-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 6px 0 var(--border-soft), 0 16px 28px rgba(16, 24, 40, 0.12);
+}
+
+.dose-ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.dose-ring .bar {
+  stroke: var(--success);
+  transition: stroke-dashoffset var(--dur-sheet) var(--ease-enter);
+}
+
+.dose-ring .track {
+  stroke: var(--border-soft);
+}
+
+.doses {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.dose {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: var(--space-12);
+  align-items: center;
+  padding: var(--space-12);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+.dose-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dose.is-taken {
+  background: var(--success-tint);
+  border-color: transparent;
+}
+
+.dose.is-skipped {
+  background: var(--bg);
+  border-color: transparent;
+  color: var(--text-2);
+}
+
+.dose.is-next {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* Date tile for appointments: a small raised calendar leaf. */
+.date-tile {
+  display: grid;
+  justify-items: center;
+  width: 56px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 3px 0 var(--border-soft), 0 6px 12px rgba(16, 24, 40, 0.08);
+  text-align: center;
+}
+
+.date-tile-month {
+  width: 100%;
+  padding: var(--space-4) 0;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.date-tile-day {
+  padding: var(--space-4) 0 var(--space-8);
+  font-size: var(--fs-title-2);
+  line-height: var(--lh-title-2);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Profile completeness bar */
+.meter {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--border-soft);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  transition: width var(--dur-sheet) var(--ease-enter);
+}
+
+/* Chip input for allergies, conditions and similar lists */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.chip-x {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 32px;
+  padding: 0 var(--space-4) 0 var(--space-12);
+  border-radius: var(--radius-full);
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-size: var(--fs-subhead);
+  line-height: var(--lh-subhead);
+  font-weight: 600;
+}
+
+.chip-x button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .chip-x button:hover { background: var(--surface); }
+}
+
+.inline-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-8);
+}
+
+/* Sections on long forms */
+.form-section {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--space-16);
+}
+
+@media (min-width: 640px) {
+  .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-grid .span-2 { grid-column: span 2; }
+}
+
+@media (min-width: 1280px) {
+  .form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.section-nav {
+  display: flex;
+  gap: var(--space-8);
+  overflow-x: auto;
+  padding-bottom: var(--space-4);
+}
+
+.section-nav a {
+  flex-shrink: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--fs-subhead);
+  line-height: var(--lh-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .section-nav a:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
+}
+
+.sticky-save {
+  position: sticky;
+  bottom: var(--space-16);
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-float);
+}
+
+/* Day picker for reminders */
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.days button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-1);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-toggle) linear, color var(--dur-toggle) linear, border-color var(--dur-toggle) linear;
+}
+
+.days button[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.times .input {
+  width: auto;
+  min-width: 120px;
+}
+
+/* Medicine card on the reminders page: a raised pill blister object. */
+.med-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-16);
+  align-items: start;
+}
+
+.pill-obj {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 3px 0 var(--border-soft), 0 6px 12px rgba(16, 24, 40, 0.08);
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+
+.empty-art {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 6px 0 var(--border-soft), 0 14px 24px rgba(16, 24, 40, 0.10);
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  border-radius: var(--radius-l);
+  border: 1px solid var(--border-soft);
+}
+
+.user-card .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: var(--fs-headline);
+  box-shadow: none;
+}
+
+.nav-group {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.offline {
+  display: none;
+}
+
+.is-offline .offline {
+  display: flex;
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.file-row-actions {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: nowrap;
+}
+
+.chip-on {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-tint);
+}
+
+.facts .span-2 {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 1024px) {
+  .search-side {
+    position: sticky;
+    top: var(--space-24);
+  }
+}
+
+.hero-detail {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.price-hero {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.price-hero .price {
+  font-size: var(--fs-large-title);
+  line-height: var(--lh-large-title);
+}
+
+.platform-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-m);
+  background: var(--bg);
+  color: var(--text-1);
+  font-weight: 700;
+  font-size: var(--fs-subhead);
+  border: 1px solid var(--border-soft);
+}
+
+.stack-4 {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Grid items default to min-width:auto, which lets wide content stretch the page on phones. */
+.shell > * {
+  min-width: 0;
+}
+
+.dose-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-24);
+}
+
+.dose-list {
+  flex: 1;
+  min-width: 0;
+}
+
+.dose-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+@media (max-width: 639px) {
+  .dose-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .dose-list {
+    width: 100%;
+  }
+
+  .dose {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .dose > :last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .greeting .avatar-l {
+    width: 64px;
+    height: 64px;
+    font-size: var(--fs-title-3);
+  }
+}

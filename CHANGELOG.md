@@ -2,6 +2,27 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-10-25
+
+### Decided
+
+- D-36 three search areas, D-37 patient appointment log (no booking, D-28 stands), D-38 medicine reminders in the app and browser, D-39 expanded medical ID, D-40 dashboard home, D-41 building started full stack. Proposed P-25 (crew view), P-26 (photo and document storage), P-27 (in-memory store until keys exist).
+
+### Built (branch `wp-0/foundation`)
+
+- Server: `server/config.js` (Zod, fails fast in production), redacting logger, router that refuses role-less routes, scrypt passwords and HS256 tokens from `node:crypto`, rotating refresh sessions with reuse revocation, httpOnly cookies with CSRF checks, Postgres rate limits, `X-Forwarded-For` trusted only behind a known proxy.
+- API: auth (register, login, me, refresh, logout), medical ID, contacts, reminders with dose logging and today's schedule, appointment log, dashboard, documents and photo with signed upload and byte checks, and the three discovery areas (hospitals and doctors, medicines and pharmacies, diagnostic centres). Single entry `api/v1/[...path].js`, local server `scripts/dev.js` on port 4000.
+- Database on `careroute-dev`: migrations `20261025000000` to `20261025000300` applied (extensions, accounts, listings, patient data, private storage buckets), synthetic listing seed loaded. Verified on the project: the `anon` role is denied on all 15 tables, `hit_rate_limit` allows then blocks, the PostGIS nearest-first query returns expected rows. The project was paused and was restored first.
+- Frontend in `public/`: sign in and sign up, dashboard, the three search pages with the 3D map, hospital, doctor, medicine price comparison, pharmacy and diagnostic centre pages, medical ID, reminders with browser notifications, appointments, documents, and an emergency page that sends people to 112 because ambulance requests are not built yet.
+- Tests: 41 passing (`tests/unit.test.js`, `tests/api.test.js`). They run against the in-memory store and storage, not Postgres. `scripts/check-public.js` passes.
+
+### Not verified
+
+- The Postgres store (`server/db/postgres.js`) has not run end to end: `.env.local` has no `DATABASE_URL` yet. Only its key SQL shapes were run by hand on `careroute-dev`.
+- Supabase Storage calls in `server/adapters/storage.js` are written against the documented API but not run (no service role key).
+- `vercel.json` has not been deployed.
+- No security agent or design review agent pass has been run on this change yet.
+
 ## 2026-10-24
 
 ### Frontend prototype (owner request)
