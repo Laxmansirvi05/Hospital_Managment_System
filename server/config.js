@@ -15,6 +15,7 @@ const schema = z.object({
   ALLOW_PRIVILEGED_SIGNUP: z.enum(['true', 'false']).default('false'),
   TRUST_PROXY: z.enum(['true', 'false']).default('false'),
   VERCEL: z.string().optional(),
+  VERCEL_ENV: z.enum(['production', 'preview', 'development']).optional(),
   SUPABASE_URL: optionalReal(z.string().url()),
   SUPABASE_SERVICE_ROLE_KEY: optionalReal(z.string().min(20)),
   PUBLIC_SUPABASE_URL: optionalReal(z.string().url()),
@@ -50,12 +51,16 @@ export function loadConfig(env = process.env) {
   }
   const v = parsed.data;
   const warnings = [];
-  const prod = v.NODE_ENV === 'production';
+  // Vercel sets NODE_ENV=production on preview deployments too, so VERCEL_ENV decides which
+  // one this is. Every deployed environment needs real configuration; only production forbids
+  // privileged sign-up (D-21 allows it in preview).
+  const deployed = v.NODE_ENV === 'production' || v.VERCEL_ENV === 'production' || v.VERCEL_ENV === 'preview';
+  const prod = v.VERCEL_ENV ? v.VERCEL_ENV === 'production' : v.NODE_ENV === 'production';
 
-  if (prod) {
+  if (deployed) {
     const missing = ['DATABASE_URL', 'JWT_SECRET', 'TRACKING_TOKEN_PEPPER'].filter((k) => !v[k]);
     if (missing.length) throw new Error(`Missing required configuration in production: ${missing.join(', ')}`);
-    if (v.ALLOW_PRIVILEGED_SIGNUP === 'true') throw new Error('ALLOW_PRIVILEGED_SIGNUP must not be true in production (D-21)');
+    if (prod && v.ALLOW_PRIVILEGED_SIGNUP === 'true') throw new Error('ALLOW_PRIVILEGED_SIGNUP must not be true in production (D-21)');
     // Without Supabase Storage, medical files would sit in function memory and vanish between instances.
     const storageMissing = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'].filter((k) => !v[k]);
     if (storageMissing.length) throw new Error(`Missing required configuration in production: ${storageMissing.join(', ')}`);

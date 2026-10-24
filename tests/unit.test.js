@@ -124,3 +124,16 @@ describe('client address (H3)', () => {
     expect(loadConfig({ ...base, SUPABASE_URL: 'https://x.example', SUPABASE_SERVICE_ROLE_KEY: 'k'.repeat(30) }).store).toBe('postgres');
   });
 });
+
+describe('Vercel environments (D-21)', () => {
+  const real = { DATABASE_URL: 'postgres://u:p@h/db', JWT_SECRET: 'a'.repeat(40), TRACKING_TOKEN_PEPPER: 'b'.repeat(40), SUPABASE_URL: 'https://x.example', SUPABASE_SERVICE_ROLE_KEY: 'k'.repeat(30) };
+  it('allows privileged sign-up on a Vercel preview, where NODE_ENV is also production', () => {
+    expect(loadConfig({ ...real, NODE_ENV: 'production', VERCEL_ENV: 'preview', ALLOW_PRIVILEGED_SIGNUP: 'true' }).allowPrivilegedSignup).toBe(true);
+  });
+  it('still refuses it on Vercel production', () => {
+    expect(() => loadConfig({ ...real, NODE_ENV: 'production', VERCEL_ENV: 'production', ALLOW_PRIVILEGED_SIGNUP: 'true' })).toThrow(/D-21/);
+  });
+  it('requires real configuration on a preview, so it never falls back to memory', () => {
+    expect(() => loadConfig({ NODE_ENV: 'production', VERCEL_ENV: 'preview' })).toThrow(/DATABASE_URL/);
+  });
+});
