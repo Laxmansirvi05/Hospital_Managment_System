@@ -9,8 +9,14 @@ api('/auth/me').then(() => location.replace(safeNext())).catch(() => render());
 
 function safeNext() {
   const next = new URLSearchParams(location.search).get('next') || '/';
-  // Only same-site paths, never a full URL, so the link cannot send someone elsewhere.
-  return next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  // Resolve with the browser's own URL rules: a string check misses "/\evil" and tab or
+  // newline tricks that browsers turn into another host.
+  try {
+    const u = new URL(next, location.origin);
+    return u.origin === location.origin ? `${u.pathname}${u.search}${u.hash}` : '/';
+  } catch {
+    return '/';
+  }
 }
 
 function render() {

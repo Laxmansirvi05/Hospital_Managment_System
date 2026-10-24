@@ -2,11 +2,12 @@
 // and the API from one origin, with the same headers vercel.json sets in production.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { getConfig } from '../server/config.js';
 import { initStore } from '../server/db/index.js';
 import { handle } from '../server/router.js';
 import { log } from '../server/log.js';
+import { prewarm } from '../server/auth/crypto.js';
 
 const ROOT = resolve('public');
 const TYPES = {
@@ -31,7 +32,7 @@ async function serveStatic(req, res) {
     return;
   }
   let file = join(ROOT, path);
-  if (!file.startsWith(ROOT)) {
+  if (file !== ROOT && !file.startsWith(ROOT + sep)) {
     res.writeHead(403).end();
     return;
   }
@@ -54,6 +55,7 @@ async function serveStatic(req, res) {
 
 const config = getConfig();
 await initStore();
+await prewarm();
 for (const w of config.warnings) log.warn(w);
 
 createServer((req, res) => {

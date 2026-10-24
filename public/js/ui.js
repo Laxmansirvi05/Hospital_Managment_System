@@ -48,6 +48,8 @@ export function leaveNote() {
 }
 
 export function extLink(href, label) {
+  // Defence in depth: the database already requires http or https, but a javascript: link must never render.
+  if (!/^https?:\/\//i.test(String(href))) return h('span', {}, label);
   return h('a', { class: 'link-ext', href, target: '_blank', rel: 'noopener noreferrer' }, label, icon('external', 16));
 }
 

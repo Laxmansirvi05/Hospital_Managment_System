@@ -138,6 +138,7 @@ export function createMemoryStore() {
     files: {
       async create(userId, meta) { const row = { id: randomUUID(), userId, status: 'pending', ...meta, createdAt: now() }; files.push(row); return clone(row); },
       async get(userId, id) { const f = files.find((x) => x.id === id && x.userId === userId); return f ? clone(f) : null; },
+      async pendingCount(userId) { return files.filter((f) => f.userId === userId && f.status === 'pending' && Date.now() - f.createdAt < 3600000).length; },
       async markReady(userId, id) { const f = files.find((x) => x.id === id && x.userId === userId); if (!f) return null; f.status = 'ready'; return clone(f); },
       async list(userId, purpose) { return files.filter((f) => f.userId === userId && f.purpose === purpose && f.status === 'ready').map(clone).sort((a, b) => b.createdAt - a.createdAt); },
       async remove(userId, id) { const i = files.findIndex((f) => f.id === id && f.userId === userId); if (i < 0) return null; return clone(files.splice(i, 1)[0]); },

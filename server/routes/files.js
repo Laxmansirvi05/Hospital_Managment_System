@@ -6,6 +6,7 @@ import { getStore } from '../db/index.js';
 import { getStorage, sniffOk } from '../adapters/storage.js';
 import { HttpError, parse, readJson, readRaw, notFound, invalid } from '../http.js';
 import { fileView } from './patients.js';
+import { limit, LIMITS as RATE } from '../limits.js';
 
 const PATIENT = ['patient'];
 const BUCKETS = { document: 'patient-documents', photo: 'patient-photos' };
@@ -35,6 +36,11 @@ function fileId(params) {
 }
 
 async function startUpload(user, purpose, meta) {
+  await limit('upload-account', user.id, ...RATE.uploadPerAccount);
+  // Unfinished uploads hold storage until cleaned up, so each account may only have a few open.
+  if ((await getStore().files.pendingCount(user.id)) >= RATE.maxPendingUploads) {
+    throw new HttpError(429, 'too_many_uploads', 'Finish or cancel your other uploads first.');
+  }
   const path = `${user.id}/${randomUUID()}`;
   const record = await getStore().files.create(user.id, { purpose, storagePath: path, ...meta });
   const { uploadUrl, method } = await getStorage().createUpload(BUCKETS[purpose], path);
@@ -82,7 +88,7 @@ export const routes = [
     async handler({ params, user }) {
       const f = await getStore().files.get(user.id, fileId(params));
       if (!f || f.purpose !== 'document' || f.status !== 'ready') throw notFound();
-      return { body: { url: await getStorage().signedDownload(BUCKETS.document, f.storagePath), expiresInSeconds: 300 } };
+      return { body: { url: await getStorage().signedDownload(BUCKETS.document, f.storagePath, { download: true }), expiresInSeconds: 300 } };
     },
   },
   {

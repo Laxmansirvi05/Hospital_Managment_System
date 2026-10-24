@@ -4,6 +4,23 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Security review fixes
+
+The security agent reviewed the patient-side build: no critical or high issues, five medium, two low. Fixed:
+
+- M1 open redirect on sign in: `next` is now resolved with the URL parser and kept only if same-origin.
+- M2 rate limits on upload links (per account) and discovery (per IP), at most 3 unfinished uploads per account, nightly cleanup of unfinished upload rows (`server/limits.js`, migration `20261025000400`). Limit values are PROPOSED. Removing orphaned storage objects is not built yet.
+- M3 any rotated refresh token for a live session now revokes it, not only the most recent one (D-22).
+- M4 production refuses to start without Supabase Storage keys or with a non-https `SUPABASE_URL`.
+- M5 request bodies over 64 KB are refused before parsing, also when the platform pre-parses. Zod upgraded 3.24.1 to 4.6.7 for GHSA-mrhx-c7xc-m3w5; `pnpm audit --prod` is clean. Vitest 2.1.8 to 2.1.9 (dev only).
+- L1 impossible dates rejected, malformed session ids answered with 401, database error messages no longer logged.
+- L2 the five-contact cap is enforced by a database trigger; verified on careroute-dev inside a rolled-back transaction.
+- Hardening: session expiry checked on every request, dev server path check uses a separator, dummy password hash built at start-up, security events logged, documents forced to download, client-side check on outbound links, `TRUST_PROXY` added to `docs/09-security.md` section 3.1.
+- Tests: 50 passing (9 new). Still against the in-memory store.
+
+Open from the review: exact Supabase host in the CSP per environment (H1), XSS payload tests per text field, and four owner questions (notification wording, `dataMode` in `/config`, rate limit values, `rating` in listing responses before Q-24).
+
+
 ### Decided
 
 - D-36 three search areas, D-37 patient appointment log (no booking, D-28 stands), D-38 medicine reminders in the app and browser, D-39 expanded medical ID, D-40 dashboard home, D-41 building started full stack. Proposed P-25 (crew view), P-26 (photo and document storage), P-27 (in-memory store until keys exist).

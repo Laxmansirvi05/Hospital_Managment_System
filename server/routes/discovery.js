@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getStore } from '../db/index.js';
 import { parse, notFound, invalid } from '../http.js';
 import { AREAS } from '../db/seed-data.js';
+import { limit, clientIp, LIMITS } from '../limits.js';
 
 // Q-27 is open, so search needs a signed-in account for now (docs/09-security.md section 5).
 const SIGNED_IN = ['patient', 'driver', 'admin'];
@@ -63,7 +64,7 @@ export const medicineView = (m) => ({
   listings: m.listings.map((l) => ({ platform: l.platform, priceInr: l.priceInr, productUrl: l.productUrl, checkedAt: l.checkedAt })),
 });
 
-export const routes = [
+const ROUTES = [
   { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: AREAS } }; } },
 
   {
@@ -98,3 +99,12 @@ export const routes = [
   { method: 'GET', path: '/diagnostic-centres', roles: SIGNED_IN, async handler({ query }) { return { body: { diagnosticCentres: (await getStore().listings.diagnostics(q(query))).map(diagnosticView) } }; } },
   { method: 'GET', path: '/diagnostic-centres/:id', roles: SIGNED_IN, async handler({ params }) { return { body: diagnosticView(await found(getStore().listings.diagnostic(uuid(params)))) }; } },
 ];
+
+// Every discovery route is rate limited per IP before it runs (docs/09-security.md section 7).
+export const routes = ROUTES.map((r) => ({
+  ...r,
+  async handler(ctx) {
+    await limit('search-ip', clientIp(ctx.req), ...LIMITS.searchPerIp);
+    return r.handler(ctx);
+  },
+}));

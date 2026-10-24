@@ -216,6 +216,10 @@ export function createPostgresStore(url) {
         return fileRow(r);
       },
       async get(userId, id) { return fileRow((await sql`select * from public.patient_files where id = ${id} and user_id = ${userId}`)[0]) || null; },
+      async pendingCount(userId) {
+        const [r] = await sql`select count(*)::int as n from public.patient_files where user_id = ${userId} and status = 'pending' and created_at > now() - interval '1 hour'`;
+        return r.n;
+      },
       async markReady(userId, id) { return fileRow((await sql`update public.patient_files set status = 'ready', updated_at = now() where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },
       async list(userId, purpose) { return (await sql`select * from public.patient_files where user_id = ${userId} and purpose = ${purpose} and status = 'ready' order by created_at desc`).map(fileRow); },
       async remove(userId, id) { return fileRow((await sql`delete from public.patient_files where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },

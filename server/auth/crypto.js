@@ -33,6 +33,10 @@ export async function verifyPassword(password, stored) {
 
 // A fixed hash so an unknown email costs the same time as a wrong password.
 let dummy = null;
+/** Builds the dummy hash at start-up so the first unknown-email login is not slower than the rest. */
+export async function prewarm() {
+  if (!dummy) dummy = await hashPassword('careroute-timing-equaliser');
+}
 export async function dummyVerify(password) {
   if (!dummy) dummy = await hashPassword('careroute-timing-equaliser');
   await verifyPassword(password, dummy);

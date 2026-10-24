@@ -105,3 +105,22 @@ describe('uploads and logs', () => {
     expect(out).toEqual({ route: '/x', email: '[redacted]', phone: '[redacted]', medicalNotes: '[redacted]', nested: { lat: '[redacted]', password: '[redacted]' } });
   });
 });
+
+describe('client address (H3)', () => {
+  it('ignores X-Forwarded-For unless the proxy is trusted', async () => {
+    const { setConfigForTests } = await import('../server/config.js');
+    const { clientIp } = await import('../server/limits.js');
+    const req = { headers: { 'x-forwarded-for': '1.2.3.4' }, socket: { remoteAddress: '127.0.0.1' } };
+    setConfigForTests(loadConfig({ NODE_ENV: 'test', TRUST_PROXY: 'false' }));
+    expect(clientIp(req)).toBe('127.0.0.1');
+    setConfigForTests(loadConfig({ NODE_ENV: 'test', TRUST_PROXY: 'true' }));
+    expect(clientIp(req)).toBe('1.2.3.4');
+  });
+
+  it('refuses production without storage, or with plain http storage (M4)', () => {
+    const base = { NODE_ENV: 'production', DATABASE_URL: 'postgres://u:p@h/db', JWT_SECRET: 'a'.repeat(40), TRACKING_TOKEN_PEPPER: 'b'.repeat(40) };
+    expect(() => loadConfig(base)).toThrow(/SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY/);
+    expect(() => loadConfig({ ...base, SUPABASE_URL: 'http://x.example', SUPABASE_SERVICE_ROLE_KEY: 'k'.repeat(30) })).toThrow(/https/);
+    expect(loadConfig({ ...base, SUPABASE_URL: 'https://x.example', SUPABASE_SERVICE_ROLE_KEY: 'k'.repeat(30) }).store).toBe('postgres');
+  });
+});

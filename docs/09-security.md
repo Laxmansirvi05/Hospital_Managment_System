@@ -68,6 +68,7 @@ This is the section the owner flagged. Treat it as the highest-priority rule set
 | `TWILIO_FROM_NUMBER` | Server only | No | |
 | `TRACKING_TOKEN_PEPPER` | Server only | No | Pepper for hashing refresh tokens now, tracking tokens later |
 | `ALLOW_PRIVILEGED_SIGNUP` | Server only | No | Not a secret. `true` lets non-patient roles self-register. Never set in production (D-21). |
+| `TRUST_PROXY` | Server only | No | Not a secret. `true` only behind a proxy that overwrites `X-Forwarded-For`. Vercel sets `VERCEL=1`, which turns it on there. Otherwise the client IP is the socket address, so per-IP limits cannot be dodged with a forged header. |
 
 Only variables starting with `PUBLIC_` are returned to the browser, and only by `GET /api/v1/config`, which returns a fixed list of names and nothing else. The allow-list above is the complete list. Adding a new `PUBLIC_` variable needs a security review.
 

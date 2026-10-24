@@ -122,6 +122,8 @@ export async function handle(req, res) {
     sendError(res, err, requestId);
   } finally {
     log.info('request', { requestId, method: req.method, route: route ? route.path : 'unmatched', status, ms: Date.now() - started });
+    // Security events (docs/09-security.md section 11): denials and limit hits, without personal data.
+    if (status === 401 || status === 403 || status === 429) log.warn('security', { requestId, route: route ? route.path : 'unmatched', status });
   }
 }
 

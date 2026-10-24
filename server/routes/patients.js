@@ -7,8 +7,9 @@ const PATIENT = ['patient'];
 const id = z.string().uuid();
 const text = (max) => z.string().trim().max(max);
 const list = (maxItems, maxLen = 80) => z.array(text(maxLen).min(1)).max(maxItems);
+// Date.parse accepts 30 February and rolls it over, so the date must survive a round trip.
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the date format YYYY-MM-DD')
-  .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), 'Enter a real date');
+  .refine((v) => { const d = new Date(`${v}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v; }, 'Enter a real date');
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use 24 hour time, for example 08:30');
 
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Not known'];
@@ -184,7 +185,13 @@ export const routes = [
       const body = parse(contactSchema, await readJson(req));
       const existing = await getStore().contacts.list(user.id);
       if (existing.length >= 5) throw invalid('contacts', 'You can save up to 5 contacts.');
-      return { status: 201, body: contactView(await getStore().contacts.create(user.id, body)) };
+      try {
+        return { status: 201, body: contactView(await getStore().contacts.create(user.id, body)) };
+      } catch (err) {
+        // The database trigger enforces the cap when two requests race past the count above.
+        if (err?.code === 'P0001' && err?.message === 'contact_limit') throw invalid('contacts', 'You can save up to 5 contacts.');
+        throw err;
+      }
     },
   },
   {

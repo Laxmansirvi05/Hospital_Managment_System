@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { getConfig } from '../config.js';
 import { getStore } from '../db/index.js';
-import { HttpError, parse, readJson, conflict, forbidden, unauthorized } from '../http.js';
-import { hashPassword, verifyPassword, dummyVerify, hashToken } from '../auth/crypto.js';
+import { parse, readJson, conflict, forbidden, unauthorized } from '../http.js';
+import { limit, clientIp } from '../limits.js';
+import { hashPassword, verifyPassword, dummyVerify } from '../auth/crypto.js';
 import { startSession, refreshSession, clearCookies } from '../auth/session.js';
 
 export const ROLES = ['patient', 'driver', 'admin'];
@@ -23,22 +24,6 @@ const registerSchema = z.object({
 }).strict();
 
 const loginSchema = z.object({ email, password: z.string().min(1, 'Enter your password').max(128) }).strict();
-
-function clientIp(req) {
-  const fwd = getConfig().trustProxy ? req.headers['x-forwarded-for'] : undefined;
-  return (typeof fwd === 'string' ? fwd.split(',')[0].trim() : '') || req.socket?.remoteAddress || 'unknown';
-}
-
-/** Postgres-backed counters (D-25). Keys are hashed so no email or IP is stored in clear. */
-async function limit(kind, value, max, windowSeconds) {
-  const key = hashToken(`${kind}:${value}`, getConfig().pepper);
-  const result = await getStore().rateLimits.hit(key, max, windowSeconds);
-  if (!result.allowed) {
-    const err = new HttpError(429, 'rate_limited', 'Too many attempts. Wait a little and try again.');
-    err.retryAfter = result.retryAfter;
-    throw err;
-  }
-}
 
 const publicUser = (u) => ({ id: u.id, role: u.role, name: u.name });
 

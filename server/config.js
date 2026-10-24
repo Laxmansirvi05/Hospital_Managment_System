@@ -56,6 +56,10 @@ export function loadConfig(env = process.env) {
     const missing = ['DATABASE_URL', 'JWT_SECRET', 'TRACKING_TOKEN_PEPPER'].filter((k) => !v[k]);
     if (missing.length) throw new Error(`Missing required configuration in production: ${missing.join(', ')}`);
     if (v.ALLOW_PRIVILEGED_SIGNUP === 'true') throw new Error('ALLOW_PRIVILEGED_SIGNUP must not be true in production (D-21)');
+    // Without Supabase Storage, medical files would sit in function memory and vanish between instances.
+    const storageMissing = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'].filter((k) => !v[k]);
+    if (storageMissing.length) throw new Error(`Missing required configuration in production: ${storageMissing.join(', ')}`);
+    if (!v.SUPABASE_URL.startsWith('https://')) throw new Error('SUPABASE_URL must use https in production, so the service key is never sent in clear');
   }
 
   // P-27: without a database the local server runs on an in-memory store and says so.

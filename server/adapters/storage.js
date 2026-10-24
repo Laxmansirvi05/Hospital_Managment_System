@@ -86,9 +86,10 @@ function supabaseStorage({ url, serviceKey }) {
       const size = range ? Number(range.split('/')[1]) : Number(res.headers.get('content-length'));
       return { size, contentType: res.headers.get('content-type'), firstBytes };
     },
-    async signedDownload(bucket, path) {
+    async signedDownload(bucket, path, { download = false } = {}) {
       const out = await call('POST', `/object/sign/${bucket}/${path}`, { expiresIn: SIGNED_SECONDS });
-      return `${base}${out.signedURL}`;
+      // Documents are forced to download so a file can never render as a page on the storage host.
+      return `${base}${out.signedURL}${download ? '&download=' : ''}`;
     },
     async remove(bucket, path) {
       await call('DELETE', `/object/${bucket}`, { prefixes: [path] });

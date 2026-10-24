@@ -236,3 +236,64 @@ describe('rate limits (D-25)', () => {
     expect(Number(last.headers.get('retry-after'))).toBeGreaterThan(0);
   });
 });
+
+describe('security review fixes (2026-10-25)', () => {
+  it('revokes the session when a token two rotations old is presented (D-22, M3)', async () => {
+    const u = await app.user();
+    const t1 = cookieHeader(u.cookies);
+    const r2 = await app.api('/auth/refresh', { method: 'POST', cookie: t1, headers: { 'x-careroute-csrf': '1' } });
+    const t2 = cookieHeader(r2.headers.getSetCookie());
+    const r3 = await app.api('/auth/refresh', { method: 'POST', cookie: t2, headers: { 'x-careroute-csrf': '1' } });
+    expect(r3.status).toBe(200);
+    const old = await app.api('/auth/refresh', { method: 'POST', cookie: t1, headers: { 'x-careroute-csrf': '1' } });
+    expect(old.status).toBe(401);
+    expect(old.body.error.code).toBe('refresh_reused');
+    expect((await app.api('/auth/me', { token: r3.body.token })).status).toBe(401);
+  });
+
+  it('answers 401, not 500, for a malformed refresh cookie (L1)', async () => {
+    const r = await app.api('/auth/refresh', { method: 'POST', cookie: 'cr_refresh=not-a-uuid.abc', headers: { 'x-careroute-csrf': '1' } });
+    expect(r.status).toBe(401);
+  });
+
+  it('rejects impossible dates such as 30 February (L1)', async () => {
+    const u = await app.user();
+    const r = await app.api('/patients/me/medical-id', { method: 'PUT', token: u.token, body: { dateOfBirth: '1985-02-30' } });
+    expect(r.status).toBe(422);
+  });
+
+  it('rejects a body over 64 KB before parsing (M5)', async () => {
+    const u = await app.user();
+    const r = await app.api('/patients/me/medical-id', { method: 'PUT', token: u.token, body: { medicalNotes: 'x'.repeat(70 * 1024) } });
+    expect(r.status).toBe(413);
+  });
+
+  it('caps unfinished uploads per account (M2)', async () => {
+    const u = await app.user();
+    const body = { title: 'Lab', kind: 'lab', fileName: 'a.pdf', contentType: 'application/pdf', sizeBytes: 100 };
+    for (let i = 0; i < 3; i++) expect((await app.api('/patients/me/reports', { token: u.token, body })).status).toBe(201);
+    const fourth = await app.api('/patients/me/reports', { token: u.token, body });
+    expect(fourth.status).toBe(429);
+    expect(fourth.body.error.code).toBe('too_many_uploads');
+  });
+
+  it('stops another patient opening, completing or deleting a document (H10)', async () => {
+    const a = await app.user();
+    const b = await app.user();
+    const bytes = Buffer.from('%PDF-1.7 x');
+    const start = await app.api('/patients/me/reports', { token: a.token, body: { title: 'Mine', kind: 'lab', fileName: 'm.pdf', contentType: 'application/pdf', sizeBytes: bytes.length } });
+    await app.api(start.body.uploadUrl, { method: 'PUT', raw: bytes, headers: { 'content-type': 'application/pdf' } });
+    expect((await app.api(`/patients/me/reports/${start.body.id}/complete`, { method: 'POST', token: b.token })).status).toBe(404);
+    await app.api(`/patients/me/reports/${start.body.id}/complete`, { method: 'POST', token: a.token });
+    expect((await app.api(`/patients/me/reports/${start.body.id}/download`, { token: b.token })).status).toBe(404);
+    expect((await app.api(`/patients/me/reports/${start.body.id}`, { method: 'DELETE', token: b.token })).status).toBe(404);
+    expect((await app.api(`/patients/me/photo/${start.body.id}/complete`, { method: 'POST', token: a.token })).status).toBe(404);
+  });
+
+  it('rate limits discovery search per IP (M2)', async () => {
+    const u = await app.user();
+    let last;
+    for (let i = 0; i < 121; i++) last = await app.api('/areas', { token: u.token, headers: { 'x-forwarded-for': '10.9.9.9' } });
+    expect(last.status).toBe(429);
+  });
+});

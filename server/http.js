@@ -47,7 +47,13 @@ const MAX_BODY = 64 * 1024;
 
 /** Reads a JSON body up to 64 KB. */
 export async function readJson(req) {
-  if (req.body !== undefined) return req.body;
+  // Checked before anything else: on Vercel the platform has already parsed the body, so the
+  // streaming limit below would never run.
+  if (Number(req.headers['content-length'] || 0) > MAX_BODY) throw new HttpError(413, 'too_large', 'The request is too large.');
+  if (req.body !== undefined) {
+    if (Buffer.byteLength(JSON.stringify(req.body ?? {})) > MAX_BODY) throw new HttpError(413, 'too_large', 'The request is too large.');
+    return req.body;
+  }
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
@@ -123,6 +129,8 @@ export function sendError(res, err, requestId) {
     send(res, err.status, { error: { code: err.code, message: err.message, ...(err.fields ? { fields: err.fields } : {}) } }, headers);
     return;
   }
-  log.error('unhandled error', { requestId, name: err?.name, message: err?.message, stack: err?.stack?.split('\n').slice(0, 4).join(' | ') });
+  // Database errors often quote the rejected value, which may be personal data, so only the
+  // error code and the first stack frames are logged, never the message.
+  log.error('unhandled error', { requestId, name: err?.name, code: err?.code, at: err?.stack?.split('\n').slice(1, 4).join(' | ') });
   send(res, 500, { error: { code: 'server_error', message: 'Something went wrong on our side. Try again.' } });
 }
