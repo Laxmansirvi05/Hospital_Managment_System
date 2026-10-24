@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Verified on the real database
+
+- `.env.local` now points at careroute-dev (Postgres through the transaction pooler, Supabase Storage with the new `sb_secret_` key). The owner's keys had first been typed into the tracked `.env.example`; they were moved to `.env.local` before anything was committed, and `.env.example` was restored.
+- An end-to-end run against the local server on careroute-dev passed 44 of 44 checks: auth, refresh rotation and reuse revocation, password change, medical ID, contacts, reminders and doses, appointments, dashboard, photo and document upload through Supabase Storage with byte checks and forced download, all discovery searches on PostGIS, reviews, and account deletion. After deletion, every table and both storage buckets held nothing for that user (checked by SQL).
+- This closes the "Postgres store not run end to end" and "Supabase Storage not run" items below.
+
+
 ### Owner answers, reviews, account deletion, Vercel project
 
 - Decided D-42 (search needs sign-in), D-43 (CareRoute reviews plus platform rating), D-44 (upload limits stand; crew sees reports once a booking is confirmed), D-45 (account deletion deletes everything), D-46 (gather data from as many sources as possible; prices only), D-47 (free AI plans with fallback), D-48 (no landing page for now). Proposed P-28 (review rules) and P-29 (collection rules). Closed Q-11, Q-17, Q-24, Q-25, Q-27; narrowed Q-10 and Q-28.
