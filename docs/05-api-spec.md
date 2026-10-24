@@ -186,3 +186,22 @@ Not in the collection. If approved, add these requests and tests to the collecti
 4. Secrets, tokens, password hashes and other users' data never appear in a response or a log.
 5. A route with no test for 401, 403 and the happy path is not finished.
 6. Outbound links in responses (`website`, `profileUrl`, `productUrl`, `sourceUrl`) are `https` or `http` URLs only, validated when the admin saves them.
+
+## 10. Built on 2026-10-25 (D-36 to D-41)
+
+Implemented on branch `wp-0/foundation`. Not in the Postman collection yet; add them with the owner's approval.
+
+| Method and path | Role | Purpose |
+| --- | --- | --- |
+| GET `/config` | none | Allow-listed public values and `dataMode` (`sample` or `live`) |
+| GET, PUT `/patients/me/medical-id` | patient | Expanded medical ID (D-39). PUT is a partial update; the collection's four fields still work. Response adds `age`, `hasPhoto`, `completeness`. |
+| POST `/patients/me/photo`, POST `/patients/me/photo/{id}/complete`, GET and DELETE `/patients/me/photo` | patient | Photo upload with a one-time link, byte check, short-lived view link (P-26) |
+| GET, POST `/patients/me/reminders`; PATCH, DELETE `/patients/me/reminders/{id}` | patient | Medicine reminders (D-38): `medicineName`, `dose`, `instructions`, `times[]`, `daysOfWeek[]`, `startDate`, `endDate`, `notes`, `active` |
+| GET `/patients/me/reminders/today?date=` | patient | Doses due on a date with status `due`, `taken` or `skipped` |
+| POST `/patients/me/reminders/{id}/doses` | patient | Record `taken` or `skipped` for `date` and `time` |
+| GET, POST `/patients/me/appointments`; PATCH, DELETE `/patients/me/appointments/{id}` | patient | Appointment log (D-37). CareRoute does not book. |
+| GET `/patients/me/dashboard?date=` | patient | Dashboard in one call (D-40) |
+| GET `/areas` | signed in | Hyderabad areas for filters |
+| GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
+
+Section 8 (reports) is built with `kind` values `lab`, `prescription`, `scan`, `discharge`, `insurance`, `other`, and limits PDF, JPEG or PNG up to 10 MB (PROPOSED until Q-11).

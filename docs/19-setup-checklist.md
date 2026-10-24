@@ -28,6 +28,17 @@ Everything that must exist before building restarts. Each row says what to creat
 | 10 | Listing and medicine price data | Discovery | Source decided: online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Collection method and any accounts or keys wait for Q-28. |
 | 11 | Assistant external sources | AI assistant | Not chosen (Q-26). Nothing to create until the owner decides. |
 
+## To connect the app to careroute-dev (next step for the owner)
+
+The schema and sample listings are already on `careroute-dev`. The app runs on sample data until these are in `.env.local` (copy `.env.example`):
+
+1. `DATABASE_URL`: Supabase dashboard, careroute-dev, Connect, "Transaction pooler" connection string, with the database password.
+2. `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`: Project Settings, API. Server only.
+3. `JWT_SECRET` and `TRACKING_TOKEN_PEPPER`: run `openssl rand -base64 48` twice.
+4. `ALLOW_PRIVILEGED_SIGNUP=true` only locally.
+
+Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is using the database.
+
 ## Per service
 
 ### 2. Supabase (D-10, D-18)

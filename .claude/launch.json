@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "app",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file-if-exists=.env.local", "scripts/dev.js"],
+      "port": 4000
+    },
+    {
       "name": "prototype",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["prototype/dev-server.py"],

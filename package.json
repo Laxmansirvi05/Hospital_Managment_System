@@ -1,0 +1,21 @@
+{
+  "name": "careroute",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "packageManager": "pnpm@11.2.2",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.js",
+    "test": "vitest run",
+    "check": "node scripts/check-public.js"
+  },
+  "dependencies": {
+    "postgres": "3.4.5",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "vitest": "2.1.8"
+  }
+}

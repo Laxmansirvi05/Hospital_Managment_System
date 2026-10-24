@@ -53,4 +53,11 @@ Hyderabad-first healthcare discovery and assistance web app with three parts: di
 
 ## Commands
 
-None. There is no application code. Only `main` exists. Do not start building until the owner says so.
+Building started on 2026-10-25 (D-41) on branch `wp-0/foundation`.
+
+| Purpose | Command |
+| --- | --- |
+| Run the app on http://127.0.0.1:4000 | `pnpm dev` (reads `.env.local`; without `DATABASE_URL` it runs on sample data, P-27) |
+| Unit and API tests | `NODE_ENV=test pnpm test` |
+| Scan `public/` for secrets and unsafe HTML | `pnpm check` |
+| Regenerate `supabase/seed.sql` | `node scripts/gen-seed.js` |
