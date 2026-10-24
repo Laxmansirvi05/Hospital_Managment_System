@@ -1,0 +1,91 @@
+/* Design tokens. Light theme only for the prototype (owner, 2026-10-24).
+   Colour values come from docs/11-design-system.md section 3.1. Map and depth
+   tokens are new for this prototype and are decorative, not text pairs. */
+:root {
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-sunken: #FAFAFC;
+  --text-1: #1D1D1F;
+  --text-2: #6E6E73;
+  --border: #D2D2D7;
+  --border-soft: #E8E8ED;
+  --border-strong: #8E8E93;
+  --primary: #0066CC;
+  --primary-hover: #0058B0;
+  --on-primary: #FFFFFF;
+  --danger: #D70015;
+  --danger-hover: #B80012;
+  --success: #1E7B34;
+  --warning: #C93400;
+  --primary-tint: #EAF3FF;
+  --danger-tint: #FFF1F0;
+  --success-tint: #EAF7EC;
+  --warning-tint: #FFF3E5;
+
+  /* Faces of 3D objects. Each face is one flat colour, so depth reads without gradients. */
+  --primary-face-top: #4D94DB;
+  --primary-face-side: #004C99;
+  --danger-face-side: #8F000E;
+  --danger-face-top: #E8334A;
+  --neutral-face-side: #C7C7CC;
+  --warning-face-top: #E86A3A;
+  --warning-face-side: #8F2500;
+
+  /* Illustrative map */
+  --map-land: #EEF1F4;
+  --map-block: #E4E8EC;
+  --map-park: #DCEEDF;
+  --map-water: #C9E0F4;
+  --map-road: #FFFFFF;
+  --map-road-edge: #D5DBE1;
+  --map-edge: #CBD3DB;
+  --map-edge-dark: #B4BEC8;
+  --map-label: #6E6E73;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Apple text styles, docs/11-design-system.md section 4 */
+  --fs-large-title: 2.125rem;  --lh-large-title: 2.5625rem;
+  --fs-title-1: 1.75rem;       --lh-title-1: 2.125rem;
+  --fs-title-2: 1.375rem;      --lh-title-2: 1.75rem;
+  --fs-title-3: 1.25rem;       --lh-title-3: 1.5625rem;
+  --fs-headline: 1.0625rem;    --lh-headline: 1.375rem;
+  --fs-body: 1.0625rem;        --lh-body: 1.5rem;
+  --fs-callout: 1rem;          --lh-callout: 1.3125rem;
+  --fs-subhead: 0.9375rem;     --lh-subhead: 1.25rem;
+  --fs-footnote: 0.8125rem;    --lh-footnote: 1.125rem;
+  --fs-caption: 0.75rem;       --lh-caption: 1rem;
+
+  /* Spacing steps, the only ones allowed */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-80: 80px;
+
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Depth. Layered shadows give 3D objects weight without blur on surfaces. */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-raised: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 16px rgba(16, 24, 40, 0.06), 0 24px 48px rgba(16, 24, 40, 0.08);
+  --shadow-float: 0 4px 12px rgba(16, 24, 40, 0.08), 0 16px 32px rgba(16, 24, 40, 0.10);
+
+  --control-h: 44px;
+  --control-h-l: 56px;
+
+  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 100ms;
+  --dur-toggle: 200ms;
+  --dur-sheet: 300ms;
+}

@@ -1,0 +1,30 @@
+/* Screen-level layout that does not belong to one component. */
+
+.grid-report {
+  display: grid;
+  gap: var(--space-24);
+}
+
+@media (min-width: 1024px) {
+  .grid-report {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    align-items: start;
+  }
+
+  .grid-report > :first-child {
+    position: sticky;
+    top: var(--space-24);
+  }
+}
+
+/* Two equal buttons side by side, for accept and reject. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+}
+
+.stack-4 {
+  display: grid;
+  gap: var(--space-4);
+}

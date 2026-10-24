@@ -1,0 +1,325 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure {
+  margin: 0;
+}
+
+ul, ol {
+  padding: 0;
+  list-style: none;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Text styles */
+.t-large-title { font-size: var(--fs-large-title); line-height: var(--lh-large-title); font-weight: 700; letter-spacing: -0.02em; }
+.t-title-1 { font-size: var(--fs-title-1); line-height: var(--lh-title-1); font-weight: 700; letter-spacing: -0.015em; }
+.t-title-2 { font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: 600; letter-spacing: -0.01em; }
+.t-title-3 { font-size: var(--fs-title-3); line-height: var(--lh-title-3); font-weight: 600; }
+.t-headline { font-size: var(--fs-headline); line-height: var(--lh-headline); font-weight: 600; }
+.t-callout { font-size: var(--fs-callout); line-height: var(--lh-callout); }
+.t-subhead { font-size: var(--fs-subhead); line-height: var(--lh-subhead); }
+.t-footnote { font-size: var(--fs-footnote); line-height: var(--lh-footnote); }
+.t-caption { font-size: var(--fs-caption); line-height: var(--lh-caption); }
+.muted { color: var(--text-2); }
+.strong { font-weight: 600; }
+
+/* Prototype banner */
+.proto-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  background: var(--text-1);
+  color: var(--surface);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  text-align: center;
+}
+
+/* Shell */
+.shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: none;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-16);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.main {
+  min-width: 0;
+  padding: var(--space-24) var(--space-16) calc(var(--space-80) + var(--space-64));
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--space-32);
+}
+
+.page-head {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.page-head h1:focus {
+  outline: none;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--fs-subhead);
+  line-height: var(--lh-subhead);
+  color: var(--text-2);
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: var(--space-4) var(--space-8) calc(var(--space-4) + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border-soft);
+}
+
+.tabbar a {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  min-height: var(--control-h);
+  padding: var(--space-4);
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tabbar a[aria-current="page"] {
+  color: var(--primary);
+}
+
+.fab-sos {
+  position: fixed;
+  right: var(--space-16);
+  bottom: calc(var(--space-80) + env(safe-area-inset-bottom));
+  z-index: 31;
+}
+
+@media (min-width: 640px) {
+  .main {
+    padding: var(--space-32) var(--space-24) calc(var(--space-80) + var(--space-64));
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell {
+    grid-template-columns: 272px 1fr;
+  }
+
+  .topbar,
+  .tabbar,
+  .fab-sos {
+    display: none;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+    height: 100vh;
+    padding: var(--space-24) var(--space-16);
+    background: var(--surface);
+    border-right: 1px solid var(--border-soft);
+    overflow-y: auto;
+  }
+
+  .main {
+    padding: var(--space-40) var(--space-32) var(--space-80);
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: 0 var(--space-8);
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .brand:hover {
+    text-decoration: none;
+  }
+}
+
+.brand-name {
+  font-size: var(--fs-title-3);
+  line-height: var(--lh-title-3);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand-sub {
+  display: block;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+/* The brand mark is a small 3D cube face stack drawn in SVG. */
+.brand-mark {
+  width: 36px;
+  height: 36px;
+}
+
+.nav {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.nav-label {
+  padding: 0 var(--space-12);
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--control-h);
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-m);
+  color: var(--text-1);
+  font-size: var(--fs-callout);
+  line-height: var(--lh-callout);
+  text-decoration: none;
+  transition: background-color var(--dur-press) linear;
+}
+
+.nav a svg {
+  color: var(--text-2);
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    background: var(--bg);
+    text-decoration: none;
+  }
+}
+
+.nav a[aria-current="page"] {
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.nav a[aria-current="page"] svg {
+  color: var(--primary);
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  display: grid;
+  gap: var(--space-12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
