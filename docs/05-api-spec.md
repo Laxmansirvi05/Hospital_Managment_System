@@ -1,12 +1,16 @@
 # API specification
 
-Source of truth: `postman/ambulance-platform.postman_collection.json`. Section 1 to 3 restate it. Section 4 is new and PROPOSED. If this file and the collection disagree, fix this file, or ask the owner before changing the collection.
+Source of truth: `postman/ambulance-platform.postman_collection.json`. Sections 1 to 3 restate it. Sections 4 to 8 are new and PROPOSED. If this file and the collection disagree, fix this file, or ask the owner before changing the collection.
 
-Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/api/v1`. JSON everywhere. Protected routes need `Authorization: Bearer <token>`.
+The collection was changed on 2026-10-24 (D-34) to remove the `hospital_admin` and `dispatcher` requests, hospital creation, doctor creation, bed updates, hospital recommendations, pre-alerts and the destination hospital. Folder 7 is now the edge-case folder.
+
+Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/api/v1`. JSON everywhere. Protected routes need `Authorization: Bearer <token>` or the session cookie (D-23).
 
 "Role" is the token the collection uses for that request. Where the collection uses one role's token, other roles are expected to get 403. Ownership rules are added in `09-security.md` section 5.
 
-## 1. Endpoint catalogue
+Roles: `patient`, `driver`, `admin` (D-29).
+
+## 1. Endpoint catalogue (collection)
 
 ### 0. Health
 
@@ -18,7 +22,7 @@ Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/a
 
 | Method and path | Auth | Request body | Success |
 | --- | --- | --- | --- |
-| POST `/auth/register` | none | `name`, `email`, `phone`, `password`, `role` | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. See Q-01. |
+| POST `/auth/register` | none | `name`, `email`, `phone`, `password`, `role` | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. |
 | POST `/auth/login` | none | `email`, `password` | 200 `{ token, ... }` |
 | GET `/auth/me` | any role | none | 200 `{ id, name, email, phone, role, createdAt }`, role at the top level as the collection reads it |
 | POST `/auth/refresh` | refresh cookie | none | 200 `{ token, user }` and new cookies. Rotates the refresh token. 401 if unknown, expired, revoked or reused. New (D-22). |
@@ -27,7 +31,7 @@ Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/a
 Auth rules decided for WP-1 (designed, not built on `main`):
 
 - Register and login also set two httpOnly cookies: `cr_access` (15 minutes, path `/`) and `cr_refresh` (7 days, path `/api/v1/auth`). The JSON `token` is the same access token, for API clients (D-22, D-23).
-- `role` defaults to `patient`. Other roles return 403 `role_not_allowed` unless `ALLOW_PRIVILEGED_SIGNUP=true` (D-21).
+- `role` defaults to `patient`. `driver` and `admin` return 403 `role_not_allowed` unless `ALLOW_PRIVILEGED_SIGNUP=true` (D-21, D-29).
 - Email is stored lower case. A 10-digit Indian mobile number becomes `+91` followed by the number. Other numbers must be in `+` country code form (PROPOSED).
 - Passwords are 8 to 128 characters (PROPOSED, NIST SP 800-63B minimum).
 - Wrong password and unknown email give the same 401 `invalid_credentials`.
@@ -45,16 +49,17 @@ Auth rules decided for WP-1 (designed, not built on `main`):
 | GET `/patients/me/contacts` | patient | none | 200 `{ contacts: [] }` |
 | DELETE `/patients/me/contacts/{id}` | patient | none | 204 |
 
-### 3. Hospitals, doctors and beds
+### 3. Hospital and doctor discovery
+
+Hospitals and doctors are listing data managed by the admin (section 7). The collection reads them from seed data, so the database must hold at least one hospital near the sample coordinates.
 
 | Method and path | Role | Request | Success |
 | --- | --- | --- | --- |
-| POST `/hospitals` | hospital_admin | `name`, `address`, `lat`, `lng`, `phone`, `emergencyAvailable`, `departments[]`, `beds { icuTotal, icuAvailable, generalTotal, generalAvailable }` | 201 `{ id, name, emergencyAvailable }` |
-| GET `/hospitals/nearby` | patient | query `lat`, `lng`, `radiusKm`, `emergencyOnly` | 200 `{ hospitals: [{ ..., distanceKm }] }` sorted nearest first |
-| GET `/hospitals/{id}` | patient | none | 200 hospital with departments and beds |
-| POST `/hospitals/{id}/doctors` | hospital_admin | `name`, `specialization`, `experienceYears`, `qualifications[]`, `availableDays[]` | 201 `{ id, ... }` |
+| GET `/hospitals/nearby` | patient | query `lat`, `lng`, `radiusKm`, `emergencyOnly` | 200 `{ hospitals: [{ ..., distanceKm }] }` sorted nearest first. The collection stores the first id as `hospitalId`. |
+| GET `/hospitals/{id}` | patient | none | 200 hospital with departments and public details |
 | GET `/hospitals/{id}/doctors` | patient | query `specialization` optional | 200 `{ doctors: [] }` |
-| PATCH `/hospitals/{id}/beds` | hospital_admin | `icuAvailable`, `generalAvailable` | 200 `{ beds: { icuAvailable, ... } }` |
+
+Whether these work without signing in is OPEN (Q-27). The collection sends a patient token.
 
 ### 4. Ambulances
 
@@ -63,7 +68,6 @@ Auth rules decided for WP-1 (designed, not built on `main`):
 | POST `/ambulances` | driver | `registrationNumber`, `type`, `operatorName`, `driverPhone` | 201 `{ id, ... }` |
 | PATCH `/ambulances/{id}/status` | driver | `status`: `available`, `offline`, `busy` | 200 `{ status }` |
 | POST `/ambulances/{id}/location` | driver | `lat`, `lng`, `headingDegrees`, `speedKmph` | 200 `{ ok: true }` |
-| GET `/ambulances/nearby` | dispatcher | query `lat`, `lng`, `type`, `radiusKm` | 200 `{ ambulances: [] }` nearest first |
 
 ### 5. Emergencies
 
@@ -75,33 +79,25 @@ Auth rules decided for WP-1 (designed, not built on `main`):
 | GET `/emergencies/mine` | patient | none | 200 `{ emergencies: [] }` newest first |
 | GET `/emergencies/driver/inbox` | driver | none | 200 `{ offers: [] }` each with `id` |
 | POST `/emergencies/{id}/accept` | driver | none | 200 `{ status: "assigned", etaSeconds }`. 409 if not acceptable. 403 for non-drivers. |
-| PATCH `/emergencies/{id}/status` | driver | `status`; with `picked_up` also `destinationHospitalId` | 200 `{ status, destinationHospitalId? }` |
+| PATCH `/emergencies/{id}/status` | driver | `status` | 200 `{ status }`. `picked_up` takes no destination (D-30). |
 | GET `/emergencies/{id}/track` | none | query `token` | 200 `{ status, ambulance position, ETA }`. No medical data. |
-| GET `/emergencies/{id}/recommended-hospitals` | driver | none | 200 `{ hospitals: [{ score, reason, ... }] }` |
-| GET `/hospitals/{id}/incoming` | hospital_admin | none | 200 `{ incoming: [{ emergencyId, ... }] }` |
 | POST `/emergencies/{id}/feedback` | patient | `rating` 1 to 5, `comment` | 201 `{ rating, ... }`. Only after completion. |
 | POST `/emergencies/{id}/cancel` | patient | `reason` | 200 `{ status: "cancelled" }`. Only before pickup. |
 
 Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_up`, `at_hospital`, `completed`.
 
-### 6. Assistant
+### 6. Assistant: triage
 
 | Method and path | Role | Request | Success |
 | --- | --- | --- | --- |
 | POST `/assistant/triage` | patient | `message`, `age`, `language` | 200 `{ urgency, sosRecommended, suggestedSpecialty, disclaimer }` |
 
-### 7. Dispatch and analytics
-
-| Method and path | Role | Request | Success |
-| --- | --- | --- | --- |
-| GET `/dispatch/active` | dispatcher | none | 200 `{ emergencies: [] }` |
-| GET `/dispatch/analytics/summary` | dispatcher | query `from`, `to` (dates) | 200 `{ totalRequests, avgAssignSeconds, ... }` |
-| GET `/dispatch/analytics/response-times` | dispatcher | query `groupBy=hour` | 200 `{ series: [] }` |
-
-## 2. Negative cases required by the collection
+### 7. Edge cases and negative tests
 
 | Case | Expected |
 | --- | --- |
+| Guest SOS without login | 201 with `trackingToken` |
+| Raise and cancel a second SOS | 201, then 200 `cancelled` |
 | Latitude 200 on `POST /emergencies` | 422, response text mentions "location" |
 | `GET /emergencies/mine` without a token | 401 |
 | Patient calls `POST /emergencies/{id}/accept` | 403 |
@@ -109,15 +105,67 @@ Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_
 | Register an email that exists | 409 |
 | Any request | Responds in under 2 seconds |
 
-## 3. Realtime contract
+## 2. Realtime contract
 
 | Item | Value | Source |
 | --- | --- | --- |
 | Channel name | `emergency:<id>` | COLLECTION (was a Socket.IO room, now a Supabase Realtime channel, see D-11) |
-| Events | location update, status change, offer, pre-alert | PROPOSED names, to be fixed in WP-5 |
+| Events | location update, status change, offer | PROPOSED names, to be fixed in WP-5 |
 | Authorization | OPEN (Q-14) | |
 
-## 4. Medical reports (PROPOSED, P-11)
+## 3. Shared rules for listing responses (PROPOSED, P-19, P-24)
+
+- Every listing has `id`, `name`, `kind`, `address`, `area`, `location { lat, lng }`, `phone`, `email` (only if public), `website`, `sourcePlatform`, `sourceUrl`, `checkedAt`.
+- `rating` and `reviewCount` appear only once Q-24 is decided. Until then they are absent, not zero.
+- Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` and `cursor`. They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
+- Only listings marked active by the admin are returned.
+
+## 4. Discovery (PROPOSED, P-19)
+
+Not in the collection. Data comes from online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Collection method is OPEN (Q-28). Sign-in requirement is OPEN (Q-27).
+
+| Method and path | Purpose |
+| --- | --- |
+| GET `/hospitals` | Search hospitals. Extra filters: `speciality`, `department`, `emergencyOnly`. |
+| GET `/doctors` | Search doctors without choosing a hospital. Filters: `specialization`, `hospitalId`. Returns profiles with `qualifications`, `experienceYears`, `hospital` or `clinic`, `publishedTimings` (only if officially published), `profileUrl`. |
+| GET `/doctors/{id}` | One doctor profile. |
+| GET `/pharmacies` | Search pharmacies and medical stores. |
+| GET `/pharmacies/{id}` | One pharmacy. |
+| GET `/diagnostic-centres` | Search diagnostic centres and labs. Filter: `test`. |
+| GET `/diagnostic-centres/{id}` | One centre with `testsListed` if public. |
+| GET `/medicines` | Search by medicine name. Returns `{ medicines: [{ id, name, brand, form, strength, listings: [{ platform, priceInr, rating?, productUrl, checkedAt }] }] }`, listings sorted by price. |
+
+## 5. Assistant: discovery and report explanation (PROPOSED, P-21, P-23)
+
+| Method and path | Role | Purpose |
+| --- | --- | --- |
+| POST `/assistant/discover` | patient | Body: `message`, `area?`, `lat?`, `lng?`. Returns `{ suggestedSpecialty, facilityTypes[], results: { doctors, hospitals, pharmacies, diagnosticCentres, medicines }, disclaimer }`. Results come only from CareRoute's own search. |
+| POST `/patients/me/reports/{id}/explain` | patient | Returns `{ summary, terms: [{ term, meaning }], values: [{ name, value, unit, referenceRange, flaggedByReport }], questionsForDoctor[], disclaimer }`. Blocked by Q-25. Not stored by default. |
+
+Both follow the safety limits in D-33 and `07-ai-triage.md`.
+
+## 6. Emergencies: driver reject (PROPOSED, P-20)
+
+| Method and path | Role | Purpose |
+| --- | --- | --- |
+| POST `/emergencies/{id}/reject` | driver | The driver's open offer becomes `declined` and the next ranked offer opens. 200 `{ offerState: "declined" }`. 409 if the driver has no open offer for this emergency. |
+
+## 7. Admin (PROPOSED, P-18, P-22)
+
+All routes need the `admin` role.
+
+| Method and path | Purpose |
+| --- | --- |
+| GET `/admin/users` | List accounts: `id`, `name`, `email`, `role`, `createdAt`, `disabled`. Never medical data. |
+| PATCH `/admin/users/{id}` | Disable or enable an account. |
+| POST, PATCH `/admin/listings/{kind}` and `/admin/listings/{kind}/{id}` | Create and edit a hospital, doctor, pharmacy, diagnostic centre or medicine listing. `kind` is one of `hospitals`, `doctors`, `pharmacies`, `diagnostic-centres`, `medicines`. |
+| PATCH `/admin/listings/{kind}/{id}/visibility` | Hide or show a listing. Listings are hidden, not deleted, so the history of what was shown is kept. |
+| GET `/admin/emergencies/active` | Former `GET /dispatch/active`: every emergency not completed or cancelled (P-18). |
+| GET `/admin/ambulances/nearby` | Former `GET /ambulances/nearby`: query `lat`, `lng`, `type`, `radiusKm` (P-18). |
+| GET `/admin/analytics/summary` | Former `GET /dispatch/analytics/summary`: query `from`, `to`. Returns `totalRequests`, `avgAssignSeconds` (P-18). |
+| GET `/admin/analytics/response-times` | Former `GET /dispatch/analytics/response-times`: query `groupBy=hour`. Returns `series` (P-18). |
+
+## 8. Medical reports (PROPOSED, P-11)
 
 Not in the collection. If approved, add these requests and tests to the collection in WP-9.
 
@@ -128,14 +176,13 @@ Not in the collection. If approved, add these requests and tests to the collecti
 | GET `/patients/me/reports` | patient | List own reports: `{ reports: [] }`. |
 | GET `/patients/me/reports/{id}/download` | patient | Return a short-lived signed download URL. |
 | DELETE `/patients/me/reports/{id}` | patient | Delete the record and the file. 204. |
-| PUT `/patients/me/reports/{id}/sharing` | patient | Set what is shared: `shareWithCrew`, `shareWithHospitalIds[]`. |
-| GET `/hospitals/{id}/incoming/{emergencyId}/reports` | hospital_admin | List reports the patient shared for a case routed to this hospital. |
-| GET `/hospitals/{id}/incoming/{emergencyId}/reports/{reportId}/download` | hospital_admin | Signed download URL. Writes an access event. |
+| PUT `/patients/me/reports/{id}/sharing` | patient | Set `shareWithCrew`. Exists only if Q-11 allows crew access. |
 
-## 5. Rules that apply to every endpoint
+## 9. Rules that apply to every endpoint
 
 1. The request is validated against a Zod schema before any other work.
 2. Role and ownership are checked before any data is read.
 3. Responses contain only fields the caller may see. The public tracking response is a separate type, so medical data cannot be added to it by accident.
 4. Secrets, tokens, password hashes and other users' data never appear in a response or a log.
 5. A route with no test for 401, 403 and the happy path is not finished.
+6. Outbound links in responses (`website`, `profileUrl`, `productUrl`, `sourceUrl`) are `https` or `http` URLs only, validated when the admin saves them.

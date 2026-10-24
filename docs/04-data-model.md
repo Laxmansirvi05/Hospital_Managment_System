@@ -14,13 +14,14 @@ Status: PROPOSED. Field names that appear in the Postman collection are kept exa
 
 | Enum | Values | Source |
 | --- | --- | --- |
-| `user_role` | `patient`, `driver`, `hospital_admin`, `dispatcher` | COLLECTION |
+| `user_role` | `patient`, `driver`, `admin` | D-29 |
 | `ambulance_type` | `BLS`, `ALS`, `ICU` | COLLECTION |
 | `ambulance_status` | `available`, `offline`, `busy` | COLLECTION |
 | `emergency_status` | `matching`, `assigned`, `en_route`, `arrived`, `picked_up`, `at_hospital`, `completed`, `cancelled`, plus a failed-match value (name OPEN, Q-06) | COLLECTION, OPEN |
 | `emergency_type` | `cardiac`, `accident`, `other`, more OPEN | COLLECTION, OPEN (Q-05) |
 | `triage_urgency` | `emergency`, `urgent`, `routine` | COLLECTION |
-| `offer_state` | `open`, `accepted`, `expired`, `declined` | PROPOSED |
+| `offer_state` | `open`, `accepted`, `expired`, `declined` | PROPOSED. `declined` is set by the driver's reject (D-32, P-20). |
+| `listing_kind` | `hospital`, `doctor`, `pharmacy`, `diagnostic_centre`, `medicine` | PROPOSED (P-19) |
 
 ## 3. Tables
 
@@ -34,6 +35,7 @@ Status: PROPOSED. Field names that appear in the Postman collection are kept exa
 | phone | E.164, for example `+919876500000` |
 | password_hash | `scrypt$N$r$p$salt$hash` (D-24) |
 | role | `user_role`, default `patient` |
+| disabled_at | set when the admin disables the account (P-22) |
 | created_at, updated_at | |
 
 ### sessions (designed for WP-1, D-22)
@@ -67,29 +69,66 @@ Fixed-window counters keyed by a SHA-256 hash of the kind and value, so no email
 | id, user_id | |
 | name, phone, relation | |
 
-### hospitals
+### Listing columns (PROPOSED, P-19, P-24)
+
+Every discovery table below has these columns. They are listed once here.
 
 | Column | Notes |
 | --- | --- |
-| id, name, address, phone | |
+| id, name | |
+| description | optional, plain text |
+| address, area | `area` is a Hyderabad locality used as a filter (D-27). The locality list is OPEN. |
 | location | geography point, GiST index |
-| emergency_available | boolean |
-| departments | text array |
-| icu_total, icu_available, general_total, general_available | integers, available never above total, never below zero (check constraints) |
-| beds_updated_at | shown to users as "updated N minutes ago" |
+| phone, email, website | `email` only if publicly listed. `website` is an `https` or `http` URL. |
+| source_platform, source_url, checked_at | which online platform the data came from (D-35), the page address, and when it was last collected or checked (P-24) |
+| active | boolean. Hidden listings are kept, not deleted. |
+| search_vector | generated `tsvector` for full-text search, GIN index. Names also get a `pg_trgm` GIN index. |
+| created_by, updated_by | admin user ids, for the audit trail |
 
-### hospital_staff (PROPOSED, Q-02)
+Ratings and reviews are not modelled until Q-24 is decided. Data comes from online platforms (D-35). How it is collected is OPEN (Q-28). One real place can appear on several platforms, so matching duplicates into one listing is needed (PROPOSED: match on normalized name plus distance under a small threshold, with admin review).
 
-Links a `hospital_admin` user to a hospital. Without it there is no way to stop one admin editing another hospital.
+### hospitals
+
+Listing columns, plus:
+
+| Column | Notes |
+| --- | --- |
+| emergency_available | boolean, from public information |
+| departments, specialities | text arrays |
+
+Bed counts were removed (D-28, D-30). `hospital_staff` was removed with the `hospital_admin` role (D-29).
 
 ### doctors
 
+Listing columns, plus:
+
 | Column | Notes |
 | --- | --- |
-| id, hospital_id | |
-| name, specialization, experience_years | |
+| hospital_id | nullable. A doctor may practise at a clinic instead. |
+| clinic_name | when not linked to a hospital |
+| specialization, experience_years | |
 | qualifications | text array |
-| available_days | text array |
+| published_timings | text, only if officially published. Not live availability (D-28). |
+| profile_url | official profile page |
+
+The collection field `availableDays` from the old "Add doctor" request is replaced by `published_timings`. Doctor rows describe real people taken from online platforms, so Q-22 must be answered before real data is stored.
+
+### pharmacies (PROPOSED, P-19)
+
+Listing columns only.
+
+### diagnostic_centres (PROPOSED, P-19)
+
+Listing columns, plus `tests_listed` (text array, only if publicly listed).
+
+### medicines and medicine_listings (PROPOSED, P-19, D-35)
+
+| Table | Columns |
+| --- | --- |
+| medicines | id, name, brand, form, strength, search_vector |
+| medicine_listings | id, medicine_id, platform, price_inr (numeric, never negative), product_url, checked_at, active |
+
+A price is shown with its platform and `checked_at`. CareRoute does not sell or order (D-28).
 
 ### ambulances
 
@@ -114,7 +153,7 @@ An ambulance with an old `last_ping_at` is treated as not available for matching
 | ambulance_type, notes | |
 | patient_location, patient_address | |
 | status | `emergency_status` |
-| ambulance_id, destination_hospital_id | set during the trip |
+| ambulance_id | set during the trip. `destination_hospital_id` was removed (D-30). |
 | eta_seconds | |
 | tracking_token_hash | store a hash, return the token once at creation |
 | cancel_reason | |
@@ -133,7 +172,7 @@ One open offer per emergency at a time. A partial unique index enforces it.
 
 ### emergency_events (PROPOSED)
 
-Append-only timeline of every step: created, offered, accepted, status changes, cancelled, pre-alert sent, SMS sent, report accessed. This powers the Care Thread, the audit trail and the analytics. Rows are never updated or deleted by application code.
+Append-only timeline of every step: created, offered, accepted, rejected, status changes, cancelled, SMS sent, report accessed. This powers the Care Thread, the audit trail and the analytics. Rows are never updated or deleted by application code.
 
 ### emergency_feedback
 
@@ -141,9 +180,13 @@ Append-only timeline of every step: created, offered, accepted, status changes, 
 | --- | --- |
 | emergency_id (unique), rating 1 to 5, comment | allowed only when the emergency is `completed` |
 
-### medical_reports and report_shares (PROPOSED, Q-11)
+### medical_reports (PROPOSED, Q-11)
 
-See `08-medical-reports.md`.
+See `08-medical-reports.md`. Hospital sharing was removed (D-29), so `report_shares` is no longer needed. A `share_with_crew` column is added only if Q-11 allows crew access. Report explanations are not stored by default (P-21).
+
+### admin_audit (PROPOSED, P-22)
+
+Append-only record of every admin action: admin id, action, target table and id, time. Listing edits keep the previous values so a wrong change can be traced.
 
 ### sms_outbox (PROPOSED)
 
@@ -151,8 +194,9 @@ Every SMS attempt: recipient phone, template name, status, provider response cod
 
 ## 4. Indexes
 
-- `hospitals.location`, `ambulances.location`, `emergencies.patient_location`: GiST.
-- `emergencies (status)` partial index where status is not completed or cancelled, for the dispatcher view.
+- `location` on every listing table, `ambulances.location`, `emergencies.patient_location`: GiST.
+- `search_vector` on every listing table and `medicines`: GIN. Listing names: `pg_trgm` GIN.
+- `emergencies (status)` partial index where status is not completed or cancelled, for the admin view (P-18).
 - `emergencies (patient_user_id, created_at desc)` for history.
 - `emergency_offers (state, expires_at)` for the expiry job.
 - `emergency_events (emergency_id, created_at)`.
@@ -163,10 +207,11 @@ Every SMS attempt: recipient phone, template name, status, provider response cod
 | --- | --- |
 | `accept_emergency(emergency_id, ambulance_id)` | Conditional update that succeeds only while the emergency is `matching` and the offer is open. Returns the row or nothing. |
 | `expire_offers()` | Marks offers past `expires_at` as expired and opens the next ranked offer. Run by pg_cron. |
-| `nearby_ambulances(point, type, radius_km)` | PostGIS filter used by matching and the dispatcher view. |
+| `nearby_ambulances(point, type, radius_km)` | PostGIS filter used by matching and the admin view (P-18). |
 | `nearby_hospitals(point, radius_km, emergency_only)` | Same for hospitals, returns distance in km. |
+| `search_listings(kind, query, area, point, radius_km)` | Full-text and name search over one listing table, with optional distance. PROPOSED (P-19). |
 
-## 6. Analytics queries
+## 6. Analytics queries (admin, P-18)
 
 - `totalRequests`: count of emergencies in range.
 - `avgAssignSeconds`: average of `assigned_at - created_at`.

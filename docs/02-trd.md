@@ -4,13 +4,13 @@ Read `00-decisions.md` first. Labels used here: LOCKED, COLLECTION, PROPOSED, OP
 
 ## 1. Stack
 
-HTML, CSS and JavaScript are the foundation (D-03). Other technology is added only where it is really required, under the rule in section 1.2.
+HTML, CSS and JavaScript are the foundation (D-03). UI frameworks and TypeScript are allowed when necessary (D-03, changed 2026-10-24). They, and any other technology, are added only under the rule in section 1.2. None has been chosen yet, so the rest of this document still describes the plain foundation.
 
 ### 1.1 Stack table
 
 | Layer | Choice | Status |
 | --- | --- | --- |
-| Frontend foundation | HTML, CSS, JavaScript (ES modules). No UI framework. No build step by default. | LOCKED (D-03) |
+| Frontend foundation | HTML, CSS, JavaScript (ES modules). No build step by default. A UI framework may be adopted when necessary, under section 1.2. | LOCKED (D-03) |
 | Backend language | JavaScript on Node.js, as Vercel Functions | LOCKED (D-03, D-10) |
 | API | One Vercel function at `api/v1/[...path].js` with an internal router, serving `/api/v1/*` | PROPOSED (P-01) |
 | Database | Supabase PostgreSQL with PostGIS | LOCKED (D-10) |
@@ -19,11 +19,13 @@ HTML, CSS and JavaScript are the foundation (D-03). Other technology is added on
 | Scheduled work | pg_cron inside the database | LOCKED (D-12) |
 | Map rendering | MapLibre GL JS with MapTiler tiles | LOCKED (D-08) |
 | Routing and ETA | Mapbox Directions and Matrix, server side only | LOCKED (D-09) |
-| Triage model | Gemini, then Groq, then OpenRouter | LOCKED (D-07) |
+| Triage model | Gemini, then Groq, then OpenRouter | LOCKED (D-07). Same chain for report explanation and the discovery assistant is PROPOSED (P-21, P-23). |
+| Discovery search | Postgres full-text search, the `pg_trgm` extension for name matching, PostGIS for distance | PROPOSED (P-19) |
+| Listing and medicine price data | Taken from online platforms such as Apollo, MedPlus and Tata 1mg | LOCKED (D-35). Collection method, terms and where the job runs: OPEN (Q-28) |
 | SMS | Twilio trial behind an adapter | LOCKED (D-13) |
 | Styling | Plain CSS with custom property tokens, cascade layers, container queries | PROPOSED (P-06) |
 | UI components | Native HTML elements first. Custom elements (Web Components) for shared widgets such as the Care Thread. Native `dialog` for dialogs. | PROPOSED (P-06) |
-| Type information | JSDoc comments, optional `// @ts-check` in the editor. No TypeScript in the build. | PROPOSED (P-15) |
+| Type information | JSDoc comments, optional `// @ts-check` in the editor. TypeScript may be adopted when necessary, under section 1.2. | LOCKED default (P-15, D-19), relaxed by D-03 |
 | Server validation | Zod | PROPOSED (P-03) |
 | Browser validation | HTML constraint validation for usability. The server is authoritative. | PROPOSED |
 | DB access | SQL migrations (Supabase CLI), `postgres` driver | PROPOSED (P-04) |
@@ -32,28 +34,37 @@ HTML, CSS and JavaScript are the foundation (D-03). Other technology is added on
 | Lint and format | ESLint and Prettier, development only | PROPOSED |
 | Tests | Vitest, Playwright, axe, Newman | PROPOSED (P-09) |
 
-TypeScript, Next.js, Tailwind CSS and Radix from the first version of these documents are no longer part of the stack.
+TypeScript, Next.js, Tailwind CSS and Radix from the first version of these documents are not part of the stack today. Since D-03 changed on 2026-10-24, a UI framework or TypeScript can come back when there is a written need and the owner approves it.
 
 ### 1.2 Rule for adding other technology
 
 A library or tool is added only when all of these are true:
 
-1. There is a written need that platform features (HTML, CSS, JavaScript, the browser, Node, Postgres) cannot meet in reasonable effort.
+1. There is a written need that platform features (HTML, CSS, JavaScript, the browser, Node, Postgres) cannot meet in reasonable effort. For a UI framework or TypeScript, the need states which screens or modules it is for and why the plain foundation is not enough there.
 2. The owner approved it.
 3. It is added to the table above with a one-line reason, and to `00-decisions.md`.
 4. Browser libraries are vendored (section 2), pinned to an exact version, and checked against `09-security.md` section 10.
 
 Libraries already justified by a locked decision: MapLibre GL JS (D-08) and the Supabase JavaScript client for Realtime (D-11). Charts are hand-built SVG unless the owner approves a library.
 
+Adopting a UI framework or TypeScript also changes other parts of this document, and the proposal must say how:
+
+- A build step appears. Section 3.1 (configuration without a build) and the "no frontend build step" release rule in `16-deployment-and-environments.md` section 5 change with it.
+- The CSP in `09-security.md` section 9 and the `public/` secret scan must still hold for the built output.
+- A framework must not bring the default look of its components (`11-design-system.md` section 9, item 11).
+- Browser code still never writes data with `innerHTML` or the framework's equivalent raw HTML feature.
+
 ## 2. Repository layout (PROPOSED)
 
 ```
 /
   public/                   everything the browser can fetch. Treat all of it as public.
-    index.html              home, guest SOS entry
+    index.html              home, guest SOS entry and discovery search
+    search/                 discovery search and result pages: hospitals, doctors, medicines, pharmacies, diagnostic centres
+    assistant/              symptom check, discovery assistant, report explanation
     sos/                    guest SOS and patient SOS pages
     track/                  family tracking page
-    patient/  driver/  hospital/  dispatch/    one folder per role, one HTML file per screen
+    patient/  driver/  admin/    one folder per role, one HTML file per screen
     css/
       tokens.css            design tokens as custom properties, light and dark
       base.css              reset, typography, layout primitives
@@ -73,7 +84,7 @@ Libraries already justified by a locked decision: MapLibre GL JS (D-08) and the 
   server/                   code that runs only on the server. Never served.
     router.js               route table, explicit order
     routes/                 one module per resource
-    auth/  db/  matching/  triage/  emergency/
+    auth/  db/  matching/  triage/  emergency/  discovery/  assistant/  admin/
     adapters/               sms, llm, routing: one interface each, one file per provider
     config.js               the only reader of server secrets
     log.js                  redacting logger
@@ -128,10 +139,10 @@ Browser libraries are copied into `public/vendor/` by a script, pinned to an exa
 
 ## 5. Authentication and authorization
 
-- Roles: `patient`, `driver`, `hospital_admin`, `dispatcher`. COLLECTION.
+- Roles: `patient`, `driver`, `admin` (D-29). `hospital_admin` and `dispatcher` were removed.
 - Token: JWT in the `Authorization: Bearer` header. Lifetime, refresh and browser storage are OPEN (Q-04, Q-19).
 - Role is read from the verified token and re-checked against the database for privileged actions.
-- Ownership checks, not only role checks: a patient reads only their own emergency, a driver changes only the trip they accepted, a hospital admin edits only their own hospital (Q-02).
+- Ownership checks, not only role checks: a patient reads only their own emergency and reports, a driver changes only the trip they accepted. The admin manages listings and accounts but never reads medical data (P-22).
 - The public tracking endpoint authorizes by `trackingToken` only. See `09-security.md`.
 - Registration of privileged roles is OPEN (Q-01).
 
@@ -154,14 +165,15 @@ Every external call goes through an adapter with a timeout, a typed error, and a
 | Service | Used for | If it fails |
 | --- | --- | --- |
 | Mapbox | Road ETA, distance matrix, route | Rank by PostGIS straight-line distance, mark the ETA as an estimate in the response and the UI |
-| Gemini | Triage | Try Groq, then OpenRouter, then return the rule-layer result only |
+| Provider websites (outbound links) | Contact and purchase on the provider's own site | A broken link is the provider's page failing. CareRoute shows the phone number and the checked date so the user has another route. |
+| Gemini | Triage, and if approved report explanation and the discovery assistant | Triage: try Groq, then OpenRouter, then return the rule-layer result only. Report explanation and discovery: try the next provider, then say plainly that the assistant is unavailable and keep normal search working. |
 | Groq | Triage fallback | Try OpenRouter |
 | OpenRouter | Triage second fallback | Return the rule-layer result only |
 | Twilio | SMS to emergency contacts | Record failure in `sms_outbox`, show the tracking link to the patient to share by hand, keep the emergency running |
 | MapTiler | Map tiles | Show the map area with a plain message and keep the status panels working |
 | Supabase Realtime | Live updates | Client falls back to polling the same read endpoints |
 
-The emergency flow itself must never depend on SMS, the model or tiles. Only the database and the Mapbox-or-fallback ranking are on the critical path.
+Discovery search reads only CareRoute's own database, so it keeps working when every outside service is down. The emergency flow itself must never depend on SMS, the model or tiles. Only the database and the Mapbox-or-fallback ranking are on the critical path.
 
 ## 8. Code standards
 

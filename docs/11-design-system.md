@@ -22,7 +22,7 @@ Plus two product principles:
 
 ## 2. The concept: Care Thread
 
-The owner asked for a design that feels connected: hospital, ambulance, reports and patient. The concept is one thread per case that links those four. It appears in the same form on every screen for every role, so the whole product feels like one system. Details in section 8.
+The owner asked for a design that feels connected: hospital, ambulance, reports and patient. The concept is one thread per case that links them. Since the destination step was removed (D-30), an emergency thread links the patient, the ambulance and the reports. It appears in the same form on every case screen for every role, so the whole product feels like one system. Details in section 8.
 
 ## 3. Color
 
@@ -110,7 +110,7 @@ Rules:
 
 1. Body text on phones is never smaller than 16 pixels.
 2. Text scales with the user's browser and system text size. Use relative units. Layouts must survive 200 percent text.
-3. Numbers that change (ETA, bed counts, times, distances) use `font-variant-numeric: tabular-nums` so they do not jitter.
+3. Numbers that change (ETA, prices, times, distances) use `font-variant-numeric: tabular-nums` so they do not jitter.
 4. Weights used: 400, 600, 700. Nothing lighter than 400.
 5. Left aligned text. Centered only for short single-line statuses. Line length 45 to 75 characters for reading text.
 6. One typeface family. No decorative display face, no serif accent words, no italic emphasis for effect. Emphasis uses weight.
@@ -134,7 +134,8 @@ Base unit 4 pixels. Only these steps exist: `4, 8, 12, 16, 20, 24, 32, 40, 48, 6
 
 - Mobile first. Breakpoints: 640, 1024, 1280.
 - Phone screens for patient and driver: single column, primary action reachable by thumb at the bottom, respect safe areas.
-- Hospital and dispatcher: desktop dashboards on a 12 column grid, dense but with the same spacing steps.
+- Discovery search and results: single column on phones, list and map side by side on wide screens.
+- Platform admin: desktop dashboards on a 12 column grid, dense but with the same spacing steps.
 - Content width for reading text: 680 maximum.
 
 ### 5.3 Shape and elevation
@@ -178,7 +179,7 @@ Rules:
 PROPOSED (P-08).
 
 1. Text first. Icons support labels. They do not replace them for any important action.
-2. A small custom set for domain concepts: ambulance, hospital, report, patient, route, bed. Drawn on a 24 grid with one stroke weight and round joins, so the set is consistent.
+2. A small custom set for domain concepts: ambulance, hospital, doctor, pharmacy, diagnostic centre, medicine, report, patient, route, external link (list PROPOSED). Drawn on a 24 grid with one stroke weight and round joins, so the set is consistent.
 3. Generic controls (close, chevron, search, plus) are also custom SVGs in the same style (D-20). No icon library is used.
 4. Icon sizes 20 and 24. Never inside a colored tile. Never three tiles in a row to describe features.
 5. Imagery is the map and real product screens. No stock photos of smiling staff. No abstract blobs, mesh backgrounds or grain.
@@ -202,8 +203,10 @@ Every component is built from tokens and covers default, hover, pressed, focus, 
 | Toast | For non-critical confirmation. Never for an emergency status. |
 | Status label | A dot plus text such as "En route". The text is always present. |
 | ETA block | Large tabular number, unit, and "updated 12 s ago". |
-| Bed count | The number first, then "of 12". An optional bar is secondary. Shows "updated 4 min ago". |
-| Map | MapLibre. Patient marker, ambulance marker, route line, destination. Always paired with a text summary of position and ETA, so the map is not the only way to read the state. |
+| Listing row | Name, kind, area, distance when known, one trailing action (call or open). Source and "Checked on {date}" on the detail page. (PROPOSED) |
+| Price row | Platform name, listed price as a tabular number, checked date, "Open on {platform}" link. Cheapest first. No "best deal" badge. (PROPOSED) |
+| External link | Text link with the custom external-link icon. Says where it goes. Opens with `rel="noopener noreferrer"`. (PROPOSED) |
+| Map | MapLibre. Patient marker, ambulance marker, route line. Listing markers in discovery. Always paired with a text summary of position and ETA, so the map is not the only way to read the state. |
 | Chart | Direct labels, no legends where avoidable, no pie charts, table view available. Colors from tokens. |
 | Empty state | Says what is missing and what to do. No illustration required. |
 | Skeleton | For loads over 300 ms. Matches final layout. |
@@ -213,7 +216,7 @@ Every component is built from tokens and covers default, hover, pressed, focus, 
 - Plain HTML elements first: `button`, `a`, `input`, `select`, `details`, `dialog`, `table`. They bring keyboard and screen reader behavior for free.
 - Shared widgets are custom elements in `public/js/components`, for example `<cr-care-thread>`, `<cr-status-label>`, `<cr-eta-block>`. They render into the page (no shadow DOM), so page CSS and tokens apply.
 - Each component has one CSS file in `public/css/components`, wrapped in a cascade layer, styled only with tokens. Class names use the prefix `cr-`.
-- No component library and no CSS framework.
+- No component library and no CSS framework by default. One may be adopted when necessary under `02-trd.md` section 1.2 (D-03). If it is, every component is restyled with these tokens and the library's default look never ships (section 9, item 11).
 
 ### 8.1 SOS and accidental taps (OPEN, Q-12)
 
@@ -231,36 +234,34 @@ If it is decided that confirmation is needed, A is the least costly for a real e
 
 One component, used on every role's case screen and in compact form in lists.
 
-Structure: four nodes joined by a line, in this order.
+Structure: three nodes joined by a line, in this order. The hospital node was removed with the destination step (D-30).
 
 | Node | Shows |
 | --- | --- |
 | Patient | Who and where, condition summary where permitted |
 | Ambulance | Crew status, ETA, last update time |
-| Hospital | Destination name and readiness, "Not chosen yet" before pickup |
-| Reports | Count of shared reports, or "None shared" |
+| Reports | Count of reports shared with the crew, or "None shared". Shown only if Q-11 allows crew access. |
 
 Layout: vertical on phones, horizontal on wide screens. Each node is a text block with a small dot marker and a state word. No icon tiles. The connecting line is solid between completed steps, and dashed toward steps not reached.
 
 Node states by emergency status:
 
-| Status | Patient | Ambulance | Hospital | Reports |
-| --- | --- | --- | --- | --- |
-| `matching` | Active | Searching | Not chosen yet | Per sharing |
-| `assigned` | Done | Active, ETA | Not chosen yet | Per sharing |
-| `en_route` | Done | Active, ETA | Not chosen yet | Per sharing |
-| `arrived` | Active | Done | Not chosen yet | Per sharing |
-| `picked_up` | Done | Active, ETA to hospital | Active, pre-alert sent | Visible to hospital if shared |
-| `at_hospital` | Done | Done | Active | Visible to hospital if shared |
-| `completed` | Done | Done | Done | Done |
-| `cancelled` | Stopped | Stopped | None | None |
+| Status | Patient | Ambulance | Reports |
+| --- | --- | --- | --- |
+| `matching` | Active | Searching | Per sharing |
+| `assigned` | Done | Active, ETA | Per sharing |
+| `en_route` | Done | Active, ETA | Per sharing |
+| `arrived` | Active | Done | Per sharing |
+| `picked_up` | Done | Active, on the way to hospital | Per sharing |
+| `at_hospital` | Done | Done | Per sharing |
+| `completed` | Done | Done | Done |
+| `cancelled` | Stopped | Stopped | None |
 
 What each role sees:
 
-- Patient: all four nodes, plain words.
-- Driver: patient and hospital detail needed for the trip, report names only if `shareWithCrew`.
-- Hospital: ambulance ETA, patient condition, shared reports.
-- Dispatcher: compact one-line version per case in the active list, full version on open.
+- Patient: all three nodes, plain words.
+- Driver: patient detail needed for the trip, report names only if `shareWithCrew` and Q-11 allows.
+- Admin: compact one-line version per case in the active list, operational fields only (P-18).
 - Family link: ambulance node only, with ETA and last update. No other nodes.
 
 ## 9. Banned patterns (binding, D-16)

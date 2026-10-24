@@ -25,6 +25,8 @@ Everything that must exist before building restarts. Each row says what to creat
 | 7 | Groq | Triage, second choice | To do |
 | 8 | OpenRouter | Triage, third choice | To do |
 | 9 | Twilio | SMS | To do |
+| 10 | Listing and medicine price data | Discovery | Source decided: online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Collection method and any accounts or keys wait for Q-28. |
+| 11 | Assistant external sources | AI assistant | Not chosen (Q-26). Nothing to create until the owner decides. |
 
 ## Per service
 
@@ -92,6 +94,51 @@ Where a finding came only from secondary sources, it says so. Details by service
 | Gemini | Free and AI Studio usage may be used and human-reviewed by Google. The demo must use synthetic symptom text only (Q-17). |
 | Groq, OpenRouter | Secondary sources only. Read their own policies before WP-6. |
 | Twilio India | Domestic route needs DLT registration, international does not. Trial delivery to Indian numbers unconfirmed. Test one number. |
+
+## Platform data research for Q-28 (checked 2026-10-24)
+
+Research only. Q-28 is still OPEN and nothing here decides it. Clauses are paraphrased, not legal advice. Have a qualified professional read the terms before any collection starts.
+
+### robots.txt
+
+Fetched directly on 2026-10-24.
+
+| Site | What it allows and blocks for general crawlers |
+| --- | --- |
+| `apollopharmacy.in` | Allows `/` in general. Blocks `/search/`, `/medicine/search-medicines/`, cart, payment, account, health records, orders, `/appointments/?*`. Publishes a sitemap. |
+| `apollo247.com` | Allows `/` in general. Blocks `/doctor-details/`, `/search/`, account, payments, health records, appointments, some tracking query strings. Fully blocks a long list of named bots (137 user-agent entries), including `Python-urllib`. Publishes a sitemap. |
+| `medplusmart.com` | Blocks only `/cgi-bin/`, `/tmp/`, `/junk/`, `/new_theme/` (and all of the Sogou bot). Publishes a sitemap. |
+| `1mg.com` | Allows `/` in general. Blocks `/search`, cart, checkout, `/drugs-usage`, `/drugs-ailments`, `/vendor-details`, `/community` and others. Publishes sitemaps for products, labs, doctors and retail. |
+
+robots.txt says what crawlers may fetch. It does not grant a licence to reuse the content. The terms below decide that.
+
+### Terms of use
+
+| Platform | Document read | What it says about automated access, copying and reuse |
+| --- | --- | --- |
+| Tata 1mg | `1mg.com/TnC`, "last updated June 2021", Tata 1MG Healthcare Solutions Private Limited | Explicitly prohibits using spiders, robots or similar tools to navigate or search the website, copying or duplicating any 1mg content or information, and framing, hotlinking or **deeplinking** any 1mg content. Use is personal and not commercial. |
+| Apollo 24\|7 | `apollo247.com/terms`, no date, Apollo Healthco Limited | No clause names scraping or crawling. Prohibits reproducing or modifying content, any commercial use of platform information, and exploiting the platform without written permission. Apollo Pharmacy products and prices are run by a separate company (Apollo Pharmacies Limited). |
+| Apollo Pharmacy | `apollopharmacy.in/landing-page/terms-noBg.htm`, no year, Apollo Pharmacies Limited | No clause names scraping or crawling. Prohibits reproducing, distributing or commercially using platform information, and copying material without written authorization. Use is personal and not commercial. |
+| MedPlus | `medplusmart.com/termsandconditions`, no date, MedPlus Health Services Pvt Ltd and Optival Health Solutions Pvt Ltd | No clause names scraping or crawling. States that site content (text, images, software) may not be used, reproduced or distributed without written authorization from MedPlus Mart. |
+
+Observed behaviour: `medplusmart.com` returned "Access Denied" (HTTP 403 from its CDN) to plain command-line requests for every page except `robots.txt`. It loaded normally in a browser. The site actively blocks non-browser clients.
+
+### Official APIs and partner programs
+
+| Platform | Found | Not found |
+| --- | --- | --- |
+| Tata 1mg | A seller onboarding program (`partners.1mg.com`, contact `partners@1mg.com`) for brands and pharmacies to list and sell on 1mg. A "Strategic Partners" track on `1mg.com/partnerships` that names "API Integration" and "SSO Integration" for ePharmacy and eDiagnostics ordering, aimed at insurers and similar businesses. Developer docs titled "API Integration with TATA 1mg" exist on `onedoc.1mg.com` but returned HTTP 503 on 2026-10-24, so their contents and access terms are unverified. An affiliate scheme is described only by third-party affiliate networks, one of which marked its campaign "paused". It gives tracking links, not a data feed. | No public API for reading the catalogue or prices. |
+| Apollo 24\|7 and Apollo Pharmacy | Nothing official. | No public API, developer portal, affiliate program or data partner program. |
+| MedPlus | Nothing official. | No public API, developer portal, affiliate program or data partner program. |
+
+Third-party scraping services and open-source scrapers for Apollo Pharmacy and 1mg exist (Apify actors, GitHub projects, commercial "data API" sellers). Their existence says nothing about whether their use is allowed. One GitHub scraper works by copying a login token from browser developer tools into Apollo's internal GraphQL API, which would breach the "no circumventing" clauses above.
+
+### What this means for Q-28 (findings, not a decision)
+
+1. All four sets of terms forbid reproducing or commercially reusing site content without written permission. 1mg's terms also name robots and spiders directly. Automated collection from these sites without written permission would conflict with their published terms.
+2. 1mg's terms also forbid deep linking. Linking a medicine row straight to a 1mg product page (F-44) may conflict with that clause, even with no collection at all.
+3. The only official routes found are business relationships: 1mg's partnerships and API integration (by agreement), and possibly 1mg's affiliate scheme through a network (links only). Nothing equivalent was found for Apollo or MedPlus. Asking each company for written permission or a data agreement is the route their terms leave open.
+4. MedPlus's bot blocking means any automated collection from it would also be working against an active technical control.
 
 ## Done means
 

@@ -4,7 +4,7 @@ Status: new feature (D-06). Everything below is PROPOSED except the decision tha
 
 ## 1. What it is
 
-A patient keeps their own medical files in CareRoute: lab reports, prescriptions and scans. During an emergency, the patient's sharing choices decide whether the crew and the receiving hospital can see them.
+A patient keeps their own medical files in CareRoute: lab reports, prescriptions and scans. The AI assistant can explain a report in plain language (D-33, see `07-ai-triage.md` section 8). Whether the ambulance crew can see a report during an emergency is OPEN (Q-11). Sharing with hospitals was removed with the hospital role (D-29).
 
 ## 2. Principles
 
@@ -24,8 +24,7 @@ A patient keeps their own medical files in CareRoute: lab reports, prescriptions
 | `fileName`, `contentType`, `sizeBytes` | Validated on the server |
 | `storagePath` | Server only, never returned |
 | `uploadedAt` | |
-| `shareWithCrew` | boolean, default false |
-| `sharedHospitalIds` | list, default empty |
+| `shareWithCrew` | boolean, default false. Exists only if Q-11 allows crew access. |
 
 ## 4. Upload flow
 
@@ -53,7 +52,7 @@ Server checks regardless of the final list:
 
 - Check the content type against the allowed list, and check the file's actual first bytes, not only the name or declared type.
 - Reject over-size files before and after upload.
-- Never execute, render server side, or transform an uploaded file.
+- Never execute, render server side, or transform an uploaded file. Sending a report's content to the model for explanation is reading it, not rendering it, and is allowed only as described in `07-ai-triage.md` section 8 (P-21, Q-25).
 - Serve downloads with `Content-Disposition` and a fixed safe content type so a file cannot run as a page.
 - Malware scanning is not available on the free stack. The docs and UI must not claim files are scanned.
 
@@ -62,9 +61,9 @@ Server checks regardless of the final list:
 | Viewer | Can see | Condition |
 | --- | --- | --- |
 | Owner | All own reports | Always |
-| Driver and crew | Reports with `shareWithCrew` true | Only for an emergency where this driver is assigned, and only while that emergency is active |
-| Hospital admin | Reports whose `sharedHospitalIds` includes their hospital | Only for an emergency routed to that hospital, and only after `picked_up` |
-| Dispatcher | Nothing | Dispatch does not need report contents |
+| Driver and crew | Reports with `shareWithCrew` true, if Q-11 allows | Only for an emergency where this driver is assigned, and only while that emergency is active |
+| Platform admin | Nothing | The admin manages accounts and listings, not health data (P-22) |
+| AI model provider | The content of one report, when the patient asks for an explanation | Only after Q-25 is answered. Synthetic reports in the demo. |
 | Family link | Nothing | Never |
 
 What the crew needs during a short trip and whether crew should see full files or only a summary is OPEN (Q-11).
@@ -83,12 +82,14 @@ Every non-owner view writes an `emergency_events` row of type `report_accessed` 
 - Upload is a plain file picker with progress and a clear failure message.
 - The sharing screen states in one sentence who will be able to see the file, before the user confirms.
 - No preview of file contents is generated on our servers.
+- An "Explain this report" action shows, before it runs, that the file will be sent to an AI service, and shows the disclaimer with the result.
 - The patient sees a "Who viewed my reports" list.
 
 ## 10. Tests required
 
 - A patient cannot read or delete another patient's report (IDOR test).
-- A hospital cannot read a report that was not shared with it, or for a case not routed to it.
+- The admin cannot read any report.
+- Report explanation works only for the owner, and its answer contains no prescription or diagnosis form.
 - An expired signed link stops working.
 - A disallowed file type and an over-size file are rejected.
 - Withdrawing sharing stops access immediately.

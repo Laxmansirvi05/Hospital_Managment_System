@@ -1,8 +1,12 @@
 # CareRoute
 
-CareRoute connects the patient, the ambulance, the hospital and the patient's medical reports during an emergency.
+CareRoute is a healthcare discovery and assistance platform for Hyderabad. It has three parts:
 
-A patient or bystander raises an SOS. The nearest suitable ambulance is offered the job, ranked by road ETA and vehicle type. The patient and family follow it live. The receiving hospital sees the incoming patient before arrival. Patients keep a medical ID and medical reports, and choose what the crew and hospital can see.
+1. **Healthcare discovery.** Search hospitals, doctors, medicines and their listed prices, pharmacies and diagnostic centres. Each result shows public details and links to the provider, who handles any booking, order or payment.
+2. **AI healthcare assistant.** Explains a medical report in plain language and helps people find relevant care from a description in ordinary words. It never diagnoses or prescribes.
+3. **Emergency ambulance system.** A patient or bystander raises an SOS. The nearest suitable ambulance is offered the job, ranked by road ETA and vehicle type, and the driver accepts or rejects it. The patient and family follow it live.
+
+Roles are patient, driver and platform admin. There is no hospital portal.
 
 ## Status
 
@@ -10,7 +14,7 @@ Documentation phase. No application code yet. The documents in `docs/` are draft
 
 ## Stack
 
-HTML, CSS and JavaScript as the foundation, with a Node.js API, on Vercel. Supabase for PostgreSQL with PostGIS, file Storage and Realtime. MapLibre with MapTiler tiles for maps. Mapbox for road ETA. Gemini, then Groq, then OpenRouter for the symptom assistant. Twilio trial for SMS. Web only, responsive, English only.
+HTML, CSS and JavaScript as the foundation, with a Node.js API, on Vercel. UI frameworks and TypeScript only when necessary and approved. Listing and medicine data from online platforms such as Apollo, MedPlus and Tata 1mg. Supabase for PostgreSQL with PostGIS, file Storage and Realtime. MapLibre with MapTiler tiles for maps. Mapbox for road ETA. Gemini, then Groq, then OpenRouter for the symptom assistant. Twilio trial for SMS. Web only, responsive, English only.
 
 ## Documents
 
@@ -28,7 +32,7 @@ Start with [`docs/README.md`](docs/README.md) for the full index.
 
 ## Contract
 
-The API contract is [`postman/ambulance-platform.postman_collection.json`](postman/ambulance-platform.postman_collection.json) with its environment file. It runs in folder order 0 to 8 and checks its own responses.
+The API contract is [`postman/ambulance-platform.postman_collection.json`](postman/ambulance-platform.postman_collection.json) with its environment file. It runs in folder order 0 to 7 and checks its own responses.
 
 ## Demo data
 

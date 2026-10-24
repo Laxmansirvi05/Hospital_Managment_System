@@ -2,6 +2,49 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-10-24
+
+### Frontend prototype (owner request)
+
+- Added `prototype/`: a clickable light-theme prototype of every role's screens, built with plain HTML, CSS and JavaScript, CSS and SVG 3D components, sample data only. No login, landing page, database or AI provider. Run with `python3 prototype/dev-server.py`. Added a `prototype` entry to `.claude/launch.json`.
+- 21st.dev components were not used: the 21st MCP server is not connected in this environment (it needs an API key).
+- Prototype choices that differ from the documents are listed as PROPOSED in `prototype/README.md` ("Where this differs from the documents").
+
+### Platform data research for Q-28
+
+- Read robots.txt and terms of use for Apollo Pharmacy, Apollo 24|7, MedPlus and Tata 1mg, and searched for official APIs and partner programs. Findings recorded in `docs/19-setup-checklist.md` and summarised in Q-28, `docs/16-deployment-and-environments.md` and a new risk in `docs/01-prd.md`. Q-28 stays OPEN.
+
+### Stack rule and data source (owner, later the same day)
+
+- D-03 changed: UI frameworks and TypeScript are allowed when necessary. Each adoption still needs a written need and the owner's approval under `docs/02-trd.md` section 1.2. None chosen yet. P-06 and P-15 (in D-19) stay the default and can be replaced under that rule. Section 1.2 now lists what a framework or TypeScript proposal must cover: build step, CSP, public file scan, no default component look, no raw HTML with data.
+- Decided D-35: listing and medicine data come from online platforms such as Apollo, MedPlus, Tata 1mg and others. Q-23 closed. Q-22 narrowed to doctor profiles as personal data. New Q-28: collection method, each platform's terms and robots.txt, refresh rate, and where the collection job runs.
+- The synthetic-data rule in `docs/10-privacy-and-data.md` now allows real business listings and prices. Patient, driver, emergency and report data stay synthetic.
+- Updated: `docs/00-decisions.md`, `01-prd.md`, `02-trd.md`, `03-architecture.md`, `04-data-model.md` (new `source_platform`, duplicate matching PROPOSED), `05-api-spec.md` (`sourcePlatform`), `09-security.md`, `10-privacy-and-data.md`, `11-design-system.md`, `15-workflow.md`, `16-deployment-and-environments.md`, `19-setup-checklist.md`, `CLAUDE.md`, `README.md`, the design review agent, and the ui-component and db-migration skills.
+
+### Product scope changed (owner's product vision)
+
+- Decided: D-26 to D-34. CareRoute is now a Hyderabad-first healthcare discovery and assistance platform with three pillars: discovery (hospitals, doctors, medicines with price comparison, pharmacies, diagnostic centres), an AI healthcare assistant (report explanation, discovery from natural language, triage), and the emergency ambulance system. Discovery shows information and sends users to the provider. No bookings, orders, payments, beds or hospital portal.
+- Roles are now `patient`, `driver`, `admin`. `hospital_admin` and `dispatcher` removed (D-29). Q-02 closed.
+- Emergency flow: destination hospital, hospital recommendations, pre-alerts and bed counts removed (D-30). Guest SOS, contacts with SMS, family tracking and medical ID for the crew kept (D-31). Drivers can reject an offer (D-32).
+- Changed notes on locked items D-02, D-04, D-06 and D-07 to follow the new decisions. Their decisions are unchanged.
+- Proposed: P-18 (admin takes the former dispatcher screens, owner had no preference), P-19 (discovery endpoints and tables, Postgres full-text search and `pg_trgm`), P-20 (reject endpoint), P-21 (report explanation design), P-22 (admin user and listing management), P-23 (discovery assistant design), P-24 (source and checked date on every listing).
+- Open: Q-21 (real ambulance operators against the demo scope in D-04), Q-22 (listing data source, doctor profiles as personal data, conflict with the synthetic data rule), Q-23 (medicine price data), Q-24 (ratings and reviews), Q-25 (report content sent to a model), Q-26 (assistant external sources), Q-27 (discovery without sign-in). Q-08 and Q-11 narrowed.
+
+### Contract changed (D-34, owner approved)
+
+`postman/ambulance-platform.postman_collection.json`:
+
+- Removed requests: Register hospital admin, Register dispatcher, Create hospital, Add doctor, Update bed counts, Ambulances near a point, Recommended hospitals for this case, Hospital: incoming pre-alerts, and the whole folder "7. Dispatch dashboard and analytics" (Active emergencies, Summary, Response times by hour).
+- Folder "8. Edge cases and negative tests" renamed to "7. ...". Folder 3 renamed "3. Hospital and doctor discovery".
+- "Hospitals near me": added the test "Seed data has a hospital nearby" and now stores the first result's id as `hospitalId`, because no request creates a hospital any more.
+- "List doctors": removed the test "Includes the new doctor", because the request that created that doctor was removed. The "Is a list" test stays.
+- "Driver: choose hospital and mark picked up" renamed "Driver: mark picked up". Body is now only `status`. Removed the test "Destination set".
+- Removed collection variables `hospitalToken`, `dispatcherToken`, `doctorId`. Descriptions updated to drop hospital and dispatcher wording.
+
+### Documents updated
+
+All of `docs/`, `README.md`, `CLAUDE.md`, and the contract agent, security agent, db-migration skill and write-copy skill, to match the decisions above. Work packages renumbered: WP-3 is discovery I, WP-7 is platform admin, new WP-10 is discovery II, demo readiness is now WP-11.
+
 ## 2026-10-17
 
 ### Setup

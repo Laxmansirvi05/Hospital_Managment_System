@@ -12,31 +12,37 @@ Security is a locked requirement (D-14). The security agent in `.claude/agents/s
 | Tokens (JWT, tracking tokens) | Anyone holding one acts as that user or sees that case. |
 | Third-party API keys | Abuse costs money and can break the product. |
 | The dispatch process itself | False or blocked requests cost lives or trips. |
+| Listing data | Users call these phone numbers and visit these links in a health need. A tampered number or link can send them to the wrong place or to a scam. |
+| Admin accounts | An admin can disable users and change every listing. |
 
 ## 2. Threats and controls
 
 | Threat | Control | Test |
 | --- | --- | --- |
-| Anyone registers as dispatcher or hospital admin (see Q-01) | Resolve Q-01. Until then privileged roles are not self-service in any deployed build. | Register with each role, expect 403 or approval-required |
+| Anyone registers as driver or admin | Only `patient` self-registers in production (D-21). `driver` and `admin` accounts are created by the server-side script. | Register with each privileged role without the flag, expect 403 |
 | Reading or changing another user's data (IDOR) | Ownership check on every read and write, section 5 | IDOR matrix test, one case per resource |
-| Hospital admin edits another hospital | `hospital_staff` link, checked on every hospital route (Q-02) | Cross-hospital test |
+| Admin account taken over | Admin accounts created only by script, admin actions written to `admin_audit`, admin sessions short (PROPOSED). A second factor for admins is OPEN. | Audit row test, role test |
+| Tampered or malicious listing link | Admin input validated with Zod, links limited to `https` and `http`, phone numbers normalized, outbound links open with `rel="noopener noreferrer"`, every edit audited | Link validation test, XSS payload test |
 | Guess or leak of a tracking token | 128 bits or more of randomness, stored hashed, lifetime limit, never logged | Token entropy test, log redaction test |
 | Token leaks through URL (it is a query parameter in the collection) | `Referrer-Policy: no-referrer` on the tracking page, strip `token` from all logs and error reports, tracking page loads no third-party scripts | Header test, log test |
-| Fake or flood SOS from the guest endpoint | Rate limit by IP and by phone, phone format check, dispatcher visibility, optional OTP later | Rate limit test |
+| Fake or flood SOS from the guest endpoint | Rate limit by IP and by phone, phone format check, admin visibility (P-18), optional OTP later | Rate limit test |
 | SMS pumping: attacker triggers many SMS | Cap SMS per emergency and per account, only send to saved contacts, cap per day | Limit test |
 | Brute force login | Rate limit per account and per IP, argon2id, same message for wrong email and wrong password | Login test |
 | User enumeration | Register returns 409 as the collection requires, so rate limit it and do not add other signals | Rate limit test |
 | Stored XSS through `notes`, names, report titles, doctor names | Data written with `textContent` or cloned templates, never `innerHTML` with data, CSP with no inline script | XSS payload test per text field |
 | SQL injection | Parameterized queries only, no string-built SQL | Lint rule and review |
 | GPS spoofing or ping flood | Only the ambulance's own driver may ping, rate limit per ambulance, sanity check speed and jump distance | Ping test |
-| Prompt injection in triage | Model has no tools or data access, output schema validated, safety floor from rules | Injection test set |
+| Prompt injection in triage or the discovery assistant | Model has no tools or data access, output schema validated, safety floor from rules, discovery results come only from our database | Injection test set |
+| Prompt injection inside an uploaded report | Report text is untrusted, the explanation schema has no treatment or diagnosis field, D-33 limits checked on the output | Injection report test |
 | Malicious file upload | Type and size checks, byte sniffing, private bucket, forced safe download headers, no server-side rendering of files | Upload test |
 | Secret in a public file | Secrets only under `server/` and in environment variables, public values only through the allow-listed `/api/v1/config` response, CI scan of `public/` and of the config response | Public file scan |
 | Secret in git | Secret scanning before commit and in CI | Scanner |
 | Supabase public key misuse | RLS on every table with no `anon` or `authenticated` policy, storage buckets private | RLS test as `anon` |
 | Dependency compromise | Lockfile, audit in CI, few dependencies, no install scripts from unknown packages | Audit |
 | Replay of accept (two drivers) | Conditional update in the database | Concurrency test |
-| Insider reads medical data | Access logged, least privilege, no admin UI that lists all patients | Review |
+| Insider reads medical data | Access logged, least privilege. The admin user list shows account fields only, never medical ID, reports or emergency notes (P-22). | Admin response field test |
+| Collecting listing data breaks a platform's terms | Read and record each platform's terms and robots.txt before collecting from it (Q-28). Identify the collector honestly, keep request rates low, no logging in to platforms, no bypassing of bot checks. | Review per platform |
+| Collected content is hostile or wrong | Every collected field is untrusted input: parsed with Zod, length limited, URLs restricted to `https` and `http`, stored as text and rendered with `textContent`. Large price or phone changes held for admin review (PROPOSED). | XSS payload test on collected fields |
 
 ## 3. Secrets and key handling
 
@@ -105,16 +111,15 @@ Only variables starting with `PUBLIC_` are returned to the browser, and only by 
 | Own user | That user | That user |
 | Medical ID | Owner. Crew only if `shareWithCrew` and the crew is assigned to an active case. | Owner |
 | Contacts | Owner | Owner |
-| Hospital | Any signed-in role | Admin linked to that hospital |
-| Beds | Any signed-in role | Admin linked to that hospital |
-| Doctors | Any signed-in role | Admin linked to that hospital |
-| Ambulance | Its driver, dispatcher | Its driver |
-| Ambulance location | Its driver, dispatcher, and parties on its active case | Its driver |
-| Emergency | Its patient, its assigned driver, its destination hospital after pre-alert, dispatcher | Patient: create, cancel, feedback. Driver: accept, advance state. |
+| Listings: hospitals, doctors, pharmacies, diagnostic centres, medicines | Signed-in users today. Without sign-in is OPEN (Q-27). | Admin |
+| Users list | Admin (account fields only) | Admin may disable |
+| Ambulance | Its driver, admin (P-18) | Its driver |
+| Ambulance location | Its driver, admin (P-18), and parties on its active case | Its driver |
+| Emergency | Its patient, its assigned driver, admin for operational fields only (P-18) | Patient: create, cancel, feedback. Driver: accept, reject, advance state. |
 | Offers inbox | The driver the offer is for | The driver |
 | Tracking view | Holder of the token | Nobody |
 | Reports | See `08-medical-reports.md` section 6 | Owner |
-| Analytics | Dispatcher | Nobody |
+| Analytics | Admin (P-18) | Nobody |
 
 A 404 is returned instead of 403 when revealing that a resource exists would itself leak information, for example another patient's emergency id. The collection requires 403 for a patient calling accept, so that case stays 403.
 
@@ -134,7 +139,8 @@ Counters are stored in Postgres (D-25). Values designed for WP-1, all PROPOSED: 
 | Login and register | IP and account |
 | Guest SOS | IP and phone |
 | SOS, authenticated | Account |
-| Triage | Account and IP, also protects model quotas |
+| Triage, discovery assistant, report explanation | Account and IP, also protects model quotas |
+| Discovery search | IP |
 | Driver pings | Ambulance |
 | SMS | Emergency, account, day |
 | Tracking endpoint | Token and IP |
@@ -193,4 +199,4 @@ Every pull request answers these. The security agent checks them.
 
 ## 13. Security tests that must exist before the demo
 
-Role matrix for every route, IDOR matrix, RLS as `anon`, token entropy, log redaction, rate limits, XSS payloads in each free text field, upload abuse, prompt injection set, concurrency on accept, public file secret scan.
+Role matrix for every route, IDOR matrix, RLS as `anon`, token entropy, log redaction, rate limits, XSS payloads in each free text field and each admin listing field, outbound link validation, upload abuse, prompt injection set (including inside a report), concurrency on accept, public file secret scan.

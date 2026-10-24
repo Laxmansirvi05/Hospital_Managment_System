@@ -10,7 +10,7 @@ Database: Supabase PostgreSQL with PostGIS. Migrations are SQL files in `supabas
 ## Before writing
 
 1. Read `docs/04-data-model.md` and `docs/06-emergency-lifecycle.md` if states or offers are involved.
-2. Check `docs/00-decisions.md` for open questions that affect the schema (Q-02, Q-03, Q-05, Q-06, Q-10, Q-11). If one applies, ask the owner. Do not choose for them.
+2. Check `docs/00-decisions.md` for open questions that affect the schema (Q-03, Q-05, Q-06, Q-10, Q-11, Q-22, Q-24, Q-28). If one applies, ask the owner. Do not choose for them.
 3. Look at the existing tables and migrations before adding anything.
 
 ## Rules
@@ -19,7 +19,7 @@ Database: Supabase PostgreSQL with PostGIS. Migrations are SQL files in `supabas
 2. Prefer additive changes (new column, new table) so old and new code both work during a deploy.
 3. Every new table: enable Row Level Security in the same migration, and add no policy for `anon` or `authenticated`. All access goes through the server.
 4. Locations use `geography(Point, 4326)` with a GiST index.
-5. Use real enums or check constraints for states and bounded numbers. Bed counts never go below zero or above totals.
+5. Use real enums or check constraints for states and bounded numbers. Prices never go below zero.
 6. Timestamps are `timestamptz`. Every table has `created_at`. Mutable tables have `updated_at`.
 7. Functions that change emergency state do it in one statement with a condition, so races are safe. `accept_emergency` is the model.
 8. `emergency_events` is append only. Do not add update or delete paths.

@@ -9,7 +9,9 @@
 | Offer and match outcomes | `emergency_events` | Failed matches, time to assign |
 | SMS results | `sms_outbox` | Is SMS working |
 | Provider errors | Structured log entries from adapters | Which provider failed and which fallback was used |
-| Dispatcher analytics | Dashboard | Totals, assign time, response time by hour |
+| Admin analytics (P-18) | Dashboard | Totals, assign time, response time by hour |
+| Listing freshness | `checked_at` on listing tables | Listings not checked recently need review (P-24) |
+| Admin actions | `admin_audit` | Who changed what |
 
 For the demo, a person looks at these. Alerting systems are not part of the scope (OPEN if wanted later).
 
@@ -20,6 +22,7 @@ For the demo, a person looks at these. Alerting systems are not part of the scop
 - The `token` query parameter of the tracking endpoint is removed before logging.
 - Provider failure logs contain the provider name, status and duration, not request bodies.
 - Triage logs contain the rule version, provider used and urgency. They do not contain the message.
+- Discovery assistant and report explanation logs contain the provider used and the outcome. They never contain the user's text or report content.
 
 ## 3. Runbook
 
@@ -58,12 +61,12 @@ Each entry: how you notice, what to do, how to confirm it worked.
 ### R-06 An emergency is stuck
 
 - Notice: an active case stays in `matching` or in a trip state with no updates.
-- Do: check offers for the case and the expiry job. Check the ambulance's last ping. Contact the driver. If needed, the dispatcher tells the patient to call the emergency number.
+- Do: check offers for the case and the expiry job. Check the ambulance's last ping. Contact the driver. If needed, the admin tells the patient to call the emergency number (P-18).
 - Confirm: the case progresses or is closed with an event recording why.
 
 ### R-07 SOS flood or prank requests
 
-- Notice: many guest SOS from one phone or address range, dispatcher sees a spike.
+- Notice: many guest SOS from one phone or address range, the admin view shows a spike.
 - Do: tighten the rate limit on the guest endpoint, block the offending phone numbers, mark the cases cancelled with a reason.
 - Confirm: new requests from the source are rejected, real requests still work.
 
@@ -78,6 +81,12 @@ Each entry: how you notice, what to do, how to confirm it worked.
 - Notice: errors after a release, failing contract run.
 - Do: roll back the code in Vercel. If a migration is involved, write a forward fix.
 - Confirm: health check and contract suite pass on the rolled back version.
+
+### R-10 Wrong or tampered listing data
+
+- Notice: a user or the owner reports a wrong phone number, link or price, or `admin_audit` shows an unexpected edit.
+- Do: hide the listing. Check `admin_audit` for who changed it and when. If an admin account may be compromised, disable it and follow R-08. Correct the data from the official source and record the new checked date.
+- Confirm: the listing shows the corrected data and checked date, and the audit trail explains the change.
 
 ## 4. Incident record template
 

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Ambulance Platform API",
-    "description": "REST API for an emergency ambulance platform: patient SOS, driver app, hospital pre-alerts, AI triage and dispatch analytics.\n\n**How to run**\n1. Import this collection and the environment file.\n2. Start your backend on the `baseUrl` shown in the environment (default http://localhost:4000/api/v1).\n3. Open the Collection Runner and run folders 0 to 8 in order. Tokens and ids are saved into collection variables automatically.\n\nRoles: patient, driver, hospital_admin (token variable `hospitalToken`), dispatcher.\nAll coordinates are sample values near Secunderabad, Hyderabad. Change the `lat` and `lng` collection variables for your area.",
+    "description": "REST API for CareRoute: hospital and doctor discovery, patient SOS, driver app and AI triage.\n\n**How to run**\n1. Import this collection and the environment file.\n2. Start your backend on the `baseUrl` shown in the environment (default http://localhost:4000/api/v1).\n3. Open the Collection Runner and run folders 0 to 7 in order. Tokens and ids are saved into collection variables automatically.\n\nRoles: patient, driver. The admin role is not exercised by this collection yet.\nFolder 3 reads hospitals from seed data, so the database must contain at least one hospital near the sample coordinates.\nAll coordinates are sample values near Secunderabad, Hyderabad. Change the `lat` and `lng` collection variables for your area.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -58,7 +58,7 @@
     },
     {
       "name": "1. Auth and roles",
-      "description": "Four roles: patient, driver, hospital_admin, dispatcher. Every protected request sends a Bearer token that these requests save into collection variables.",
+      "description": "Roles: patient, driver, admin. This collection registers a patient and a driver. Every protected request sends a Bearer token that these requests save into collection variables.",
       "item": [
         {
           "name": "Register patient",
@@ -185,136 +185,6 @@
                   "pm.test(\"Returns a token\", function () { pm.expect(typeof j.token === \"string\" && j.token.length > 20).to.be.true; });",
                   "pm.test(\"Role matches\", function () { pm.expect(j.user.role === \"driver\").to.be.true; });",
                   "pm.collectionVariables.set(\"driverToken\", j.token);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Register hospital admin",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Creates a `hospital_admin` account and returns a JWT. Re-running returns 409 once the email exists, so use Login instead.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Demo Hospital Admin\",\n  \"email\": \"hospital_admin.demo@example.com\",\n  \"phone\": \"9876500000\",\n  \"password\": \"Demo@1234\",\n  \"role\": \"hospital_admin\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "noauth"
-            }
-          },
-          "response": [
-            {
-              "name": "Created",
-              "status": "Created",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"token\": \"eyJhbGciOi...\",\n  \"user\": {\n    \"id\": \"usr_123\",\n    \"role\": \"hospital_admin\",\n    \"name\": \"Demo Hospital Admin\"\n  }\n}"
-            }
-          ],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", function () { pm.response.to.have.status(201); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Returns a token\", function () { pm.expect(typeof j.token === \"string\" && j.token.length > 20).to.be.true; });",
-                  "pm.test(\"Role matches\", function () { pm.expect(j.user.role === \"hospital_admin\").to.be.true; });",
-                  "pm.collectionVariables.set(\"hospitalToken\", j.token);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Register dispatcher",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Creates a `dispatcher` account and returns a JWT. Re-running returns 409 once the email exists, so use Login instead.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Demo Dispatcher\",\n  \"email\": \"dispatcher.demo@example.com\",\n  \"phone\": \"9876500000\",\n  \"password\": \"Demo@1234\",\n  \"role\": \"dispatcher\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "noauth"
-            }
-          },
-          "response": [
-            {
-              "name": "Created",
-              "status": "Created",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"token\": \"eyJhbGciOi...\",\n  \"user\": {\n    \"id\": \"usr_123\",\n    \"role\": \"dispatcher\",\n    \"name\": \"Demo Dispatcher\"\n  }\n}"
-            }
-          ],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", function () { pm.response.to.have.status(201); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Returns a token\", function () { pm.expect(typeof j.token === \"string\" && j.token.length > 20).to.be.true; });",
-                  "pm.test(\"Role matches\", function () { pm.expect(j.user.role === \"dispatcher\").to.be.true; });",
-                  "pm.collectionVariables.set(\"dispatcherToken\", j.token);"
                 ]
               }
             }
@@ -664,79 +534,9 @@
       ]
     },
     {
-      "name": "3. Hospitals, doctors and beds",
-      "description": "Hospitals are created by hospital admins, which avoids scraping websites. Nearby search uses PostGIS distance queries.",
+      "name": "3. Hospital and doctor discovery",
+      "description": "Hospitals and doctors are listing data managed by the platform admin and loaded from seed data here. Nearby search uses PostGIS distance queries.",
       "item": [
-        {
-          "name": "Create hospital",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/hospitals",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "hospitals"
-              ]
-            },
-            "description": "A hospital admin registers a hospital with its location, departments and bed counts.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Demo City Hospital\",\n  \"address\": \"Sample Road, Secunderabad\",\n  \"lat\": 17.4412,\n  \"lng\": 78.4989,\n  \"phone\": \"04012345678\",\n  \"emergencyAvailable\": true,\n  \"departments\": [\n    \"Emergency\",\n    \"Cardiology\",\n    \"Trauma\"\n  ],\n  \"beds\": {\n    \"icuTotal\": 12,\n    \"icuAvailable\": 5,\n    \"generalTotal\": 80,\n    \"generalAvailable\": 31\n  }\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{hospitalToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [
-            {
-              "name": "Created",
-              "status": "Created",
-              "code": 201,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"id\": \"hos_123\",\n  \"name\": \"Demo City Hospital\",\n  \"emergencyAvailable\": true\n}"
-            }
-          ],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", function () { pm.response.to.have.status(201); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Hospital has id\", function () { pm.expect(typeof j.id === \"string\").to.be.true; });",
-                  "pm.collectionVariables.set(\"hospitalId\", j.id);"
-                ]
-              }
-            }
-          ]
-        },
         {
           "name": "Hospitals near me",
           "request": {
@@ -792,7 +592,9 @@
                   "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
                   "const j = pm.response.json();",
                   "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.hospitals)).to.be.true; });",
-                  "pm.test(\"Sorted nearest first\", function () { pm.expect(j.hospitals.every(function (h, i, a) { return i === 0 || a[i - 1].distanceKm <= h.distanceKm; })).to.be.true; });"
+                  "pm.test(\"Sorted nearest first\", function () { pm.expect(j.hospitals.every(function (h, i, a) { return i === 0 || a[i - 1].distanceKm <= h.distanceKm; })).to.be.true; });",
+                  "pm.test(\"Seed data has a hospital nearby\", function () { pm.expect(j.hospitals.length > 0).to.be.true; });",
+                  "if (j.hospitals.length > 0) { pm.collectionVariables.set(\"hospitalId\", j.hospitals[0].id); }"
                 ]
               }
             }
@@ -813,7 +615,7 @@
                 "{{hospitalId}}"
               ]
             },
-            "description": "One hospital with departments and beds.",
+            "description": "One hospital with its departments and public details.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -835,64 +637,6 @@
                   "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
                   "const j = pm.response.json();",
                   "pm.test(\"Id matches\", function () { pm.expect(j.id === pm.collectionVariables.get(\"hospitalId\")).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Add doctor",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}/doctors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "hospitals",
-                "{{hospitalId}}",
-                "doctors"
-              ]
-            },
-            "description": "Doctor profile entered by the hospital: specialization, experience, availability.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Dr. Demo Sharma\",\n  \"specialization\": \"Cardiology\",\n  \"experienceYears\": 12,\n  \"qualifications\": [\n    \"MBBS\",\n    \"MD\"\n  ],\n  \"availableDays\": [\n    \"Mon\",\n    \"Wed\",\n    \"Fri\"\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{hospitalToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", function () { pm.response.to.have.status(201); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Doctor has id\", function () { pm.expect(typeof j.id === \"string\").to.be.true; });",
-                  "pm.collectionVariables.set(\"doctorId\", j.id);"
                 ]
               }
             }
@@ -941,65 +685,7 @@
                 "exec": [
                   "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
                   "const j = pm.response.json();",
-                  "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.doctors)).to.be.true; });",
-                  "pm.test(\"Includes the new doctor\", function () { pm.expect(j.doctors.some(function (d) { return d.id === pm.collectionVariables.get(\"doctorId\"); })).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Update bed counts",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}/beds",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "hospitals",
-                "{{hospitalId}}",
-                "beds"
-              ]
-            },
-            "description": "Hospital staff keep ICU and general bed availability current. Ambulance matching uses this.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"icuAvailable\": 4,\n  \"generalAvailable\": 29\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{hospitalToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"ICU updated\", function () { pm.expect(j.beds.icuAvailable === 4).to.be.true; });"
+                  "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.doctors)).to.be.true; });"
                 ]
               }
             }
@@ -1180,72 +866,12 @@
               }
             }
           ]
-        },
-        {
-          "name": "Ambulances near a point",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ambulances/nearby?lat={{lat}}&lng={{lng}}&type=ALS&radiusKm=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ambulances",
-                "nearby"
-              ],
-              "query": [
-                {
-                  "key": "lat",
-                  "value": "{{lat}}"
-                },
-                {
-                  "key": "lng",
-                  "value": "{{lng}}"
-                },
-                {
-                  "key": "type",
-                  "value": "ALS"
-                },
-                {
-                  "key": "radiusKm",
-                  "value": "10"
-                }
-              ]
-            },
-            "description": "Dispatcher view of available ambulances, nearest first.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{dispatcherToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.ambulances)).to.be.true; });"
-                ]
-              }
-            }
-          ]
         }
       ]
     },
     {
       "name": "5. Emergency ambulance flow (core)",
-      "description": "Run these in order with the Collection Runner: SOS, driver accepts, trip progress, hospital pre-alert, completion.",
+      "description": "Run these in order with the Collection Runner: SOS, driver accepts, trip progress, completion.",
       "item": [
         {
           "name": "Patient: raise SOS",
@@ -1470,7 +1096,7 @@
                 "status"
               ]
             },
-            "description": "Moves the trip to `en_route`. Pushes a live update to the patient, family link and hospital.",
+            "description": "Moves the trip to `en_route`. Pushes a live update to the patient and family link.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"en_route\"\n}",
@@ -1550,50 +1176,6 @@
           ]
         },
         {
-          "name": "Recommended hospitals for this case",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/emergencies/{{emergencyId}}/recommended-hospitals",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "emergencies",
-                "{{emergencyId}}",
-                "recommended-hospitals"
-              ]
-            },
-            "description": "Ranks hospitals by road ETA, emergency department, matching specialty and available ICU beds.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{driverToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Is a ranked list\", function () { pm.expect(Array.isArray(j.hospitals) && j.hospitals.length > 0).to.be.true; });",
-                  "pm.test(\"Each has a score and reason\", function () { pm.expect(j.hospitals.every(function (h) { return typeof h.score === \"number\" && typeof h.reason === \"string\"; })).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Driver: arrived at patient",
           "request": {
             "method": "PATCH",
@@ -1614,7 +1196,7 @@
                 "status"
               ]
             },
-            "description": "Moves the trip to `arrived`. Pushes a live update to the patient, family link and hospital.",
+            "description": "Moves the trip to `arrived`. Pushes a live update to the patient and family link.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"arrived\"\n}",
@@ -1651,7 +1233,7 @@
           ]
         },
         {
-          "name": "Driver: choose hospital and mark picked up",
+          "name": "Driver: mark picked up",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1671,10 +1253,10 @@
                 "status"
               ]
             },
-            "description": "Sets the destination hospital. This triggers the pre-alert to that hospital's dashboard.",
+            "description": "Moves the trip to `picked_up`: the patient is on board. Pushes a live update to the patient and family link.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"picked_up\",\n  \"destinationHospitalId\": \"{{hospitalId}}\"\n}",
+              "raw": "{\n  \"status\": \"picked_up\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1701,52 +1283,7 @@
                 "exec": [
                   "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
                   "const j = pm.response.json();",
-                  "pm.test(\"Picked up\", function () { pm.expect(j.status === \"picked_up\").to.be.true; });",
-                  "pm.test(\"Destination set\", function () { pm.expect(j.destinationHospitalId === pm.collectionVariables.get(\"hospitalId\")).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Hospital: incoming pre-alerts",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}/incoming",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "hospitals",
-                "{{hospitalId}}",
-                "incoming"
-              ]
-            },
-            "description": "What the hospital dashboard shows before the ambulance arrives: case type, patient condition, ETA.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{hospitalToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.incoming)).to.be.true; });",
-                  "pm.test(\"Our patient is listed\", function () { pm.expect(j.incoming.some(function (c) { return c.emergencyId === pm.collectionVariables.get(\"emergencyId\"); })).to.be.true; });"
+                  "pm.test(\"Picked up\", function () { pm.expect(j.status === \"picked_up\").to.be.true; });"
                 ]
               }
             }
@@ -1773,7 +1310,7 @@
                 "status"
               ]
             },
-            "description": "Moves the trip to `at_hospital`. Pushes a live update to the patient, family link and hospital.",
+            "description": "Moves the trip to `at_hospital`. Pushes a live update to the patient and family link.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"at_hospital\"\n}",
@@ -1830,7 +1367,7 @@
                 "status"
               ]
             },
-            "description": "Moves the trip to `completed`. Pushes a live update to the patient, family link and hospital.",
+            "description": "Moves the trip to `completed`. Pushes a live update to the patient and family link.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"completed\"\n}",
@@ -2090,158 +1627,7 @@
       ]
     },
     {
-      "name": "7. Dispatch dashboard and analytics",
-      "description": "Used by the dispatcher screen. Great for the demo: response times and failed matches as charts.",
-      "item": [
-        {
-          "name": "Active emergencies",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/dispatch/active",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "dispatch",
-                "active"
-              ]
-            },
-            "description": "Every request not yet completed or cancelled.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{dispatcherToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Is a list\", function () { pm.expect(Array.isArray(j.emergencies)).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Summary",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/dispatch/analytics/summary?from=2026-10-01&to=2026-10-31",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "dispatch",
-                "analytics",
-                "summary"
-              ],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "2026-10-01"
-                },
-                {
-                  "key": "to",
-                  "value": "2026-10-31"
-                }
-              ]
-            },
-            "description": "Totals and averages for a date range.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{dispatcherToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Has totals\", function () { pm.expect(typeof j.totalRequests === \"number\").to.be.true; });",
-                  "pm.test(\"Has average assignment time\", function () { pm.expect(typeof j.avgAssignSeconds === \"number\").to.be.true; });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Response times by hour",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/dispatch/analytics/response-times?groupBy=hour",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "dispatch",
-                "analytics",
-                "response-times"
-              ],
-              "query": [
-                {
-                  "key": "groupBy",
-                  "value": "hour"
-                }
-              ]
-            },
-            "description": "Average time from SOS to arrival, grouped by hour of day.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{dispatcherToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", function () { pm.response.to.have.status(200); });",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Is a series\", function () { pm.expect(Array.isArray(j.series)).to.be.true; });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "8. Edge cases and negative tests",
+      "name": "7. Edge cases and negative tests",
       "description": "Proves the API protects itself. Run after the main flow.",
       "item": [
         {
@@ -2601,19 +1987,7 @@
       "value": ""
     },
     {
-      "key": "hospitalToken",
-      "value": ""
-    },
-    {
-      "key": "dispatcherToken",
-      "value": ""
-    },
-    {
       "key": "hospitalId",
-      "value": ""
-    },
-    {
-      "key": "doctorId",
       "value": ""
     },
     {

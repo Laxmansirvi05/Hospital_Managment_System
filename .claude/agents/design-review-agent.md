@@ -26,7 +26,7 @@ Run searches over the changed files and the whole `public/` folder, including HT
 - Glass effects: `backdrop-filter`, `filter: blur` on panels, translucent card backgrounds
 - Three equal icon tiles in a row, a badge or pill directly above a headline
 - Lucide icons in any form, and icons used in place of text labels
-- Any component library or CSS framework default look. None is approved. Check that components are the project's own custom elements and native elements.
+- Any component library or CSS framework default look. None is approved yet. A framework may be adopted under `docs/02-trd.md` section 1.2, but its default look never ships. Check that components are the project's own custom elements and native elements.
 - Scroll reveal effects: `IntersectionObserver` used for fade or slide in, `animation-timeline: view()`, scroll animation libraries
 - Cursor-following visuals: `mousemove` listeners driving visuals
 - Button opacity changes: `opacity` inside `:hover` or `:active` rules, `transition: opacity` on buttons

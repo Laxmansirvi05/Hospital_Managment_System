@@ -1,6 +1,6 @@
 # Emergency lifecycle
 
-The states and moves below come from the Postman collection. Anything marked OPEN or PROPOSED is not decided.
+The states and moves below come from the Postman collection. Anything marked OPEN or PROPOSED is not decided. Since 2026-10-24 the trip has no destination hospital step and no hospital pre-alert (D-30).
 
 ## 1. States
 
@@ -10,11 +10,13 @@ The states and moves below come from the Postman collection. Anything marked OPE
 | `assigned` | A driver accepted | COLLECTION |
 | `en_route` | Ambulance is heading to the patient | COLLECTION |
 | `arrived` | Ambulance is at the patient | COLLECTION |
-| `picked_up` | Patient is on board, destination hospital chosen | COLLECTION |
+| `picked_up` | Patient is on board | COLLECTION |
 | `at_hospital` | Ambulance reached the hospital | COLLECTION |
 | `completed` | Trip finished | COLLECTION |
 | `cancelled` | Patient cancelled before pickup | COLLECTION |
 | failed match | Nobody accepted. Name and rules OPEN (Q-06, Q-07) | OPEN |
+
+The hospital the ambulance goes to is not recorded. The driver decides it outside CareRoute (D-30).
 
 The collection says a new SOS starts as `matching` or `assigned`. `assigned` is possible when an offer is accepted immediately.
 
@@ -30,7 +32,7 @@ stateDiagram-v2
   assigned --> cancelled: patient cancels
   en_route --> arrived: driver
   en_route --> cancelled: patient cancels
-  arrived --> picked_up: driver sets destination hospital
+  arrived --> picked_up: driver, patient on board
   arrived --> cancelled: patient cancels
   picked_up --> at_hospital: driver
   at_hospital --> completed: driver
@@ -43,7 +45,7 @@ Rules:
 
 1. Moves go forward only. No skipping, no going back. A request that tries one returns 409. This rule is PROPOSED where the collection is silent, and consistent with the 409 test for an already finished trip.
 2. Only the driver who accepted may change the trip state. Others get 403.
-3. `picked_up` requires `destinationHospitalId`. Setting it sends the pre-alert to that hospital.
+3. `picked_up` takes only `status`. There is no destination and no pre-alert (D-30).
 4. Cancel is allowed only before `picked_up`. COLLECTION ("Patients may cancel before pickup").
 5. Feedback is allowed only in `completed`. COLLECTION.
 6. A terminal state (`completed`, `cancelled`, failed) never changes again.
@@ -54,9 +56,9 @@ Rules:
 1. Matching ranks candidate ambulances and stores them as ordered offers.
 2. Only the first offer is `open`. It has `expires_at` set 30 seconds after it opened. COLLECTION.
 3. The driver sees it in the inbox. Accepting calls `accept_emergency`, a conditional update that works only while the emergency is `matching` and the offer is open.
-4. If the driver does not accept in time, `expire_offers()` marks it `expired` and opens the next. If the driver declines, the same happens without waiting. A decline endpoint is not in the collection, so it is PROPOSED.
+4. If the driver does not accept in time, `expire_offers()` marks it `expired` and opens the next. If the driver rejects (D-32), the offer becomes `declined` and the next opens without waiting. The reject endpoint is PROPOSED (P-20).
 5. `expire_offers()` runs from pg_cron. The schedule must be shorter than a minute. The exact pg_cron syntax and the minimum interval must be confirmed against the installed version (see `02-trd.md` section 9).
-6. When offers run out, the emergency moves to the failed-match state and the dispatcher is notified. How many rounds, and any retry, are OPEN (Q-07).
+6. When offers run out, the emergency moves to the failed-match state, the patient is shown the emergency number, and the admin view lists it (P-18). How many rounds, and any retry, are OPEN (Q-07).
 
 ## 4. Ambulance eligibility
 
@@ -76,9 +78,9 @@ When an ambulance accepts, its status becomes `busy`. When the trip ends, it ret
 - The public track response contains status, ambulance position and ETA only. No names, no medical data, no phone numbers.
 - Token lifetime is OPEN (Q-09). Until decided, it must not outlive the emergency's terminal state by default (PROPOSED).
 
-## 6. Pre-alert
+## 6. What the crew sees
 
-When the state becomes `picked_up` with a destination, the hospital's incoming list includes the case with: `emergencyId`, case type, patient condition, ETA. The "patient condition" content is derived from fields the patient or crew entered: `emergencyType`, `conscious`, `patientCount`, `notes`. Medical ID details are included only if `shareWithCrew` is true. Reports are included only as described in `08-medical-reports.md`.
+The assigned driver sees the pickup location, `emergencyType`, `conscious`, `patientCount` and `notes`. Medical ID details are included only if `shareWithCrew` is true. Reports are included only if Q-11 allows crew access. Hospital pre-alerts were removed (D-30).
 
 ## 7. SMS to contacts
 

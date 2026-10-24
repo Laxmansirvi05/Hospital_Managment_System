@@ -4,7 +4,7 @@ This document sets the rules for personal and health data. It is a project polic
 
 ## 1. Demo data rule
 
-The demo runs on synthetic data only. No real patient, driver, hospital or report is used in development, previews or the demo. Seed data in `supabase/seed.sql` is invented. The only real phone numbers are the few verified test numbers the Twilio trial needs, and they belong to people who agreed.
+The demo runs on synthetic data only. No real patient, driver, hospital or report is used in development, previews or the demo. Seed data in `supabase/seed.sql` is invented. Exception: listing and medicine data comes from online platforms such as Apollo, MedPlus and Tata 1mg (D-35), so it is real public information. Business listings and prices may be real. Real doctor profiles wait for Q-22. Patient, driver, emergency and report data stay synthetic. The only real phone numbers are the few verified test numbers the Twilio trial needs, and they belong to people who agreed.
 
 ## 2. Data inventory
 
@@ -16,18 +16,22 @@ The demo runs on synthetic data only. No real patient, driver, hospital or repor
 | Medical report files | Health | Storage bucket | See `08-medical-reports.md` |
 | Emergency contacts | Personal (of a third party) | `emergency_contacts` | Owner, SMS sender |
 | Patient location during an SOS | Location | `emergencies` | Parties on the case |
-| Ambulance location | Location | `ambulances`, Realtime | Parties on the case, dispatcher |
+| Ambulance location | Location | `ambulances`, Realtime | Parties on the case, admin (P-18) |
 | Emergency type, condition, notes | Health | `emergencies` | Parties on the case |
-| Feedback | Personal | `emergency_feedback` | Dispatcher in aggregate, owner |
+| Feedback | Personal | `emergency_feedback` | Admin in aggregate (P-18), owner |
 | SMS records | Personal | `sms_outbox` | Operators |
-| Triage text | Health | Not stored by default | Sent to a model provider, see 5 |
+| Triage and discovery assistant text | Health | Not stored by default | Sent to a model provider, see 5 |
+| Report content sent for explanation | Health | Not stored by default | Sent to a model provider, blocked by Q-25 |
+| Business listings: hospitals, pharmacies, diagnostic centres, medicine prices | Public business information | Listing tables | Everyone who can search |
+| Doctor profiles | Personal data of real people, from public sources | `doctors` | Everyone who can search. Taken from online platforms (D-35). What may be published and the removal process OPEN (Q-22). |
+| Admin actions | Operational | `admin_audit` | Admins, owner |
 
 ## 3. Principles
 
 1. Collect only what a feature in the PRD needs.
 2. Health data is shared only by the patient's choice (`shareWithCrew`, report sharing), except the facts the crew needs to run the trip that the patient or caller entered during the SOS.
 3. Family contacts get a tracking link, never health data.
-4. Dispatchers see the operational picture, not report contents.
+4. The platform admin sees accounts, listings and, if P-18 is approved, the operational picture of emergencies. Never medical ID, reports or emergency notes.
 5. Every person can see, correct and delete their data (see section 6).
 6. Plain-language notices, written for a stressed reader, shown at the moment of the choice.
 
@@ -39,7 +43,9 @@ The demo runs on synthetic data only. No real patient, driver, hospital or repor
 | Adding an emergency contact | They will get an SMS with a tracking link when you raise an SOS | Required for the feature |
 | Uploading a report | The file is private until you share it | Share off |
 | Sharing a report | Exactly who will see it and when | Nothing shared |
-| Triage assistant | Your text is sent to an AI service to produce guidance. Do not enter names or phone numbers. | Notice shown before first use |
+| Triage and discovery assistant | Your text is sent to an AI service to produce guidance. Do not enter names or phone numbers. | Notice shown before first use |
+| Report explanation | This report will be sent to an AI service to explain it. It is guidance, not a diagnosis. | Asked each time, before sending |
+| Leaving CareRoute | You are going to {provider}'s website. CareRoute does not handle bookings, orders or payments. | Shown on outbound links |
 | Location | Why the app needs your location and that it is used only while you raise or follow an SOS | Browser permission prompt, asked at the moment of use |
 
 Consent text is part of the product and follows `12-ux-and-content.md`.
@@ -48,8 +54,9 @@ Consent text is part of the product and follows `12-ux-and-content.md`.
 
 | Service | Receives | Must not receive |
 | --- | --- | --- |
-| Gemini, Groq, OpenRouter | Symptom text, age, language | Name, phone, email, location, user id |
-| Mapbox | Coordinates of ambulances, patient and hospitals, for routing | Names, phone numbers, medical data |
+| Gemini, Groq, OpenRouter | Symptom text, age, language. Discovery assistant text. Report content, only after Q-25. | Name, phone, email, location, user id |
+| Mapbox | Coordinates of ambulances and the patient, for routing | Names, phone numbers, medical data |
+| Provider websites (outbound links) | Whatever the user chooses to send them after leaving CareRoute. CareRoute adds no tracking parameters. | Anything from CareRoute |
 | MapTiler | Tile requests from the browser, which reveal the viewed area and the browser's IP | Anything else |
 | Twilio | Contact phone number, message text with the tracking link | Health detail |
 | Supabase | All stored data | Not applicable, it is the data store. Choose the project region deliberately (OPEN). |
@@ -75,7 +82,8 @@ Periods are not decided. They must be set for: emergencies and events, ambulance
 
 - Ask for browser location at the point of use, not on first page load.
 - If permission is denied, offer manual address entry. An SOS must never be blocked by a location denial.
-- Patient location is visible to the assigned driver, the destination hospital after pre-alert, and the dispatcher, and to nobody else.
+- Patient location is visible to the assigned driver and, if P-18 is approved, the admin, and to nobody else.
+- Discovery uses location only to sort by distance. It is sent with the search request and not stored.
 - The public tracking page shows the ambulance, not the patient's address.
 
 ## 9. Incidents involving personal data

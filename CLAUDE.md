@@ -1,6 +1,6 @@
 # CareRoute
 
-Emergency ambulance web app that connects the patient, the ambulance, the hospital and the patient's medical reports. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation (no TypeScript, no Next.js), a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. Other technology only where really required and approved (`docs/02-trd.md` section 1.2). Project phase right now: documentation and setup (cloud Supabase, accounts and keys). No application code on `main`. Do not start building until the owner says so.
+Hyderabad-first healthcare discovery and assistance web app with three parts: discovery of hospitals, doctors, medicines, pharmacies and diagnostic centres; an AI healthcare assistant; and an emergency ambulance system. Roles are `patient`, `driver` and `admin`. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation, a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. UI frameworks and TypeScript are allowed when necessary, and other technology only where really required. Each one needs a written need and the owner's approval (`docs/02-trd.md` section 1.2). None has been chosen yet. Project phase right now: documentation and setup (cloud Supabase, accounts and keys). No application code on `main`. Do not start building until the owner says so.
 
 ## Read in this order
 

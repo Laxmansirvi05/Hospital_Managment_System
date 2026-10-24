@@ -16,16 +16,17 @@ How work is planned, built, reviewed and shipped. Written to be followed by the 
 | WP-0 | Foundation: project scaffold (`public/`, `api/`, `server/`), config validation, logger, design tokens, base components, CI with secret scan and `public/` file scan, local Supabase, health endpoint | 0 | none (Q-15 answered, icons decided) |
 | WP-1 | Accounts and roles | 1 | none (answered: D-21 to D-25) |
 | WP-2 | Medical ID and emergency contacts | 2 | none |
-| WP-3 | Hospitals, doctors and beds, nearby search | 3 | Q-02 |
-| WP-4 | Ambulances, status, pings, nearby | 4 | Q-03 |
-| WP-5 | Emergency core: SOS, guest SOS, matching, offers, accept, trip states, tracking, recommended hospitals, pre-alert, feedback, history, cancel, realtime, SMS | 5 and parts of 8 | Q-05, Q-06, Q-07, Q-08, Q-09, Q-12, Q-13, Q-14 |
-| WP-6 | Triage assistant | 6 | Q-17, clinician review of rules |
-| WP-7 | Dispatch dashboard and analytics | 7 | Q-06 |
-| WP-8 | Hardening: negative tests, security suite, performance measurement, accessibility pass | 8 | none |
+| WP-3 | Discovery I: hospitals and doctors, search, filters, detail pages, listing tables, data collection from platforms | 3 | Q-22, Q-24, Q-27, Q-28, P-19 |
+| WP-4 | Ambulances, status, pings | 4 | Q-03 |
+| WP-5 | Emergency core: SOS, guest SOS, matching, offers, accept, reject, trip states, tracking, feedback, history, cancel, realtime, SMS | 5 and parts of 7 | Q-05, Q-06, Q-07, Q-08, Q-09, Q-12, Q-14, P-20 |
+| WP-6 | AI assistant: triage, discovery assistant, report explanation | 6 | Q-17, clinician review of rules, P-23. Report explanation also Q-25 and WP-9. External sources Q-26. |
+| WP-7 | Platform admin: users, listing management, audit, and if approved active cases and analytics | new | P-18, P-22 |
+| WP-8 | Hardening: negative tests, security suite, performance measurement, accessibility pass | 7 | none |
 | WP-9 | Medical reports | new | Q-10, Q-11 |
-| WP-10 | Demo readiness: seed data, demo script, deployment checks, runbook drill, final documentation review | all | all |
+| WP-10 | Discovery II: pharmacies, diagnostic centres, medicine price comparison | new | Q-24, Q-28 |
+| WP-11 | Demo readiness: seed data, demo script, deployment checks, runbook drill, final documentation review | all | all |
 
-WP-1 comes before WP-2 to WP-4. WP-5 needs WP-2, WP-3 and WP-4. WP-9 needs WP-1 and WP-5.
+WP-1 comes before WP-2 to WP-4. WP-3 needs WP-7's listing management, or seed data until it exists. WP-5 needs WP-2 and WP-4. WP-9 needs WP-1. WP-10 needs WP-3.
 
 ## 3. Definition of ready
 

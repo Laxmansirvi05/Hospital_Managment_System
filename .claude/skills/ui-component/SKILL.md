@@ -28,7 +28,7 @@ description: Use when building or changing any CareRoute screen or component. En
 
 - Purple to blue gradients, gradient text, glass or blur effects, colored left borders on cards, grain textures.
 - Emoji in headings, a badge above a headline, rows of three icon tiles.
-- Lucide icons as the default, any component library or CSS framework, Inter, Space Grotesk, Instrument Serif, serif accent words.
+- Lucide icons as the default, the default look of any component library or CSS framework (a framework itself needs approval under `docs/02-trd.md` section 1.2), Inter, Space Grotesk, Instrument Serif, serif accent words.
 - Scroll reveal animations, cursor-following effects, opacity fades on button hover.
 - Spacing outside the scale.
 - Em dashes, buzzwords, or claims we cannot source.

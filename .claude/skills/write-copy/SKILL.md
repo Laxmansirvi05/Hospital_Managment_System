@@ -13,7 +13,7 @@ description: Use when writing any CareRoute user-facing text, error message, not
 
 1. Name the reader and their state. For patient screens, assume frightened, hurried and possibly one-handed.
 2. Say the one thing they need: what is happening, what happens next, or what to do.
-3. Use specific words and numbers with units. "6 min", "2.4 km", "12 of 30 beds".
+3. Use specific words and numbers with units. "6 min", "2.4 km", "3 pharmacies within 1.5 km".
 4. Sentence case. Buttons are verbs.
 5. Errors say what went wrong and what the person can do. They do not blame the person.
 6. Consent text names exactly who will see what, and when.

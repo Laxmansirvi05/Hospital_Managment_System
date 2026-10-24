@@ -43,7 +43,9 @@ Facts below were checked while writing these documents. Anything not listed here
 | Groq | Secondary sources say no training on API data and no default retention, with up to 30 days of reliability logs. Not confirmed from Groq's own pages. | Read Groq's data policy before WP-6 |
 | OpenRouter | Some free models run on hosts whose terms allow training. A data collection setting set to deny excludes them. Secondary sources. | Send the deny setting on every request, confirm in OpenRouter's docs before WP-6 |
 | pg_cron | Verified on `careroute-dev`: a 30 second schedule is accepted and ran twice, 30 seconds apart, both succeeded. | Offer expiry design stands (D-12). The extension is now installed on dev with no jobs. |
-| Supabase Free | Storage size, database size and Realtime connection and message limits not yet verified | Check before WP-5 and WP-9 |
+| Supabase Free | Storage size, database size and Realtime connection and message limits not yet verified | Check before WP-3, WP-5 and WP-9. Listing tables for all of Hyderabad add to database size. |
+| Listing and medicine price sources | Online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Terms, robots.txt and official APIs were checked on 2026-10-24: the terms forbid reproducing content without written permission, 1mg's terms name robots and forbid deep linking, and no public data API was found. Details in `19-setup-checklist.md`. Where the collection job runs is not decided: Vercel Hobby cron runs at most once a day and functions have time limits. | Answer Q-28 before WP-3 and WP-10 |
+| Assistant external sources | Not chosen (Q-26) | Check before WP-6 |
 | Vercel | Function duration and invocation limits for the plan in use not yet verified | Check before WP-5 |
 | Vercel Hobby | Sources disagree on how many functions one deployment may hold (one reports 12, another says it depends on the framework) | The API is one function with a router, so this should not matter. Confirm in WP-0. |
 
@@ -51,7 +53,7 @@ Update this table whenever a limit is confirmed.
 
 ## 4. Database setup
 
-1. Enable the `postgis` extension. Enable `pg_cron`.
+1. Enable the `postgis` extension. Enable `pg_cron`. Enable `pg_trgm` if P-19 is approved.
 2. Apply migrations from `supabase/migrations` in order. They are forward-only. A mistake is fixed by a new migration.
 3. Enable Row Level Security on every table. Add no policy for `anon` or `authenticated`.
 4. Create storage buckets as private.
