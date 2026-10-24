@@ -2,10 +2,11 @@ import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
-import { pageHead, ratingBlock } from '../ui.js';
+import { pageHead } from '../ui.js';
 import { idParam, notFoundPage, contactCard } from '../details.js';
+import { reviewsSection } from '../reviews.js';
 
-const { main } = await shell({ nav: 'medicines', title: 'Pharmacy' });
+const { main, user } = await shell({ nav: 'medicines', title: 'Pharmacy' });
 
 try {
   const p = await api(`/pharmacies/${encodeURIComponent(idParam())}`);
@@ -19,8 +20,7 @@ try {
             h('span', { class: `tag ${p.open24 ? 'tag-success' : ''}` }, icon('clock', 14), p.hours),
             h('span', { class: 't-subhead muted' }, p.area)),
           createMap({ pins: [{ ...p.location, kind: 'pharmacy', label: p.name, showLabel: true, active: true }], tilt: 40 })),
-        p.rating !== null ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Rating and reviews'), ratingBlock(p),
-          h('p', { class: 't-footnote muted' }, `Rating as shown on ${p.source.platform}.`)) : null,
+        reviewsSection({ kind: 'pharmacy', id: p.id, listing: p, canWrite: user.role === 'patient' }),
         h('section', { class: 'card stack-12' },
           h('h2', { class: 't-title-3' }, 'Before you go'),
           h('p', { class: 't-subhead muted' }, 'Call the store to check that your medicine is in stock. CareRoute does not see store stock or take orders.'),

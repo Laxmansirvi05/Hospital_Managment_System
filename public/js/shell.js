@@ -22,6 +22,7 @@ const NAV = [
       { id: 'appointments', href: '/appointments/', label: 'Appointments', icon: 'calendar' },
       { id: 'documents', href: '/documents/', label: 'Documents', icon: 'report' },
       { id: 'medical-id', href: '/medical-id/', label: 'Medical ID', icon: 'idcard' },
+      { id: 'account', href: '/account/', label: 'Account and privacy', icon: 'shield' },
     ],
   },
 ];
@@ -85,7 +86,7 @@ export async function shell({ nav, title }) {
     h('nav', { class: 'nav', 'aria-label': 'Main' },
       NAV.map((g) => h('div', { class: 'nav-group' },
         h('span', { class: 'nav-label' }, g.group),
-        g.items.filter((i) => isPatient || ['hospitals', 'medicines', 'diagnostics'].includes(i.id))
+        g.items.filter((i) => isPatient || ['hospitals', 'medicines', 'diagnostics', 'account'].includes(i.id))
           .map((i) => h('a', { href: i.href, 'aria-current': i.id === nav ? 'page' : false }, icon(i.icon), i.label))))),
     h('div', { class: 'sidebar-foot' },
       isPatient ? h('a', { class: 'sos-key sos-key-compact', href: '/sos/', style: 'width:100%' }, icon('ambulance', 22), 'Emergency') : null,

@@ -2,10 +2,11 @@ import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
-import { pageHead, ratingBlock, listingRow, rating } from '../ui.js';
+import { pageHead, listingRow, rating } from '../ui.js';
 import { idParam, notFoundPage, contactCard } from '../details.js';
+import { reviewsSection } from '../reviews.js';
 
-const { main } = await shell({ nav: 'hospitals', title: 'Hospital' });
+const { main, user } = await shell({ nav: 'hospitals', title: 'Hospital' });
 
 try {
   const id = idParam();
@@ -31,7 +32,7 @@ try {
           docs.doctors.length
             ? h('div', { class: 'list' }, docs.doctors.map((d) => listingRow({ href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name, meta: [`${d.specialization} · ${d.experienceYears} years`], trail: rating(d) })))
             : h('p', { class: 't-subhead muted' }, 'No doctor profiles listed for this hospital yet.')),
-        x.rating !== null ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Rating'), ratingBlock(x)) : null),
+        reviewsSection({ kind: 'hospital', id: x.id, listing: x, canWrite: user.role === 'patient' })),
       h('div', { class: 'stack-16' }, contactCard(x)))));
 } catch (err) {
   if (err.status === 404) notFoundPage(main, '/search/hospitals/', 'Search hospitals');

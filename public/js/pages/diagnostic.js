@@ -2,10 +2,11 @@ import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
-import { pageHead, ratingBlock, extLink } from '../ui.js';
+import { pageHead, extLink } from '../ui.js';
 import { idParam, notFoundPage, contactCard } from '../details.js';
+import { reviewsSection } from '../reviews.js';
 
-const { main } = await shell({ nav: 'diagnostics', title: 'Diagnostic centre' });
+const { main, user } = await shell({ nav: 'diagnostics', title: 'Diagnostic centre' });
 
 try {
   const c = await api(`/diagnostic-centres/${encodeURIComponent(idParam())}`);
@@ -25,8 +26,7 @@ try {
           h('h2', { class: 't-title-3' }, 'Tests listed publicly'),
           h('div', { class: 'row-8' }, c.testsListed.map((t) => h('a', { class: 'tag tag-primary', href: `/search/diagnostics/?test=${encodeURIComponent(t)}` }, t))),
           h('p', { class: 't-footnote muted' }, 'Check prices and preparation with the centre. Bookings and reports are handled by the centre, not by CareRoute.')),
-        c.rating !== null ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Rating and reviews'), ratingBlock(c),
-          h('p', { class: 't-footnote muted' }, `Rating as shown on ${c.source.platform}.`)) : null),
+        reviewsSection({ kind: 'diagnostic_centre', id: c.id, listing: c, canWrite: user.role === 'patient' })),
       h('div', { class: 'stack-16' }, contactCard(c)))));
 } catch (err) {
   if (err.status === 404) notFoundPage(main, '/search/diagnostics/', 'Search diagnostic centres');

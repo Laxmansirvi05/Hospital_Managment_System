@@ -31,6 +31,8 @@ export function createMemoryStore() {
   const doseLogs = [];
   const appointments = [];
   const files = [];
+  const reviews = [];
+  const reports = [];
   const hospitals = clone(HOSPITALS);
   const doctors = clone(DOCTORS);
 
@@ -58,6 +60,22 @@ export function createMemoryStore() {
       async byEmail(email) { for (const u of users.values()) if (u.email === email) return clone(u); return null; },
       async byId(id) { return users.has(id) ? clone(users.get(id)) : null; },
       async list() { return [...users.values()].map(clone).sort((a, b) => a.createdAt - b.createdAt); },
+      async setPassword(id, passwordHash) { const u = users.get(id); if (u) u.passwordHash = passwordHash; },
+      // D-45: removing the user removes everything tied to them, as the database cascade does.
+      async remove(id) {
+        users.delete(id);
+        profiles.delete(id);
+        for (const [sid, s] of sessions) if (s.userId === id) sessions.delete(sid);
+        const drop = (arr, pred) => { for (let i = arr.length - 1; i >= 0; i--) if (pred(arr[i])) arr.splice(i, 1); };
+        drop(contacts, (x) => x.userId === id);
+        drop(doseLogs, (x) => x.userId === id);
+        drop(reminders, (x) => x.userId === id);
+        drop(appointments, (x) => x.userId === id);
+        drop(files, (x) => x.userId === id);
+        const mine = new Set(reviews.filter((r) => r.userId === id).map((r) => r.id));
+        drop(reports, (x) => x.userId === id || mine.has(x.reviewId));
+        drop(reviews, (x) => x.userId === id);
+      },
       async setDisabled(id, disabled) { const u = users.get(id); if (!u) return null; u.disabledAt = disabled ? now() : null; return clone(u); },
     },
 
@@ -74,6 +92,7 @@ export function createMemoryStore() {
         Object.assign(s, { refreshHash, previousRefreshHash, expiresAt, lastUsedAt: now() });
         return clone(s);
       },
+      async revokeOthers(userId, keepId) { for (const s of sessions.values()) if (s.userId === userId && s.id !== keepId && !s.revokedAt) Object.assign(s, { revokedAt: now(), revokedReason: 'logout' }); },
       async revoke(id, reason) { const s = sessions.get(id); if (s && !s.revokedAt) Object.assign(s, { revokedAt: now(), revokedReason: reason }); },
     },
 
@@ -138,10 +157,34 @@ export function createMemoryStore() {
     files: {
       async create(userId, meta) { const row = { id: randomUUID(), userId, status: 'pending', ...meta, createdAt: now() }; files.push(row); return clone(row); },
       async get(userId, id) { const f = files.find((x) => x.id === id && x.userId === userId); return f ? clone(f) : null; },
+      async all(userId) { return files.filter((f) => f.userId === userId).map(clone); },
       async pendingCount(userId) { return files.filter((f) => f.userId === userId && f.status === 'pending' && Date.now() - f.createdAt < 3600000).length; },
       async markReady(userId, id) { const f = files.find((x) => x.id === id && x.userId === userId); if (!f) return null; f.status = 'ready'; return clone(f); },
       async list(userId, purpose) { return files.filter((f) => f.userId === userId && f.purpose === purpose && f.status === 'ready').map(clone).sort((a, b) => b.createdAt - a.createdAt); },
       async remove(userId, id) { const i = files.findIndex((f) => f.id === id && f.userId === userId); if (i < 0) return null; return clone(files.splice(i, 1)[0]); },
+    },
+
+    reviews: {
+      async list(kind, listingId) {
+        return reviews.filter((r) => r.kind === kind && r.listingId === listingId && r.status === 'visible')
+          .sort((a, b) => b.updatedAt - a.updatedAt)
+          .map((r) => ({ ...clone(r), authorName: users.get(r.userId)?.name ?? '' }));
+      },
+      async get(id) { const r = reviews.find((x) => x.id === id); return r ? clone(r) : null; },
+      async upsert(userId, { kind, listingId, rating, body }) {
+        let r = reviews.find((x) => x.userId === userId && x.kind === kind && x.listingId === listingId);
+        if (r) Object.assign(r, { rating, body, updatedAt: now() });
+        else { r = { id: randomUUID(), userId, kind, listingId, rating, body, status: 'visible', createdAt: now(), updatedAt: now() }; reviews.push(r); }
+        return clone(r);
+      },
+      async remove(userId, id) { const i = reviews.findIndex((r) => r.id === id && r.userId === userId); if (i < 0) return false; reviews.splice(i, 1); return true; },
+      async report(userId, id, hideAt) {
+        const r = reviews.find((x) => x.id === id);
+        if (!r) return null;
+        if (!reports.some((x) => x.reviewId === id && x.userId === userId)) reports.push({ reviewId: id, userId });
+        if (reports.filter((x) => x.reviewId === id).length >= hideAt) r.status = 'hidden';
+        return { hidden: r.status === 'hidden' };
+      },
     },
 
     listings: {

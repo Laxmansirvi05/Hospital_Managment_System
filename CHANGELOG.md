@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Owner answers, reviews, account deletion, Vercel project
+
+- Decided D-42 (search needs sign-in), D-43 (CareRoute reviews plus platform rating), D-44 (upload limits stand; crew sees reports once a booking is confirmed), D-45 (account deletion deletes everything), D-46 (gather data from as many sources as possible; prices only), D-47 (free AI plans with fallback), D-48 (no landing page for now). Proposed P-28 (review rules) and P-29 (collection rules). Closed Q-11, Q-17, Q-24, Q-25, Q-27; narrowed Q-10 and Q-28.
+- Built: reviews on hospital, doctor, pharmacy and diagnostic centre pages beside the platform rating (migration `20261025000500`, applied to careroute-dev); Account and privacy page with password change, sign out of other devices and account deletion. 55 tests pass against the in-memory store. Review posting and account deletion checked in the browser.
+- Vercel: created project `careroute` in team `laxman-sirvi-s-projects` with the CLI and linked this folder. `vercel.json` now sets output `public`, region `bom1`, no build step. Connecting the GitHub repository failed: the Vercel account needs a GitHub login connection first (owner task). The CLI added `.env*` to `.gitignore`, which would also hide `.env.example`; reverted.
+
+
 ### Security review fixes
 
 The security agent reviewed the patient-side build: no critical or high issues, five medium, two low. Fixed:

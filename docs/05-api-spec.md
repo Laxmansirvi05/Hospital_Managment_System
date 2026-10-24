@@ -205,3 +205,15 @@ Implemented on branch `wp-0/foundation`. Not in the Postman collection yet; add 
 | GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
 
 Section 8 (reports) is built with `kind` values `lab`, `prescription`, `scan`, `discharge`, `insurance`, `other`, and limits PDF, JPEG or PNG up to 10 MB (PROPOSED until Q-11).
+
+### Added later on 2026-10-25 (D-43, D-45)
+
+| Method and path | Role | Purpose |
+| --- | --- | --- |
+| POST `/auth/password` | any role | `currentPassword`, `newPassword`. 204. Ends every other session. |
+| POST `/auth/sessions/revoke-others` | any role | Sign out on all other devices. 204. |
+| POST `/patients/me/delete-account` | patient | `password`, `confirm: "DELETE"`. Removes stored files, then the account and all its data (D-45). 204, cookies cleared. 502 `delete_incomplete` if storage fails, in which case nothing is deleted. |
+| GET `/reviews?kind=&id=` | signed in | `kind` is `hospital`, `doctor`, `pharmacy` or `diagnostic_centre`. Returns `{ summary: { average, count }, reviews: [{ id, rating, body, author, updatedAt, mine }] }`. `author` is a first name only. |
+| PUT `/reviews` | patient | `kind`, `id`, `rating` 1 to 5, `body` up to 1,000 characters. Creates or updates the caller's one review for that listing. |
+| DELETE `/reviews/{id}` | patient | Own review only. 204. |
+| POST `/reviews/{id}/report` | patient | Not your own. Three reports from different patients hide it until an admin checks (P-28). 204. |

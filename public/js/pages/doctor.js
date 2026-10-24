@@ -1,11 +1,12 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { pageHead, ratingBlock, extLink, telHref, source, leaveNote } from '../ui.js';
+import { pageHead, extLink, telHref, source, leaveNote } from '../ui.js';
 import { idParam, notFoundPage } from '../details.js';
+import { reviewsSection } from '../reviews.js';
 import { km } from '../format.js';
 
-const { main } = await shell({ nav: 'hospitals', title: 'Doctor' });
+const { main, user } = await shell({ nav: 'hospitals', title: 'Doctor' });
 
 try {
   const d = await api(`/doctors/${encodeURIComponent(idParam())}`);
@@ -31,7 +32,7 @@ try {
           h('p', { class: 't-title-3' }, d.publishedTimings || 'Not published'),
           h('p', { class: 'notice notice-neutral' }, icon('info', 18), h('span', {}, 'Published timings. Call the hospital or clinic to confirm and to book. CareRoute does not show live availability or book appointments.')),
           h('a', { class: 'btn btn-secondary', href: `/appointments/?doctor=${encodeURIComponent(d.name)}&place=${encodeURIComponent(d.place.name)}&speciality=${encodeURIComponent(d.specialization)}#new` }, icon('calendar', 18), 'Log an appointment you booked')),
-        d.rating !== null ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Rating'), ratingBlock(d)) : null),
+        reviewsSection({ kind: 'doctor', id: d.id, listing: d, canWrite: user.role === 'patient' })),
       h('div', { class: 'stack-16' },
         h('section', { class: 'card card-raised stack-16' },
           h('h2', { class: 't-title-3' }, 'Contact'),

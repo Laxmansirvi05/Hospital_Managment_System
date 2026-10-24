@@ -116,6 +116,9 @@ export function createPostgresStore(url) {
       async byEmail(email) { return userRow((await sql`select * from public.users where email = ${email}`)[0]) || null; },
       async byId(id) { return userRow((await sql`select * from public.users where id = ${id}`)[0]) || null; },
       async list() { return (await sql`select * from public.users order by created_at`).map(userRow); },
+      async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, updated_at = now() where id = ${id}`; },
+      // D-45: every patient table references users with on delete cascade.
+      async remove(id) { await sql`delete from public.users where id = ${id}`; },
       async setDisabled(id, disabled) {
         return userRow((await sql`update public.users set disabled_at = ${disabled ? sql`now()` : null}, updated_at = now() where id = ${id} returning *`)[0]) || null;
       },
@@ -132,6 +135,7 @@ export function createPostgresStore(url) {
           where id = ${id} and refresh_hash = ${previousRefreshHash} and revoked_at is null returning *`;
         return sessionRow(rows[0]) || null;
       },
+      async revokeOthers(userId, keepId) { await sql`update public.sessions set revoked_at = now(), revoked_reason = 'logout' where user_id = ${userId} and id <> ${keepId} and revoked_at is null`; },
       async revoke(id, reason) { await sql`update public.sessions set revoked_at = now(), revoked_reason = ${reason} where id = ${id} and revoked_at is null`; },
     },
 
@@ -216,6 +220,7 @@ export function createPostgresStore(url) {
         return fileRow(r);
       },
       async get(userId, id) { return fileRow((await sql`select * from public.patient_files where id = ${id} and user_id = ${userId}`)[0]) || null; },
+      async all(userId) { return (await sql`select * from public.patient_files where user_id = ${userId}`).map(fileRow); },
       async pendingCount(userId) {
         const [r] = await sql`select count(*)::int as n from public.patient_files where user_id = ${userId} and status = 'pending' and created_at > now() - interval '1 hour'`;
         return r.n;
@@ -223,6 +228,34 @@ export function createPostgresStore(url) {
       async markReady(userId, id) { return fileRow((await sql`update public.patient_files set status = 'ready', updated_at = now() where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },
       async list(userId, purpose) { return (await sql`select * from public.patient_files where user_id = ${userId} and purpose = ${purpose} and status = 'ready' order by created_at desc`).map(fileRow); },
       async remove(userId, id) { return fileRow((await sql`delete from public.patient_files where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },
+    },
+
+    reviews: {
+      async list(kind, listingId) {
+        const rows = await sql`select r.*, u.name as author_name from public.reviews r join public.users u on u.id = r.user_id
+          where r.listing_kind = ${kind} and r.listing_id = ${listingId} and r.status = 'visible' order by r.updated_at desc limit 200`;
+        return rows.map((r) => ({ id: r.id, userId: r.user_id, kind: r.listing_kind, listingId: r.listing_id, rating: r.rating, body: r.body, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, authorName: r.author_name }));
+      },
+      async get(id) {
+        const [r] = await sql`select * from public.reviews where id = ${id}`;
+        return r ? { id: r.id, userId: r.user_id, kind: r.listing_kind, listingId: r.listing_id, rating: r.rating, body: r.body, status: r.status } : null;
+      },
+      async upsert(userId, { kind, listingId, rating, body }) {
+        const [r] = await sql`insert into public.reviews (user_id, listing_kind, listing_id, rating, body) values (${userId}, ${kind}, ${listingId}, ${rating}, ${body})
+          on conflict (user_id, listing_kind, listing_id) do update set rating = excluded.rating, body = excluded.body, updated_at = now() returning *`;
+        return { id: r.id, userId: r.user_id, kind: r.listing_kind, listingId: r.listing_id, rating: r.rating, body: r.body, status: r.status, createdAt: r.created_at, updatedAt: r.updated_at };
+      },
+      async remove(userId, id) { return (await sql`delete from public.reviews where id = ${id} and user_id = ${userId}`).count > 0; },
+      async report(userId, id, hideAt) {
+        return sql.begin(async (tx) => {
+          const [r] = await tx`select id from public.reviews where id = ${id} for update`;
+          if (!r) return null;
+          await tx`insert into public.review_reports (review_id, user_id) values (${id}, ${userId}) on conflict do nothing`;
+          const [{ n }] = await tx`select count(*)::int as n from public.review_reports where review_id = ${id}`;
+          if (n >= hideAt) await tx`update public.reviews set status = 'hidden', updated_at = now() where id = ${id}`;
+          return { hidden: n >= hideAt };
+        });
+      },
     },
 
     listings: {

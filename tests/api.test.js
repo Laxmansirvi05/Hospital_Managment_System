@@ -297,3 +297,72 @@ describe('security review fixes (2026-10-25)', () => {
     expect(last.status).toBe(429);
   });
 });
+
+describe('account settings (D-45)', () => {
+  it('changes the password and ends the other sessions', async () => {
+    const u = await app.user();
+    const other = await app.api('/auth/login', { body: { email: u.email, password: 'correct horse' } });
+    expect((await app.api('/auth/password', { token: u.token, body: { currentPassword: 'wrong one', newPassword: 'new horse 123' } })).status).toBe(401);
+    expect((await app.api('/auth/password', { token: u.token, body: { currentPassword: 'correct horse', newPassword: 'new horse 123' } })).status).toBe(204);
+    expect((await app.api('/auth/me', { token: other.body.token })).status).toBe(401);
+    expect((await app.api('/auth/me', { token: u.token })).status).toBe(200);
+    expect((await app.api('/auth/login', { body: { email: u.email, password: 'new horse 123' } })).status).toBe(200);
+  });
+
+  it('deletes the account and every piece of the patient’s data', async () => {
+    const u = await app.user();
+    await app.api('/patients/me/medical-id', { method: 'PUT', token: u.token, body: { bloodGroup: 'O+' } });
+    await app.api('/patients/me/contacts', { token: u.token, body: { name: 'K', phone: '9876533333', relation: 'Friend' } });
+    await app.api('/patients/me/reminders', { token: u.token, body: { medicineName: 'X', dose: '1', times: ['08:00'], startDate: '2026-10-01' } });
+    await app.api('/reviews', { method: 'PUT', token: u.token, body: { kind: 'hospital', id: '0b9c1d2e-0000-4000-8000-000000000001', rating: 4, body: 'Clean and quick.' } });
+    expect((await app.api('/patients/me/delete-account', { token: u.token, body: { password: 'correct horse', confirm: 'nope' } })).status).toBe(422);
+    expect((await app.api('/patients/me/delete-account', { token: u.token, body: { password: 'wrong pass', confirm: 'DELETE' } })).status).toBe(401);
+    const del = await app.api('/patients/me/delete-account', { token: u.token, body: { password: 'correct horse', confirm: 'DELETE' } });
+    expect(del.status).toBe(204);
+    expect((await app.api('/auth/me', { token: u.token })).status).toBe(401);
+    expect((await app.api('/auth/login', { body: { email: u.email, password: 'correct horse' } })).status).toBe(401);
+    expect(await app.store.profiles.get(u.id)).toBeNull();
+    expect(await app.store.contacts.list(u.id)).toEqual([]);
+    expect(await app.store.reminders.list(u.id)).toEqual([]);
+    const other = await app.user();
+    expect((await app.api('/reviews?kind=hospital&id=0b9c1d2e-0000-4000-8000-000000000001', { token: other.token })).body.reviews.some((r) => r.author.startsWith('patient'))).toBe(false);
+  });
+});
+
+describe('reviews (D-43)', () => {
+  const H = '0b9c1d2e-0000-4000-8000-000000000002';
+  it('keeps one review per patient per listing, shows first names only, and averages', async () => {
+    const a = await app.user();
+    const b = await app.user();
+    await app.api('/reviews', { method: 'PUT', token: a.token, body: { kind: 'hospital', id: H, rating: 5, body: 'Kind staff.' } });
+    await app.api('/reviews', { method: 'PUT', token: a.token, body: { kind: 'hospital', id: H, rating: 3, body: 'Long wait this time.' } });
+    await app.api('/reviews', { method: 'PUT', token: b.token, body: { kind: 'hospital', id: H, rating: 5 } });
+    const r = await app.api(`/reviews?kind=hospital&id=${H}`, { token: a.token });
+    expect(r.body.summary).toEqual({ average: 4, count: 2 });
+    expect(r.body.reviews.filter((x) => x.mine)).toHaveLength(1);
+    expect(r.body.reviews.every((x) => !x.author.includes(' '))).toBe(true);
+    expect(JSON.stringify(r.body)).not.toContain('@test.example');
+  });
+
+  it('refuses unknown listings, bad ratings and deleting someone else’s review', async () => {
+    const a = await app.user();
+    const b = await app.user();
+    expect((await app.api('/reviews', { method: 'PUT', token: a.token, body: { kind: 'hospital', id: '00000000-0000-4000-8000-000000000000', rating: 4 } })).status).toBe(422);
+    expect((await app.api('/reviews', { method: 'PUT', token: a.token, body: { kind: 'hospital', id: H, rating: 6 } })).status).toBe(422);
+    const mine = await app.api('/reviews', { method: 'PUT', token: a.token, body: { kind: 'pharmacy', id: '2d7e3f40-0000-4000-8000-000000000001', rating: 4 } });
+    expect((await app.api(`/reviews/${mine.body.id}`, { method: 'DELETE', token: b.token })).status).toBe(404);
+    expect((await app.api(`/reviews/${mine.body.id}`, { method: 'DELETE', token: a.token })).status).toBe(204);
+  });
+
+  it('hides a review after three different patients report it', async () => {
+    const author = await app.user();
+    const r = await app.api('/reviews', { method: 'PUT', token: author.token, body: { kind: 'doctor', id: '1c8d2e3f-0000-4000-8000-000000000001', rating: 1, body: 'Spam text' } });
+    expect((await app.api(`/reviews/${r.body.id}/report`, { method: 'POST', token: author.token })).status).toBe(422);
+    for (let i = 0; i < 3; i++) {
+      const rep = await app.user();
+      expect((await app.api(`/reviews/${r.body.id}/report`, { method: 'POST', token: rep.token })).status).toBe(204);
+    }
+    const list = await app.api('/reviews?kind=doctor&id=1c8d2e3f-0000-4000-8000-000000000001', { token: author.token });
+    expect(list.body.reviews.some((x) => x.id === r.body.id)).toBe(false);
+  });
+});

@@ -404,6 +404,7 @@ dialog.sheet[open] {
 .form-grid {
   display: grid;
   gap: var(--space-16);
+  align-items: start;
 }
 
 @media (min-width: 640px) {
@@ -671,4 +672,81 @@ dialog.sheet[open] {
     height: 64px;
     font-size: var(--fs-title-3);
   }
+}
+
+/* Reviews (D-43) */
+.rating-pair {
+  display: grid;
+  gap: var(--space-24);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+@media (min-width: 640px) {
+  .rating-pair { grid-template-columns: 1fr 1fr; }
+}
+
+.stars {
+  display: inline-flex;
+  gap: var(--space-4);
+  color: var(--border);
+}
+
+.stars .on {
+  color: var(--warning);
+}
+
+.star-picker {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.star-picker button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--border);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-enter), color var(--dur-press) linear;
+}
+
+.star-picker button.on {
+  color: var(--warning);
+}
+
+.star-picker button:active {
+  transform: scale(0.9);
+}
+
+.review-form {
+  padding: var(--space-16);
+  border-radius: var(--radius-l);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+}
+
+.review {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-16) 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.review:last-child {
+  border-bottom: 0;
+}
+
+.avatar-s {
+  width: 32px;
+  height: 32px;
+  font-size: var(--fs-footnote);
+  box-shadow: none;
+}
+
+.danger-zone {
+  border-color: var(--danger-tint);
 }
