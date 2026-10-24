@@ -4,6 +4,11 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Vercel preview working
+
+- Two deploy bugs found on the first Vercel preview, both invisible locally. `trailingSlash: true` redirected every API call to a path with a slash, which then returned Vercel's 404. The `/api/v1/:path*` rewrite added `?path=...` to the URL, which the strict search schemas rejected with 422. Fixed by removing `trailingSlash` (all page links are absolute) and dropping the `path` param in `api/v1/[...path].js`. One unit test added; 59 tests pass.
+- Live check on a preview deployment against careroute-dev passed 16 of 16: pages, health, register, me, refresh, dashboard, all six searches, account deletion, then 401. SQL confirmed no test users or sessions left.
+
 ### Verified on the real database
 
 - `.env.local` now points at careroute-dev (Postgres through the transaction pooler, Supabase Storage with the new `sb_secret_` key). The owner's keys had first been typed into the tracked `.env.example`; they were moved to `.env.local` before anything was committed, and `.env.example` was restored.

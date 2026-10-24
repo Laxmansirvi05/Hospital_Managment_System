@@ -6,9 +6,24 @@ import { prewarm } from '../../server/auth/crypto.js';
 
 const warm = prewarm();
 
+/**
+ * The vercel.json rewrite copies the matched path into the query string as `path`. The router
+ * reads the path from the URL itself, and the strict query schemas would reject the extra key.
+ */
+export function dropRewriteParam(url) {
+  const q = url.indexOf('?');
+  if (q === -1) return url;
+  const params = new URLSearchParams(url.slice(q + 1));
+  if (!params.has('path')) return url;
+  params.delete('path');
+  const rest = params.toString();
+  return url.slice(0, q) + (rest ? `?${rest}` : '');
+}
+
 export default async function handler(req, res) {
   getConfig();
   await initStore();
   await warm;
+  req.url = dropRewriteParam(req.url);
   return handle(req, res);
 }

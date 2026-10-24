@@ -5,6 +5,7 @@ import { buildTable, TABLE } from '../server/router.js';
 import { dosesFor } from '../server/db/geo.js';
 import { sniffOk } from '../server/adapters/storage.js';
 import { scrub } from '../server/log.js';
+import { dropRewriteParam } from '../api/v1/[...path].js';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -135,5 +136,14 @@ describe('Vercel environments (D-21)', () => {
   });
   it('requires real configuration on a preview, so it never falls back to memory', () => {
     expect(() => loadConfig({ NODE_ENV: 'production', VERCEL_ENV: 'preview' })).toThrow(/DATABASE_URL/);
+  });
+});
+
+describe('Vercel entry point', () => {
+  it('drops the path param the rewrite adds and keeps the real query', () => {
+    expect(dropRewriteParam('/api/v1/hospitals?q=care&path=hospitals')).toBe('/api/v1/hospitals?q=care');
+    expect(dropRewriteParam('/api/v1/health?path=health')).toBe('/api/v1/health');
+    expect(dropRewriteParam('/api/v1/areas')).toBe('/api/v1/areas');
+    expect(dropRewriteParam('/api/v1/medicines?q=para')).toBe('/api/v1/medicines?q=para');
   });
 });
