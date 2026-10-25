@@ -274,6 +274,20 @@ export function createPostgresStore(url) {
         const bySpeciality = await sql`select specialization as key, count(*)::int as n from public.doctors where active group by 1 order by 2 desc, 1 limit 12`;
         const bySource = await sql`select source_platform as key, count(*)::int as n from public.doctors where active group by 1 order by 2 desc`;
         const byChain = await sql`select coalesce(chain, 'Independent') as key, count(*)::int as n from public.pharmacies where active group by 1 order by 2 desc`;
+        const byMedicineGroup = await sql`select category as key, count(*)::int as n from public.medicines where active and category is not null group by 1 order by 2 desc, 1 limit 10`;
+        const [medTotals] = await sql`select count(*)::int as n from public.medicines where active`;
+        // Common tests patients ask about, cheapest published price for each.
+        const tests = await sql`select distinct on (key) key, price_inr::float as price from (
+            select case when name ilike '%complete blood%' then 'Complete blood count'
+                        when name ilike '%thyroid profile%' or name ilike '%tft%' then 'Thyroid profile'
+                        when name ilike '%hba1c%' or name ilike '%glycosylated%' then 'HbA1c (diabetes)'
+                        when name ilike '%lipid profile%' then 'Lipid profile'
+                        when name ilike '%vitamin d%' then 'Vitamin D'
+                        when name ilike '%vitamin b12%' then 'Vitamin B12'
+                        when name ilike '%liver function%' then 'Liver function'
+                        when name ilike '%kidney function%' or name ilike '%renal function%' then 'Kidney function'
+                   end as key, price_inr from public.test_prices where active) t
+          where key is not null order by key, price`;
         const [fees] = await sql`select count(*)::int as n, min(consultation_fee_inr)::float as min,
           percentile_cont(0.5) within group (order by consultation_fee_inr)::float as median, max(consultation_fee_inr)::float as max
           from public.doctors where active and consultation_fee_inr is not null`;
@@ -285,6 +299,7 @@ export function createPostgresStore(url) {
         return {
           totals: { carePlaces: totals.care_places, doctors: totals.doctors, pharmacies: totals.pharmacies, diagnosticCentres: totals.diagnostic_centres, doctorsWithPhoto: totals.doctors_with_photo, emergency: totals.emergency },
           byType: pairs(byType), byArea: pairs(byArea), bySpeciality: pairs(bySpeciality), bySource: pairs(bySource), byChain: pairs(byChain),
+          medicines: medTotals.n, byMedicineGroup: pairs(byMedicineGroup), commonTests: tests.map((t) => ({ key: t.key, price: t.price })),
           fees: fees.n ? { count: fees.n, min: fees.min, median: fees.median, max: fees.max } : null,
           points: points.map((p) => ({ kind: p.k, type: p.t, lat: p.lat, lng: p.lng })),
         };

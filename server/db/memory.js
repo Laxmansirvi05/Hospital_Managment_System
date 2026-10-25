@@ -197,6 +197,7 @@ export function createMemoryStore() {
           totals: { carePlaces: hospitals.length, doctors: docs.length, pharmacies: PHARMACIES.length, diagnosticCentres: DIAGNOSTICS.length, doctorsWithPhoto: docs.filter((d) => d.photoUrl).length, emergency: hospitals.filter((h) => h.emergencyAvailable === true).length },
           byType: count(hospitals, (h) => h.facilityType ?? 'hospital'), byArea: count(hospitals, (h) => h.area).slice(0, 12),
           bySpeciality: count(docs, (d) => d.specialization).slice(0, 12), bySource: count(docs, (d) => d.sourcePlatform), byChain: count(PHARMACIES, (p) => p.chain ?? 'Independent'),
+          medicines: MEDICINES.length, byMedicineGroup: count(MEDICINES.filter((x) => x.category), (x) => x.category).slice(0, 10), commonTests: [],
           fees: fees.length ? { count: fees.length, min: fees[0], median: fees[Math.floor(fees.length / 2)], max: fees.at(-1) } : null,
           points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...PHARMACIES.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...DIAGNOSTICS.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
         };

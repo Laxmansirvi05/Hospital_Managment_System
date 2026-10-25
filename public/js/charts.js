@@ -42,7 +42,7 @@ export function bars3d({ items, max, height = 220, title }) {
 /**
  * Ranked horizontal bars in HTML, one hue for magnitude, each value labelled at the bar end.
  * Rows are links when `href` is given, so a bar opens the matching search.
- * @param {{ items: { label: string, value: number, href?: string, hint?: string }[], title: string, unit?: string }} o
+ * @param {{ items: { label: string, value: number, display?: string, href?: string, hint?: string }[], title: string, unit?: string }} o
  */
 export function hbars({ items, title, unit = '' }) {
   const top = Math.max(1, ...items.map((i) => i.value));
@@ -51,7 +51,7 @@ export function hbars({ items, title, unit = '' }) {
       const body = [
         h('span', { class: 'hbars-label' }, i.label),
         h('span', { class: 'hbars-track' }, h('span', { class: 'hbars-bar', style: `width:${Math.max(2, (i.value / top) * 100).toFixed(1)}%` })),
-        h('span', { class: 'hbars-value num' }, `${i.value.toLocaleString('en-IN')}${unit}`),
+        h('span', { class: 'hbars-value num' }, i.display ?? `${i.value.toLocaleString('en-IN')}${unit}`),
       ];
       const tip = i.hint || `${i.label}: ${i.value.toLocaleString('en-IN')}${unit}`;
       return h('li', {}, i.href ? h('a', { class: 'hbars-row', href: i.href, title: tip }, body) : h('span', { class: 'hbars-row', title: tip }, body));
