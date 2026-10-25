@@ -58,6 +58,7 @@ const ICONS = {
   report: [['path', { d: 'M7 3h7l5 5v13H7z' }], ['path', { d: 'M14 3v5h5' }], ['path', { d: 'M10 13h6M10 17h4' }]],
   idcard: [['rect', { x: 3, y: 5, width: 18, height: 14, rx: 2 }], ['circle', { cx: 9, cy: 11, r: 2 }], ['path', { d: 'M6 16c.8-1.4 1.8-2 3-2s2.2.6 3 2' }], ['path', { d: 'M14.5 10h4M14.5 14h4' }]],
   clock: [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M12 7v5l3 2' }]],
+  gear: [['circle', { cx: 12, cy: 12, r: 3 }], ['circle', { cx: 12, cy: 12, r: 7 }], ['path', { d: 'M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1' }]],
   ambulance: [['path', { d: 'M2 17V6h11v11' }], ['path', { d: 'M13 9h4.5l3.5 3.5V17h-8' }], ['circle', { cx: 6.5, cy: 17.5, r: 2 }], ['circle', { cx: 17, cy: 17.5, r: 2 }], ['path', { d: 'M7.5 8.5v5M5 11h5' }]],
   hospital: [['path', { d: 'M4 21V5h16v16' }], ['path', { d: 'M2 21h20' }], ['path', { d: 'M12 8v6M9 11h6' }], ['path', { d: 'M10 21v-3h4v3' }]],
   doctor: [['path', { d: 'M6 3v6a4 4 0 0 0 8 0V3' }], ['path', { d: 'M10 13v2.5a5 5 0 0 0 10 0V14' }], ['circle', { cx: 20, cy: 12, r: 2 }]],

@@ -28,13 +28,13 @@ const NAV = [
   {
     group: 'You',
     items: [
-      { id: 'settings', href: '/settings/', label: 'Settings', icon: 'filter' },
+      { id: 'settings', href: '/settings/', label: 'Settings', icon: 'gear' },
       { id: 'account', href: '/account/', label: 'Account and privacy', icon: 'shield' },
     ],
   },
 ];
 
-// The larger text setting is per device (Settings page). Applied before anything draws.
+// The larger text setting is per device (Settings page). Applied as soon as this module runs.
 export const TEXT_LARGE_KEY = 'careroute.textLarge';
 try {
   if (localStorage.getItem(TEXT_LARGE_KEY) === '1') document.documentElement.classList.add('text-large');
@@ -114,7 +114,7 @@ export async function shell({ nav, title }) {
     h('a', { class: 'brand', href: '/' }, brandMark(), h('span', { class: 'brand-name' }, 'CareRoute')),
     h('div', { class: 'row-8' },
       isPatient ? h('a', { class: 'btn btn-danger btn-sm', href: '/sos/' }, icon('ambulance', 18), 'SOS') : null,
-      h('a', { class: 'icon-btn', href: '/settings/', 'aria-label': 'Settings' }, icon('filter', 20)),
+      h('a', { class: 'icon-btn', href: '/settings/', 'aria-label': 'Settings' }, icon('gear', 20)),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Sign out', onclick: signOut }, icon('logout', 20))),
   );
 

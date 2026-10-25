@@ -125,7 +125,7 @@ export async function searchPage({ main, title, sub, tabs, art }) {
     const go = (n) => { update({ page: n === 1 ? '' : String(n) }); results.scrollIntoView({ block: 'start' }); };
     const pager = page > 1 || hasNext ? h('nav', { class: 'pager', 'aria-label': 'Pages' },
       h('button', { class: 'btn btn-secondary', type: 'button', disabled: page === 1, onclick: () => go(page - 1) }, icon('back', 18), 'Previous'),
-      h('span', { class: 't-subhead muted', 'aria-current': 'page' }, `Page ${page} of ${pages}`),
+      h('span', { class: 't-subhead muted' }, `Page ${page} of ${pages}`),
       h('button', { class: 'btn btn-secondary', type: 'button', disabled: !hasNext, onclick: () => go(page + 1) }, 'Next', icon('chevron', 18))) : null;
     results.replaceChildren(...[
       h('div', { class: 'spread' },

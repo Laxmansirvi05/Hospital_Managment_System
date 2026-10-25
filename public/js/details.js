@@ -16,7 +16,8 @@ export function notFoundPage(main, backHref, backLabel) {
 export function contactCard(x, extra = []) {
   return h('section', { class: 'card card-raised stack-16', 'aria-labelledby': 'contact-h' },
     h('h2', { class: 't-title-3', id: 'contact-h' }, 'Contact and location'),
-    x.phone ? h('a', { class: 'btn btn-primary btn-block', href: telHref(x.phone) }, icon('phone', 18), `Call ${x.phone}`)
+    // The primary Call sits under the title (quickActions); here it is secondary, one primary per screen.
+    x.phone ? h('a', { class: 'btn btn-secondary btn-block', href: telHref(x.phone) }, icon('phone', 18), `Call ${x.phone}`)
       : h('p', { class: 't-subhead muted' }, 'No phone number is listed for this place. Use the directions below, or check its official website if it has one.'),
     h('dl', { class: 'facts' },
       h('div', {}, h('dt', {}, 'Address'), h('dd', {}, x.address)),
@@ -35,8 +36,9 @@ export function contactCard(x, extra = []) {
 /** Call, directions and website as pills under the title, so they are reachable without scrolling. */
 export function quickActions(x) {
   const web = x.website && /^https?:\/\//i.test(x.website) ? x.website : null;
+  if (!x.phone && !x.location && !web) return null;
   return h('div', { class: 'quick-actions' },
     x.phone ? h('a', { class: 'btn btn-primary', href: telHref(x.phone) }, icon('phone', 18), 'Call') : null,
-    x.location ? h('a', { class: 'btn btn-secondary', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Directions to ${x.name} in Google Maps, opens in a new tab` }, icon('route', 18), 'Directions') : null,
-    web ? h('a', { class: 'btn btn-secondary', href: web, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${x.name} website, opens in a new tab` }, icon('globe', 18), 'Website') : null);
+    x.location ? h('a', { class: 'btn btn-secondary', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Directions to ${x.name} in Google Maps, opens in a new tab` }, icon('route', 18), 'Directions', icon('external', 16)) : null,
+    web ? h('a', { class: 'btn btn-secondary', href: web, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Website of ${x.name}, opens in a new tab` }, icon('globe', 18), 'Website', icon('external', 16)) : null);
 }

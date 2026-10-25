@@ -11,8 +11,8 @@ const section = (title, sub, ...rows) => h('section', { class: 'card stack-8' },
   h('div', { class: 'stack-4' }, h('h2', { class: 't-title-3' }, title), sub ? h('p', { class: 't-footnote muted' }, sub) : null),
   h('div', {}, rows));
 
-const row = (label, hint, control) => h('div', { class: 'setting-row' },
-  h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, label), hint ? h('span', { class: 't-footnote muted' }, hint) : null),
+const row = (label, hint, control, id) => h('div', { class: 'setting-row' },
+  h('div', { class: 'stack-4' }, h('span', { class: 't-headline', id }, label), hint ? h('span', { class: 't-footnote muted', id: id ? `${id}-hint` : undefined }, hint) : null),
   control);
 
 const linkRow = (label, hint, href) => h('a', { class: 'setting-row setting-link', href },
@@ -21,7 +21,7 @@ const linkRow = (label, hint, href) => h('a', { class: 'setting-row setting-link
 
 function textSizeSwitch() {
   let on = document.documentElement.classList.contains('text-large');
-  const sw = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(on), 'aria-label': 'Larger text' });
+  const sw = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(on), 'aria-labelledby': 'larger-text', 'aria-describedby': 'larger-text-hint' });
   sw.addEventListener('click', () => {
     on = !on;
     sw.setAttribute('aria-checked', String(on));
@@ -39,7 +39,7 @@ function locationControls() {
   const label = h('span', { class: 't-footnote muted' });
   const draw = () => { label.textContent = `Distances are measured from ${getOrigin().label || 'your location'}.`; };
   draw();
-  const use = h('button', { class: 'btn btn-secondary btn-sm', type: 'button' }, icon('locate', 16), 'Use my location');
+  const use = h('button', { class: 'btn btn-secondary', type: 'button' }, icon('locate', 16), 'Use my location');
   use.addEventListener('click', async () => {
     try {
       await locateMe();
@@ -49,7 +49,7 @@ function locationControls() {
       toast(err.message);
     }
   });
-  const reset = h('button', { class: 'btn btn-text btn-sm', type: 'button' }, `Reset to ${DEFAULT_ORIGIN.label}`);
+  const reset = h('button', { class: 'btn btn-text', type: 'button' }, `Reset to ${DEFAULT_ORIGIN.label}`);
   reset.addEventListener('click', () => {
     try {
       sessionStorage.removeItem('careroute.origin');
@@ -70,7 +70,7 @@ function notificationControl() {
     unsupported: 'This browser cannot show notifications. Due doses still appear on the dashboard.',
   };
   const hint = h('span', { class: 't-footnote muted' }, words[state] || words.default);
-  const btn = state === 'default' ? h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, 'Turn on') : null;
+  const btn = state === 'default' ? h('button', { class: 'btn btn-primary', type: 'button' }, 'Turn on') : null;
   btn?.addEventListener('click', async () => {
     const result = await askForNotifications();
     hint.textContent = words[result] || words.default;
@@ -86,7 +86,7 @@ main.replaceChildren(h('div', { class: 'page' },
   pageHead({ art: 'settings', title: 'Settings', sub: 'Choices for this device. Your account, password and data are on the Account and privacy page.' }),
   h('div', { class: 'settings-grid' },
     section('Display', 'Saved in this browser.',
-      row('Larger text', 'Makes all text about 12 percent bigger on every page.', textSizeSwitch())),
+      row('Larger text', 'Makes text about 12 percent bigger on every signed-in page.', textSizeSwitch(), 'larger-text')),
     section('Location', 'Used only to sort results by distance. It is not stored on our servers.',
       h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Starting point'), loc.label), loc.control)),
     section('Medicine reminders', null,

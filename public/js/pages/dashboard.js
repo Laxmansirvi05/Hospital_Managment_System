@@ -50,7 +50,7 @@ function findCare() {
   api('/insights').then((x) => {
     const totals = { ...x.totals, medicines: x.medicines };
     for (const [k, el] of counts) el.textContent = typeof totals[k] === 'number' ? `${totals[k].toLocaleString('en-IN')} listed` : '';
-  }).catch(() => { for (const el of counts.values()) el.textContent = ''; });
+  }).catch(() => { for (const el of counts.values()) el.textContent = 'Count unavailable'; });
   return h('section', { class: 'stack-12', 'aria-labelledby': 'find-h' }, h('h2', { class: 't-title-2', id: 'find-h' }, 'Find care'), grid);
 }
 

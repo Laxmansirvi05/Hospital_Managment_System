@@ -150,7 +150,7 @@ Base unit 4 pixels. Only these steps exist: `4, 8, 12, 16, 20, 24, 32, 40, 48, 6
 - Cards float (D-61, owner 2026-10-26): a solid surface, no border, 28 pixel corners (`--radius-2xl`) and the layered `--shadow-tile`; on hover an interactive card lifts 4 pixels with `--shadow-tile-hover`. No colored edge on any side.
 - Shadows are soft and layered, never glowing. Dark mode shows depth by stepping to a lighter surface, never by glow.
 - 3D objects in page heads and dashboard tiles are isometric blocks with one flat colour per face (`public/js/art3d.js`), so depth reads without gradients.
-- Layout uses the screen: pages grow to 1680 pixels, result lists become two or three columns of tiles on wide screens, and the side column stays in view. The premium layer lives in `public/css/premium.css`, loaded after the other styles on signed-in pages only.
+- Layout uses the screen: pages grow to 1680 pixels, result lists become two or three columns of tiles on wide screens, and the side column stays in view. The premium layer lives in `public/css/premium.css`, loaded after the other styles on signed-in pages, the public Privacy and Terms pages and the 404 page, not on sign-in or sign-up.
 - No blur, no translucency, no frosted panels (section 9).
 
 ## 6. Motion
@@ -197,7 +197,7 @@ Every component is built from tokens and covers default, hover, pressed, focus, 
 | Input | Label above, never placeholder-only. Helper text below. Error text names the problem and the fix. Minimum height 44. |
 | Segmented control | For choices of 2 to 4 options such as ambulance type. |
 | Switch | For consent and sharing, always with a sentence saying what it does. |
-| Card | Flat surface, 1 pixel border, `--radius-l`, standard padding. Status shown inside by label and dot, never by an edge color. |
+| Card | Floating surface, no border, `--radius-2xl` (28), `--shadow-tile`; interactive cards lift on hover (D-61). |
 | List row | Title, optional detail, one trailing value or action. Height at least 44. |
 | Table | Dashboard use. Sticky header, tabular numerals, row height at least 44 for touch, sortable columns announce their sort. |
 | Sheet | Bottom sheet on phones, side panel on desktop. Solid surface. Visible close control. |
