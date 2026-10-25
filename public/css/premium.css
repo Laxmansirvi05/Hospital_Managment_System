@@ -491,3 +491,92 @@ html.text-large {
 .empty {
   padding: var(--space-20) var(--space-16);
 }
+
+/* Public legal pages: a simple bar and one reading column, like Apple's legal pages. */
+.legal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  padding: var(--space-12) var(--space-24);
+  background: var(--bg);
+  box-shadow: 0 1px 0 var(--border-soft);
+}
+
+.legal-bar nav a {
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-full);
+  color: var(--text-1);
+  font-size: var(--fs-subhead);
+}
+
+.legal-bar nav a[aria-current="page"] {
+  background: var(--surface);
+  box-shadow: var(--shadow-tile);
+  font-weight: 600;
+}
+
+.legal-main {
+  padding: var(--space-24) var(--space-16) var(--space-64);
+}
+
+.legal-main .prose {
+  margin: 0 auto;
+  padding: var(--space-32) var(--space-24);
+}
+
+@media (min-width: 1024px) {
+  .legal-main .prose {
+    padding: var(--space-48) var(--space-64);
+  }
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-subhead);
+}
+
+.settings-grid {
+  display: grid;
+  gap: var(--space-16);
+}
+
+@media (min-width: 1024px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.setting-link {
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.setting-link > svg {
+  color: var(--text-2);
+}
+
+@media (hover: hover) {
+  .setting-link:hover {
+    text-decoration: none;
+  }
+
+  .setting-link:hover .t-headline {
+    color: var(--primary);
+  }
+}
+
+.legal-links {
+  display: flex;
+  gap: var(--space-16);
+  padding: 0 var(--space-12);
+  font-size: var(--fs-footnote);
+}
+
+.legal-links a {
+  color: var(--text-2);
+}

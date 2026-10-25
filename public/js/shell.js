@@ -23,10 +23,25 @@ const NAV = [
       { id: 'appointments', href: '/appointments/', label: 'Appointments', icon: 'calendar' },
       { id: 'documents', href: '/documents/', label: 'Documents', icon: 'report' },
       { id: 'medical-id', href: '/medical-id/', label: 'Medical ID', icon: 'idcard' },
+    ],
+  },
+  {
+    group: 'You',
+    items: [
+      { id: 'settings', href: '/settings/', label: 'Settings', icon: 'filter' },
       { id: 'account', href: '/account/', label: 'Account and privacy', icon: 'shield' },
     ],
   },
 ];
+
+// The larger text setting is per device (Settings page). Applied before anything draws.
+export const TEXT_LARGE_KEY = 'careroute.textLarge';
+try {
+  if (localStorage.getItem(TEXT_LARGE_KEY) === '1') document.documentElement.classList.add('text-large');
+} catch (err) {
+  // Storage can be blocked; the page then uses the normal text size.
+  console.debug('text size setting unavailable', err.name);
+}
 
 const TABS = [
   { id: 'dashboard', href: '/', label: 'Home', icon: 'home' },
@@ -87,17 +102,19 @@ export async function shell({ nav, title }) {
     h('nav', { class: 'nav', 'aria-label': 'Main' },
       NAV.map((g) => h('div', { class: 'nav-group' },
         h('span', { class: 'nav-label' }, g.group),
-        g.items.filter((i) => isPatient || ['hospitals', 'medicines', 'diagnostics', 'account'].includes(i.id))
+        g.items.filter((i) => isPatient || ['explore', 'hospitals', 'medicines', 'diagnostics', 'settings', 'account'].includes(i.id))
           .map((i) => h('a', { href: i.href, 'aria-current': i.id === nav ? 'page' : false }, icon(i.icon), i.label))))),
     h('div', { class: 'sidebar-foot' },
       isPatient ? h('a', { class: 'sos-key sos-key-compact', href: '/sos/', style: 'width:100%' }, icon('ambulance', 22), 'Emergency') : null,
-      userCard),
+      userCard,
+      h('nav', { class: 'legal-links', 'aria-label': 'Legal' }, h('a', { href: '/privacy/' }, 'Privacy'), h('a', { href: '/terms/' }, 'Terms'))),
   );
 
   document.getElementById('topbar').replaceChildren(
     h('a', { class: 'brand', href: '/' }, brandMark(), h('span', { class: 'brand-name' }, 'CareRoute')),
     h('div', { class: 'row-8' },
       isPatient ? h('a', { class: 'btn btn-danger btn-sm', href: '/sos/' }, icon('ambulance', 18), 'SOS') : null,
+      h('a', { class: 'icon-btn', href: '/settings/', 'aria-label': 'Settings' }, icon('filter', 20)),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Sign out', onclick: signOut }, icon('logout', 20))),
   );
 
