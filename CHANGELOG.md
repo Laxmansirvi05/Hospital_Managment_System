@@ -4,6 +4,18 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### More sources, photos, prices and Explore
+
+- Decided D-55 (doctor photos, shown from the hospital's own image address), D-56 (doctors and facilities from every site that allows it, facts only), D-57 (booking by the source's call number and booking page), D-58 (no test filter chips on diagnostic search), D-59 (greater Hyderabad, clinics and care place types).
+- Refused, and why: Apollo Hospitals and Medicover return 403 to automated clients; MedPlus blocks non-browser clients; Tata 1mg's terms ban robots; Yashoda's robots.txt disallows doctor pages. P-29 forbids getting around these.
+- Doctors from eight hospital groups' own websites through `scripts/collect-doctors.js` and adapters in `scripts/sources/` (CARE, KIMS JSON API, Rainbow, Continental, Gleneagles, Ankura, Citizens, L V Prasad Eye Institute), with photo, title, speciality, qualifications, experience, languages, timings, consultation fee and booking page where published. Branches are mapped by hand to OpenStreetMap buildings; branches OSM lacks are left out rather than guessed.
+- OpenStreetMap now covers greater Hyderabad (box inside the Outer Ring Road): 1,650 care places typed as hospital, clinic, eye, dental, maternity, nursing home or AYUSH; 244 pharmacies with chain; 56 diagnostic centres.
+- Jan Aushadhi: 2,096 generic medicines with official MRP and therapeutic group from the public Product and MRP list. Prescription need is unknown in that list and is shown as unknown.
+- Vijaya Diagnostic: Hyderabad centres with coordinates, phones and services, and published Hyderabad test prices in the new `test_prices` table.
+- New pages and features: Explore Hyderabad (counts, dot map, ranked charts), doctor profile with photo, fee and book or call panel, hospital doctor lists grouped by speciality, doctor search by language, hospital group and experience, care place type and pharmacy chain filters, test price search, nearest emergency departments on the dashboard.
+- Fixed: patients were signed out every 15 minutes because a dropped access cookie gave "unauthorized", not "token_expired"; hospital doctor lists stopped at 50; Malakpet doctors were once mapped to Nampally by distance (distance matching removed).
+- Migrations `20261025000800` to `20261025001100`, applied to careroute-dev and careroute-prod.
+
 ### Real listing data
 
 - Decided D-50 (OpenStreetMap as the main listing source, ODbL credit), D-51 (a listing may have no phone), D-52 (doctors from hospitals' own websites, within P-29), D-53 (medicine prices from government data through data.gov.in), D-54 (the doctor fields published; was P-30). Closed Q-22. Proposed P-31 (`careroute_import` role for loading production).

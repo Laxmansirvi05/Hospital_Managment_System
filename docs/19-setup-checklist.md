@@ -173,9 +173,14 @@ Run by hand until Q-28 decides where a scheduled job runs. Commands are in `CLAU
 | --- | --- | --- | --- |
 | OpenStreetMap, Overpass API | Hospitals, pharmacies, diagnostic centres inside the Hyderabad administrative area | One request per run, honest user agent. ODbL credit shown on every listing and search page (D-50). | 970 hospitals, 222 pharmacies, 29 diagnostic centres, in 126 suburb areas. About a third of hospitals and almost no pharmacies have a phone (D-51). |
 | CARE Hospitals website | Hyderabad doctor pages from CARE's own `doctors-sitemap.xml` | robots.txt checked before fetching; English pages only (language copies are disallowed); one request every 3 seconds; only the D-54 fields kept. | 331 pages allowed; 329 had doctor details; 297 doctors loaded at four CARE branches (Banjara Hills 144, HITEC City 83, Nampally 50, Musheerabad 20). Doctors at CARE Malakpet (32) are not shown: OpenStreetMap has no CARE Malakpet hospital to attach them to, and guessing by distance put them at the wrong branch. |
+| KIMS Hospitals | Doctors, Hyderabad branches | Its own JSON API (`/api/doctors`, `/api/branches`, `/api/specialities`); robots.txt is `Allow: /*`. | Kompally branch not placed (no OSM building). |
+| Rainbow, Continental, Gleneagles, Ankura, Citizens, L V Prasad | Doctors | Each site's own sitemap; robots.txt checked per request; 3 s between requests to a host. | L V Prasad: Hyderabad campus doctors only, no emails. |
+| Jan Aushadhi (PMBJP) | Generic medicines and MRP | The public Product and MRP list, fetched the way the page fetches it (guest token, one request). | 2,096 priced products. |
+| Vijaya Diagnostic | Centres and Hyderabad test prices | Centre pages' embedded centre list and test pages' schema.org Offer. Google review text in the pages is not kept. | |
+| Apollo Hospitals, Medicover | Not used | 403 to automated clients (checked 2026-10-25). | |
 | Yashoda Hospitals | Not used | robots.txt disallows `/doctors/` (checked 2026-10-25). | |
 | Apollo Hospitals | Not used | Returns 403 to automated clients, even for robots.txt (checked 2026-10-25). P-29 forbids getting around that. | |
-| Jan Aushadhi, NPPA | Not yet | The Jan Aushadhi site has no public download; NPPA did not answer from here. Both are published on data.gov.in, which needs the owner's free API key (D-53). | |
+| NPPA | Not yet | Did not answer from here; also on data.gov.in, which needs the owner's free API key (D-53). | |
 
 Known data quality limits, all from the source:
 
