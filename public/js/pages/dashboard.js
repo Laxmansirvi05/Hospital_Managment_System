@@ -1,12 +1,33 @@
 import { h, s, icon, toast, announce } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { empty } from '../ui.js';
+import { empty, getOrigin, telHref } from '../ui.js';
+import { km } from '../format.js';
 import { greeting, weekday, dateLong, relativeDay, monthShort, dayOfMonth, nowTimeIst, initials, bytes } from '../format.js';
 
 const GENDER = { female: 'Female', male: 'Male', other: 'Other', prefer_not_to_say: 'Prefers not to say' };
 const R = 46;
 const C = 2 * Math.PI * R;
+
+/**
+ * The three nearest hospitals that list an emergency department, from the patient's chosen
+ * location (or the default). Filled in after the page draws, so the dashboard never waits on it.
+ */
+function nearestEmergency() {
+  const box = h('div', { class: 'stack-8' }, h('div', { class: 'skeleton skeleton-row' }));
+  const o = getOrigin();
+  api(`/hospitals/nearby?lat=${o.lat}&lng=${o.lng}&emergencyOnly=true&radiusKm=25&limit=3`).then((r) => {
+    box.replaceChildren(
+      h('p', { class: 't-headline' }, 'Nearest emergency departments'),
+      ...(r.hospitals.length ? r.hospitals.map((x) => h('div', { class: 'spread emergency-row' },
+        h('a', { href: `/hospital/?id=${x.id}`, class: 'stack-4' }, h('span', { class: 't-callout' }, x.name), h('span', { class: 't-footnote muted' }, `${x.area} · ${km(x.distanceKm)}`)),
+        x.phone ? h('a', { class: 'btn btn-secondary btn-sm', href: telHref(x.phone), 'aria-label': `Call ${x.name}` }, icon('phone', 16), 'Call')
+          : h('a', { class: 'btn btn-secondary btn-sm', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer' }, icon('route', 16), 'Directions')))
+        : [h('p', { class: 't-subhead muted' }, 'No hospital near you lists an emergency department. Call 112.')]),
+      h('p', { class: 't-footnote muted' }, `Measured from ${o.label || 'your area'}. Only hospitals whose listing says they have an emergency department are shown.`));
+  }).catch(() => box.replaceChildren(h('p', { class: 't-subhead muted' }, 'Nearby emergency departments could not load. Call 112.')));
+  return box;
+}
 
 const { main, user } = await shell({ nav: 'dashboard', title: 'Dashboard' });
 
@@ -122,7 +143,8 @@ function render(d, photoUrl) {
   const sosCard = h('section', { class: 'card stack-12', 'aria-labelledby': 'sos-h' },
     h('h2', { class: 't-title-3', id: 'sos-h' }, 'In an emergency'),
     h('a', { class: 'sos-key', href: 'tel:112' }, h('span', { class: 'sos-key-title' }, 'Call 112'), h('span', { class: 'sos-key-sub' }, 'National emergency number')),
-    h('p', { class: 't-footnote muted' }, 'Ambulance requests through CareRoute are being built and are not live yet.'));
+    h('p', { class: 't-footnote muted' }, 'Ambulance requests through CareRoute are being built and are not live yet.'),
+    nearestEmergency());
 
   const completeness = p.completeness < 100 ? h('a', { class: 'card card-link stack-12', href: '/medical-id/' },
     h('div', { class: 'spread' },

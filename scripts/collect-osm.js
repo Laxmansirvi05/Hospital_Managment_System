@@ -93,7 +93,8 @@ export function toListings(elements, checkedAt) {
   for (const e of elements) {
     const t = e.tags || {};
     const kind = kindOf(t);
-    const name = clean(t.name || t['name:en']);
+    // Prefer the English name when the main one has no Latin letters, so search by typing works.
+    const name = clean(/[A-Za-z]/.test(t.name || '') ? t.name : t['name:en'] || t.name);
     const lat = e.lat ?? e.center?.lat;
     const lng = e.lon ?? e.center?.lon;
     if (!kind || !name || lat == null) continue;

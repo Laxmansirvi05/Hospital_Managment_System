@@ -808,3 +808,15 @@ dialog.sheet[open] {
     align-items: start;
   }
 }
+
+.emergency-row {
+  gap: var(--space-12);
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.emergency-row a.stack-4 {
+  color: var(--text-1);
+  text-decoration: none;
+  min-width: 0;
+}
