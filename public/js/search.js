@@ -107,11 +107,13 @@ export async function searchPage({ main, title, sub, tabs }) {
     const filtersOn = [...p.keys()].some((k) => k !== 'tab');
     results.replaceChildren(...[
       h('div', { class: 'spread' },
-        h('h2', { class: 't-title-2' }, `${list.length} ${list.length === 1 ? tab.noun : tab.plural || `${tab.noun}s`}`),
+        // A full page means there are more; say "nearest" rather than implying this is all of them.
+        h('h2', { class: 't-title-2' }, list.length >= PAGE ? `The ${PAGE} nearest ${tab.plural || `${tab.noun}s`}` : `${list.length} ${list.length === 1 ? tab.noun : tab.plural || `${tab.noun}s`}`),
         filtersOn ? h('button', { class: 'btn btn-text btn-sm', type: 'button', onclick: () => update({ q: '', area: '', speciality: '', test: '', open24: '', emergency: '', type: '', chain: '', language: '', group: '', sort: '' }) }, 'Clear search') : null),
       q ? h('p', { class: 't-subhead muted' }, `Matching “${q}”${p.get('area') ? ` in ${p.get('area')}` : ''}`) : null,
       list.length ? h('div', { class: 'list' }, list.map(tab.row))
         : empty({ title: `No ${tab.plural || `${tab.noun}s`} found`, text: 'Try a shorter search, another area, or fewer filters.' }),
+      list.length >= PAGE ? h('p', { class: 't-footnote muted' }, 'There are more. Search by name, choose an area or add a filter to see others.') : null,
       osmCredit(list),
     ].filter(Boolean));
     if (tab.pin) {
@@ -129,6 +131,9 @@ export async function searchPage({ main, title, sub, tabs }) {
   draw();
 }
 
+// Results per search; the server allows up to 50.
+const PAGE = 50;
+
 export function chip(label, on, onClick) {
   return h('button', { class: `chip${on ? ' chip-on' : ''}`, type: 'button', 'aria-pressed': String(on), onclick: onClick }, on ? icon('check', 16) : null, label);
 }
@@ -137,6 +142,7 @@ export function chip(label, on, onClick) {
 export function withOrigin(path, params, origin, keys) {
   const q = new URLSearchParams();
   for (const k of keys) if (params.get(k)) q.set(k === 'emergency' ? 'emergencyOnly' : k, params.get(k));
+  q.set('limit', String(PAGE));
   q.set('lat', String(origin.lat));
   q.set('lng', String(origin.lng));
   return `${path}?${q}`;
