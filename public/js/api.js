@@ -1,5 +1,5 @@
 // Fetch wrapper for /api/v1. Cookies carry the session (D-23); writes send the CSRF header.
-// An expired access token is refreshed once, then the request is retried.
+// A missing or expired access token is refreshed once, then the request is retried.
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -36,9 +36,13 @@ export async function api(path, o = {}) {
   } catch {
     throw new ApiError(0, { error: { code: 'offline', message: 'You seem to be offline. Check your connection and try again.' } });
   }
-  if (res.status === 401 && o.retry !== false) {
+  // The access cookie lives 15 minutes, so the browser usually drops it before it can be sent
+  // expired: a plain "unauthorized" is the common case, not "token_expired". Both try the refresh
+  // cookie once. Sign-in, sign-up and refresh itself are never retried, so a wrong password stays wrong.
+  const authCall = /^\/auth\/(login|register|refresh|logout)\b/.test(path);
+  if (res.status === 401 && o.retry !== false && !authCall) {
     const body = await res.clone().json().catch(() => null);
-    if (body?.error?.code === 'token_expired' && (await refresh())) return api(path, { ...o, retry: false });
+    if (['token_expired', 'token_invalid', 'unauthorized'].includes(body?.error?.code) && (await refresh())) return api(path, { ...o, retry: false });
   }
   if (res.status === 204) return null;
   const body = await res.json().catch(() => null);
