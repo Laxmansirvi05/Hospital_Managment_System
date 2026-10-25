@@ -257,6 +257,15 @@ describe('discovery (D-36)', () => {
     expect(Array.isArray(r.body.tests)).toBe(true);
     expect((await app.api(`/test-prices?provider=${'x'.repeat(81)}`, { token: u.token })).status).toBe(422);
   });
+  it('filters doctors by language and group, sorts by experience, and rejects an unknown sort', async () => {
+    const u = await app.user();
+    const r = await app.api('/doctors?sort=experience', { token: u.token });
+    expect(r.status).toBe(200);
+    const years = r.body.doctors.map((d) => d.experienceYears ?? -1);
+    expect(years).toEqual([...years].sort((a, b) => b - a));
+    expect((await app.api('/doctors?language=Telugu&group=CARE%20Hospitals%20website', { token: u.token })).status).toBe(200);
+    expect((await app.api('/doctors?sort=popular', { token: u.token })).status).toBe(422);
+  });
   it('returns a title on every doctor (D-54)', async () => {
     const u = await app.user();
     const r = await app.api('/doctors', { token: u.token });

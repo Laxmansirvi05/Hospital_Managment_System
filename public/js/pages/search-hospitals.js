@@ -17,6 +17,16 @@ function specialitySelect(params, update, key) {
 const TYPES = [['hospital', 'Hospitals'], ['clinic', 'Clinics'], ['eye', 'Eye care'], ['dental', 'Dental'], ['maternity', 'Women and children'], ['nursing_home', 'Nursing homes'], ['ayush', 'AYUSH']];
 const TYPE_LABEL = Object.fromEntries([['hospital', 'Hospital'], ['clinic', 'Clinic'], ['eye', 'Eye care'], ['dental', 'Dental'], ['maternity', 'Women and children'], ['nursing_home', 'Nursing home'], ['ayush', 'AYUSH']]);
 
+// Hospital groups whose doctor profiles CareRoute collects (scripts/sources/), by source name.
+const GROUPS = ['CARE Hospitals', 'KIMS Hospitals', 'Rainbow Hospitals', 'Continental Hospitals', 'Gleneagles Hospitals', 'Ankura Hospitals', 'Citizens Specialty Hospital', 'L V Prasad Eye Institute'];
+function groupSelect(params, update) {
+  const sel = h('select', { class: 'select', 'aria-label': 'Hospital group', style: 'width:auto;min-width:200px' },
+    h('option', { value: '' }, 'Any hospital group'),
+    GROUPS.map((g) => h('option', { value: `${g} website`, selected: params.get('group') === `${g} website` }, g)));
+  sel.addEventListener('change', () => update({ group: sel.value }));
+  return sel;
+}
+
 const { main } = await shell({ nav: 'hospitals', title: 'Hospitals and doctors' });
 
 searchPage({
@@ -45,10 +55,15 @@ searchPage({
       id: 'doctors', label: 'Doctors', noun: 'doctor', key: 'doctors',
       placeholder: 'Doctor name or specialization',
       endpoint: (p, o) => {
-        const url = withOrigin('/doctors', p, o, ['q', 'area']);
+        const url = withOrigin('/doctors', p, o, ['q', 'area', 'language', 'group', 'sort']);
         return p.get('speciality') ? `${url}&specialization=${encodeURIComponent(p.get('speciality'))}` : url;
       },
-      filters: (p, update) => [specialitySelect(p, update, 'speciality')],
+      filters: (p, update) => [
+        specialitySelect(p, update, 'speciality'),
+        groupSelect(p, update),
+        chip('Most experienced first', p.get('sort') === 'experience', () => update({ sort: p.get('sort') === 'experience' ? '' : 'experience' })),
+        ...['Telugu', 'Hindi', 'Urdu', 'Tamil', 'Kannada'].map((l) => chip(`Speaks ${l}`, p.get('language') === l, () => update({ language: p.get('language') === l ? '' : l }))),
+      ],
       row: (d) => listingRow({
         href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name, media: doctorPhoto(d, 'avatar-m'),
         meta: [[d.specialization, d.experienceYears !== null ? `${d.experienceYears} years` : ''].filter(Boolean).join(' · '), `${d.place.name}, ${d.place.area}`,

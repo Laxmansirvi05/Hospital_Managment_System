@@ -219,8 +219,10 @@ export function createMemoryStore() {
         const list = doctors.map(doctorView).filter((d) =>
           matches([d.name, d.specialization, d.place.name].join(' '), p.q) &&
           (!p.area || d.place.area === p.area) &&
-          (!p.specialization || d.specialization.toLowerCase().includes(p.specialization.toLowerCase())));
-        return near(list.map((d) => ({ ...d, lat: d.place.lat, lng: d.place.lng })), p).map(clone);
+          (!p.specialization || d.specialization.toLowerCase().includes(p.specialization.toLowerCase())) &&
+          (!p.language || (d.languages ?? []).includes(p.language)) && (!p.group || d.sourcePlatform === p.group));
+        const out = near(list.map((d) => ({ ...d, lat: d.place.lat, lng: d.place.lng })), p).map(clone);
+        return p.sort === 'experience' ? out.sort((a, b) => (b.experienceYears ?? -1) - (a.experienceYears ?? -1)) : out;
       },
       async doctor(id) { const d = doctors.find((x) => x.id === id); return d ? clone(doctorView(d)) : null; },
       async medicines(p) {

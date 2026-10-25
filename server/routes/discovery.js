@@ -26,6 +26,9 @@ const searchQuery = z.object({
   chain: z.string().trim().max(60).optional(),
   category: z.string().trim().max(80).optional(),
   provider: z.string().trim().max(80).optional(),
+  language: z.string().trim().max(40).optional(),
+  group: z.string().trim().max(80).optional(),
+  sort: z.enum(['distance', 'experience']).optional(),
 }).strict().refine((v) => (v.lat === undefined) === (v.lng === undefined), { message: 'Send both lat and lng for location', path: ['location'] });
 
 function q(query) {

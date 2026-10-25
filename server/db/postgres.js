@@ -99,7 +99,7 @@ export function createPostgresStore(url) {
         ${n.dist} as distance_km
       from public.doctors d left join public.hospitals h on h.id = d.hospital_id
       where d.active and ${where} and ${n.where}
-      order by ${p.lat == null ? sql`d.name` : n.order}
+      order by ${p.sort === 'experience' ? sql`d.experience_years desc nulls last, d.name` : p.lat == null ? sql`d.name` : n.order}
       limit ${p.limit ?? 50}`;
   }
 
@@ -329,7 +329,9 @@ export function createPostgresStore(url) {
       async doctors(p) {
         const where = sql`(${p.q ?? null}::text is null or d.name ilike ${like(p.q ?? '')} or d.specialization ilike ${like(p.q ?? '')} or coalesce(h.name, d.clinic_name) ilike ${like(p.q ?? '')})
           and (${p.area ?? null}::text is null or coalesce(h.area, d.clinic_area) = ${p.area ?? null})
-          and (${p.specialization ?? null}::text is null or d.specialization ilike ${like(p.specialization ?? '')})`;
+          and (${p.specialization ?? null}::text is null or d.specialization ilike ${like(p.specialization ?? '')})
+          and (${p.language ?? null}::text is null or ${p.language ?? null} = any(d.languages))
+          and (${p.group ?? null}::text is null or d.source_platform = ${p.group ?? null})`;
         return (await doctorsQuery(where, p)).map(doctorOut);
       },
       async doctor(id) { const [r] = await doctorsQuery(sql`d.id = ${id}`); return r ? doctorOut(r) : null; },
