@@ -53,6 +53,7 @@ export const hospitalView = (x) => ({ ...base(x), description: x.description, em
 export const doctorView = (d) => ({
   id: d.id, name: d.name, title: d.title ?? '', specialization: d.specialization, qualifications: d.qualifications, experienceYears: d.experienceYears,
   publishedTimings: d.publishedTimings, profileUrl: d.profileUrl, rating: d.rating ?? null, ratingCount: d.ratingCount ?? null,
+  photoUrl: d.photoUrl ?? null, languages: d.languages ?? [], expertise: d.expertise ?? [], bookingUrl: d.bookingUrl ?? null, consultationFeeInr: d.consultationFeeInr ?? null,
   place: { kind: d.place.kind, id: d.place.id, name: d.place.name, area: d.place.area, address: d.place.address, phone: d.place.phone, location: { lat: d.place.lat, lng: d.place.lng } },
   source: { platform: d.sourcePlatform, url: d.sourceUrl, checkedAt: d.checkedAt },
   ...(d.distanceKm !== undefined ? { distanceKm: d.distanceKm } : {}),

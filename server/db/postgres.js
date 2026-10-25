@@ -81,6 +81,7 @@ export function createPostgresStore(url) {
   const doctorOut = (r) => ({
     id: r.id, name: r.name, title: r.title, specialization: r.specialization, qualifications: r.qualifications, experienceYears: r.experience_years,
     hospitalId: r.hospital_id, publishedTimings: r.published_timings, profileUrl: r.profile_url, rating: num(r.rating), ratingCount: r.rating_count,
+    photoUrl: r.photo_url, languages: r.languages, expertise: r.expertise, bookingUrl: r.booking_url, consultationFeeInr: num(r.consultation_fee_inr),
     sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at),
     place: r.hospital_id
       ? { kind: 'hospital', id: r.hospital_id, name: r.h_name, area: r.h_area, address: r.h_address, phone: r.appointment_phone ?? r.h_phone, lat: r.p_lat, lng: r.p_lng }

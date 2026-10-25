@@ -750,3 +750,49 @@ dialog.sheet[open] {
 .danger-zone {
   border-color: var(--danger-tint);
 }
+
+/* Doctor profile (D-55): photo from the hospital's website beside the key facts. */
+.doctor-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-24);
+  align-items: center;
+}
+
+.doctor-hero-photo {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-8);
+}
+
+.avatar-xl {
+  width: 128px;
+  height: 128px;
+  border-radius: var(--radius-xl);
+  font-size: var(--fs-large-title);
+}
+
+.avatar-m {
+  width: 44px;
+  height: 44px;
+  font-size: var(--fs-subhead);
+}
+
+.fee {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .sticky-side {
+    position: sticky;
+    top: var(--space-24);
+  }
+}
+
+@media (max-width: 560px) {
+  .doctor-hero {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+  }
+}

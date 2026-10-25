@@ -46,6 +46,11 @@ export function relativeDay(iso, today = todayIst()) {
   return dateLong(iso);
 }
 
+/** Whole rupees, for fees that are never fractional. */
+export function inr(value) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+}
+
 export function rupees(value) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(value);
 }

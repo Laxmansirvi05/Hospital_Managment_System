@@ -117,7 +117,7 @@ Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_
 
 - Every listing has `id`, `name`, `kind`, `address`, `area`, `location { lat, lng }`, `phone` (may be `null`, D-51), `email` (only if public), `website`, `sourcePlatform`, `sourceUrl`, `checkedAt`.
 - Hospitals have `emergencyAvailable`: `true`, `false`, or `null` when the source does not say. `emergencyOnly` returns only `true`.
-- Doctors also have `title` (string, may be empty, D-54). A doctor's `place.phone` is the hospital's appointment number for that doctor when published, else the hospital's main number.
+- Doctors also have `title` (string, may be empty, D-54), `photoUrl` (the hospital's own image address or `null`, D-55), `languages` and `expertise` (string arrays), `bookingUrl` (the hospital's own booking page or `null`, D-57) and `consultationFeeInr` (number or `null`). A doctor's `place.phone` is the hospital's appointment number for that doctor when published, else the hospital's main number.
 - `rating` and `reviewCount` appear only once Q-24 is decided. Until then they are absent, not zero.
 - Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` and `cursor`. They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
 - Only listings marked active by the admin are returned.

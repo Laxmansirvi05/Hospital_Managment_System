@@ -1,4 +1,4 @@
-// Loads .cache/osm.json and .cache/care-doctors.json into a database. Rows are matched on
+// Loads .cache/osm.json and .cache/doctors-*.json into a database. Rows are matched on
 // source_ref, so running it again updates rows instead of adding copies, and rows a source no
 // longer lists are hidden (active = false), not deleted, so reviews keep their target.
 // Connects with DATABASE_URL (careroute-dev), or with --prod to PROD_IMPORT_DATABASE_URL (P-31).
@@ -7,25 +7,7 @@
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import postgres from 'postgres';
-import { parseLines } from './collect-care-doctors.js';
-
-const CARE_NAME = /^(guru ?nanak )?care hospitals?\b/i;
-// CARE writes some localities differently from OpenStreetMap.
-const ALIASES = { 'hitec city': ['hitec city', 'hi tech city', 'hi-tech city', 'hitech city'] };
-const norm = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-
-/** Maps a CARE location such as "CARE Hospitals, Banjara Hills, Hyderabad" to an OSM hospital ref. */
-export function careBranchMatcher(osm) {
-  const branches = osm.hospitals.filter((h) => CARE_NAME.test(h.name));
-  return (location) => {
-    const parts = location.split(',').map((s) => s.trim()).filter((s) => !/^hyderabad$/i.test(s));
-    const locality = norm(parts.at(-1) || '');
-    const names = ALIASES[locality] || [locality];
-    // Only an explicit locality match counts. A nearest-branch guess once put Malakpet doctors at Nampally.
-    const byText = branches.find((b) => names.some((n) => norm(`${b.name} ${b.address} ${b.area}`).includes(n)));
-    return byText ? byText.sourceRef : null;
-  };
-}
+import { SOURCES } from './collect-doctors.js';
 
 const point = (sql, x) => sql`extensions.st_setsrid(extensions.st_makepoint(${x.lng}, ${x.lat}), 4326)::extensions.geography`;
 
@@ -76,30 +58,33 @@ async function main() {
       const dh = await upsertPlaces(tx, 'diagnostic_centres', osm.diagnostics, (r) => ({ ...withPoint(r), hours: r.hours, description: r.description, tests_listed: r.testsListed }));
       console.log(`OpenStreetMap: ${osm.hospitals.length} hospitals, ${osm.pharmacies.length} pharmacies, ${osm.diagnostics.length} diagnostic centres (${hh + ph + dh} no longer listed, hidden)`);
 
-      const branch = careBranchMatcher(osm);
-      const ids = new Map((await tx`select id, source_ref from public.hospitals where source_ref is not null`).map((r) => [r.source_ref, r.id]));
-      const doctors = Object.entries(care.pages || {}).map(([url, p]) => ({ ...parseLines(p.lines, url), checkedAt: p.checkedAt })).filter((d) => d.name);
-      const unplaced = [];
-      const refs = [];
-      for (const d of doctors) {
-        const hospitalRef = d.locations.map(branch).find(Boolean);
-        if (!hospitalRef) { unplaced.push(d.locations.join(' / ') || 'no location'); continue; }
-        const cols = {
-          source_ref: d.sourceRef, name: d.name, title: d.title, specialization: d.specialization, qualifications: d.qualifications,
-          experience_years: d.experienceYears !== null && d.experienceYears <= 70 ? d.experienceYears : null,
-          hospital_id: ids.get(hospitalRef), appointment_phone: d.appointmentPhone, profile_url: d.profileUrl, published_timings: '',
-          source_platform: 'CARE Hospitals website', source_url: d.profileUrl, checked_at: d.checkedAt, active: true,
-        };
-        await tx`insert into public.doctors ${tx(cols)}
-          on conflict (source_ref) do update set ${tx(cols, Object.keys(cols).filter((c) => c !== 'source_ref'))}, updated_at = now()`;
-        refs.push(d.sourceRef);
+      const ids = new Map((await tx`select id, source_ref from public.hospitals where source_ref is not null and active`).map((r) => [r.source_ref, r.id]));
+      for (const src of SOURCES) {
+        let cache;
+        try { cache = JSON.parse(await readFile(`.cache/doctors-${src.id}.json`, 'utf8')); } catch (err) { if (err.code === 'ENOENT') continue; throw err; }
+        const refs = [];
+        const unplaced = {};
+        for (const d of Object.values(cache.records)) {
+          const hospitalId = ids.get(src.branches[d.branch]);
+          if (!hospitalId) { unplaced[d.branchText || 'no location'] = (unplaced[d.branchText || 'no location'] || 0) + 1; continue; }
+          // A photo is shown only from the hospital's own image host, which the CSP also allows (D-55).
+          const photo = d.photoUrl && src.photoHosts.includes(new URL(d.photoUrl).host) ? d.photoUrl : null;
+          const cols = {
+            source_ref: d.sourceRef, name: d.name, title: d.title, specialization: d.specialization.slice(0, 120), qualifications: d.qualifications.slice(0, 20),
+            experience_years: d.experienceYears !== null && d.experienceYears <= 70 ? d.experienceYears : null,
+            hospital_id: hospitalId, appointment_phone: d.appointmentPhone, profile_url: d.profileUrl, published_timings: (d.timings || '').slice(0, 300),
+            photo_url: photo, languages: d.languages.slice(0, 12), expertise: d.expertise.slice(0, 12), booking_url: d.bookingUrl,
+            consultation_fee_inr: d.consultationFeeInr, source_platform: src.sourcePlatform, source_url: d.profileUrl, checked_at: d.checkedAt, active: true,
+          };
+          await tx`insert into public.doctors ${tx(cols)}
+            on conflict (source_ref) do update set ${tx(cols, Object.keys(cols).filter((c) => c !== 'source_ref'))}, updated_at = now()`;
+          refs.push(d.sourceRef);
+        }
+        await tx`update public.doctors set active = false, updated_at = now()
+          where source_platform = ${src.sourcePlatform} and active and not (source_ref = any(${refs}))`;
+        console.log(`${src.hospital}: ${refs.length} doctors loaded`);
+        for (const [loc, n] of Object.entries(unplaced)) console.log(`  not placed (${n}): ${loc}`);
       }
-      await tx`update public.doctors set active = false, updated_at = now()
-        where source_platform = 'CARE Hospitals website' and active and not (source_ref = any(${refs}))`;
-      console.log(`CARE doctors: ${refs.length} loaded, ${unplaced.length} without a matching hospital`);
-      const counts = {};
-      for (const u of unplaced) counts[u] = (counts[u] || 0) + 1;
-      for (const [loc, n] of Object.entries(counts)) console.log(`  not placed (${n}): ${loc}`);
     });
   } finally {
     await sql.end({ timeout: 5 });

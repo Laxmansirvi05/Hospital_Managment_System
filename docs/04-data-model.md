@@ -110,6 +110,10 @@ Listing columns, plus:
 | title | the doctor's title as the hospital publishes it, for example "Senior Consultant Cardiologist" (D-54) |
 | specialization, experience_years | `experience_years` may be null |
 | appointment_phone | the hospital's appointment number for this doctor, as published. Never a personal number (D-54). |
+| photo_url | the hospital's own image address, `https` only, from a host in the CSP allow list. The image is never copied (D-55). |
+| languages, expertise | text arrays, as published |
+| booking_url | the hospital's own booking or profile page (D-57) |
+| consultation_fee_inr | as published, or null |
 | qualifications | text array |
 | published_timings | text, only if officially published. Not live availability (D-28). |
 | profile_url | official profile page |

@@ -1,47 +1,78 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { pageHead, extLink, telHref, source, leaveNote } from '../ui.js';
+import { pageHead, extLink, telHref, source, leaveNote, doctorPhoto, listingRow } from '../ui.js';
 import { idParam, notFoundPage } from '../details.js';
 import { reviewsSection } from '../reviews.js';
-import { km } from '../format.js';
+import { km, inr } from '../format.js';
 
 const { main, user } = await shell({ nav: 'hospitals', title: 'Doctor' });
+
+const fact = (label, value) => (value ? h('div', {}, h('dt', {}, label), h('dd', {}, value)) : null);
+const tags = (list, cls = 'tag') => h('div', { class: 'row-8' }, list.map((t) => h('span', { class: cls }, t)));
 
 try {
   const d = await api(`/doctors/${encodeURIComponent(idParam())}`);
   document.title = `${d.name} · CareRoute`;
   // A DOM node can sit in one place only, so each use gets its own link.
   const placeLink = () => (d.place.kind === 'hospital' ? h('a', { href: `/hospital/?id=${d.place.id}` }, d.place.name) : d.place.name);
+  const sourceName = d.source.platform.replace(/ website$/, '');
+  // Other doctors in the same speciality at the same hospital, for patients comparing options.
+  const peers = d.place.kind === 'hospital'
+    ? (await api(`/hospitals/${d.place.id}/doctors?specialization=${encodeURIComponent(d.specialization)}`).catch(() => ({ doctors: [] }))).doctors.filter((x) => x.id !== d.id).slice(0, 6)
+    : [];
+
+  const book = h('section', { class: 'card card-raised stack-16', 'aria-labelledby': 'book-h' },
+    h('h2', { class: 't-title-3', id: 'book-h' }, 'Book an appointment'),
+    d.consultationFeeInr !== null ? h('div', { class: 'fee' }, h('span', { class: 't-footnote muted' }, 'Consultation fee'), h('span', { class: 't-title-1 num' }, inr(d.consultationFeeInr))) : null,
+    d.bookingUrl ? h('a', { class: 'btn btn-primary btn-block', href: d.bookingUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('calendar', 18), `Book on the ${sourceName} website`) : null,
+    d.place.phone ? h('a', { class: `btn ${d.bookingUrl ? 'btn-secondary' : 'btn-primary'} btn-block`, href: telHref(d.place.phone) }, icon('phone', 18), `Call ${d.place.phone}`)
+      : h('p', { class: 't-subhead muted' }, 'No phone number is listed.'),
+    d.distanceKm !== undefined ? h('p', { class: 't-subhead muted' }, `${km(d.distanceKm)} away`) : null,
+    h('p', { class: 't-footnote muted' }, 'Booking happens on the hospital’s own website or by phone. CareRoute does not take bookings or payments.'),
+    h('a', { class: 'btn btn-text btn-sm', href: `/appointments/?doctor=${encodeURIComponent(d.name)}&place=${encodeURIComponent(d.place.name)}&speciality=${encodeURIComponent(d.specialization)}#new` }, icon('calendar', 16), 'Log an appointment you booked'));
+
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ title: d.name, crumbs: [['Hospitals and doctors', '/search/hospitals/?tab=doctors'], [d.name]], large: false }),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
-        h('section', { class: 'card card-raised stack-16' },
-          h('div', { class: 'row' },
-            h('span', { class: 'obj', style: 'width:72px;height:72px;border-radius:var(--radius-xl)' }, icon('doctor', 34)),
-            h('div', { class: 'stack-4' },
-              h('p', { class: 't-title-2' }, d.specialization),
-              d.title ? h('p', { class: 't-callout' }, d.title) : null,
-              h('p', { class: 't-callout muted' }, placeLink(), `, ${d.place.area}`))),
+        h('section', { class: 'card card-raised doctor-hero' },
+          h('div', { class: 'doctor-hero-photo' },
+            doctorPhoto(d, 'avatar-xl'),
+            d.photoUrl ? h('span', { class: 't-caption muted' }, `Photo: ${sourceName}`) : null),
+          h('div', { class: 'stack-8' },
+            h('p', { class: 't-title-2' }, d.specialization),
+            d.title ? h('p', { class: 't-callout' }, d.title) : null,
+            h('p', { class: 't-callout muted' }, placeLink(), `, ${d.place.area}`),
+            h('div', { class: 'row-8' },
+              d.experienceYears !== null ? h('span', { class: 'tag tag-primary' }, `${d.experienceYears} years experience`) : null,
+              d.consultationFeeInr !== null ? h('span', { class: 'tag' }, `Fee ${inr(d.consultationFeeInr)}`) : null,
+              d.languages.length ? h('span', { class: 'tag' }, `Speaks ${d.languages.join(', ')}`) : null))),
+        h('section', { class: 'card stack-16' },
+          h('h2', { class: 't-title-3' }, 'Qualifications and experience'),
           h('dl', { class: 'facts facts-2' },
-            h('div', {}, h('dt', {}, 'Qualifications'), h('dd', {}, d.qualifications.join(', '))),
-            d.experienceYears !== null ? h('div', {}, h('dt', {}, 'Experience'), h('dd', { class: 'num' }, `${d.experienceYears} years`)) : null,
-            h('div', {}, h('dt', {}, 'Practises at'), h('dd', {}, placeLink())),
-            h('div', {}, h('dt', {}, 'Address'), h('dd', {}, d.place.address)))),
+            fact('Qualifications', d.qualifications.join(', ')),
+            fact('Experience', d.experienceYears !== null ? `${d.experienceYears} years` : null),
+            fact('Practises at', placeLink()),
+            fact('Address', d.place.address),
+            fact('Languages', d.languages.join(', '))),
+          d.qualifications.length ? null : h('p', { class: 't-subhead muted' }, 'The hospital does not list qualifications for this doctor.')),
+        d.expertise.length ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Areas of care'), tags(d.expertise, 'tag tag-primary')) : null,
         h('section', { class: 'card stack-12' },
           h('h2', { class: 't-title-3' }, 'Consultation timings'),
           h('p', { class: 't-title-3' }, d.publishedTimings || 'Not published'),
-          h('p', { class: 'notice notice-neutral' }, icon('info', 18), h('span', {}, 'Published timings. Call the hospital or clinic to confirm and to book. CareRoute does not show live availability or book appointments.')),
-          h('a', { class: 'btn btn-secondary', href: `/appointments/?doctor=${encodeURIComponent(d.name)}&place=${encodeURIComponent(d.place.name)}&speciality=${encodeURIComponent(d.specialization)}#new` }, icon('calendar', 18), 'Log an appointment you booked')),
+          h('p', { class: 'notice notice-neutral' }, icon('info', 18), h('span', {}, 'Timings as the hospital publishes them. Call or check its website to confirm before you go. CareRoute does not show live availability.'))),
+        peers.length ? h('section', { class: 'card stack-12' },
+          h('h2', { class: 't-title-3' }, `Other ${d.specialization} doctors at ${d.place.name}`),
+          h('div', { class: 'list' }, peers.map((p) => listingRow({
+            href: `/doctor/?id=${p.id}`, kind: 'doctor', title: p.name, media: doctorPhoto(p, 'avatar-m'),
+            meta: [[p.title, p.experienceYears !== null ? `${p.experienceYears} years` : ''].filter(Boolean).join(' · ')],
+          })))) : null,
         reviewsSection({ kind: 'doctor', id: d.id, listing: d, canWrite: user.role === 'patient' })),
-      h('div', { class: 'stack-16' },
-        h('section', { class: 'card card-raised stack-16' },
-          h('h2', { class: 't-title-3' }, 'Contact'),
-          d.place.phone ? h('a', { class: 'btn btn-primary btn-block', href: telHref(d.place.phone) }, icon('phone', 18), d.place.kind === 'hospital' ? 'Call for an appointment' : 'Call the clinic') : h('p', { class: 't-subhead muted' }, 'No phone number is listed.'),
-          d.place.phone ? h('p', { class: 't-subhead muted num' }, d.place.phone) : null,
-          d.distanceKm !== undefined ? h('p', { class: 't-subhead muted' }, `${km(d.distanceKm)} away`) : null,
-          d.profileUrl ? extLink(d.profileUrl, 'Official profile') : null,
+      h('div', { class: 'stack-16 sticky-side' },
+        book,
+        h('section', { class: 'card stack-12' },
+          d.profileUrl ? extLink(d.profileUrl, `Full profile on the ${sourceName} website`) : null,
           leaveNote(),
           source(d)))),
   ));

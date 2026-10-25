@@ -43,10 +43,27 @@ export function distance(item) {
   return item.distanceKm !== undefined ? h('span', { class: 'num t-subhead' }, km(item.distanceKm)) : null;
 }
 
-export function listingRow({ href, kind, title, meta, trail }) {
+/** Initials of a doctor's name, without the "Dr" prefix. */
+export function initials(name) {
+  return (name || '').replace(/^Dr\.?\s*/i, '').replace(/\([^)]*\)/g, '').split(/[\s.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || 'Dr';
+}
+
+/**
+ * The doctor's photo from the hospital's own website (D-55), or initials when there is none or
+ * it fails to load. The image is decorative because the name is always next to it.
+ */
+export function doctorPhoto(d, size = '') {
+  const wrap = h('span', { class: `avatar ${size}`.trim(), 'aria-hidden': 'true' });
+  const fallback = () => wrap.replaceChildren(initials(d.name));
+  if (d.photoUrl) wrap.append(h('img', { src: d.photoUrl, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', onerror: fallback }));
+  else fallback();
+  return wrap;
+}
+
+export function listingRow({ href, kind, title, meta, trail, media }) {
   const iconName = { hospital: 'hospital', doctor: 'doctor', pharmacy: 'pharmacy', diagnostic: 'flask', medicine: 'pill' }[kind];
   return h('a', { class: 'list-row lift', href },
-    h('span', { class: 'obj' }, icon(iconName, 22)),
+    media || h('span', { class: 'obj' }, icon(iconName, 22)),
     h('span', { class: 'list-row-main' }, h('span', { class: 'list-row-title' }, title), meta.filter(Boolean).map((m) => h('span', { class: 'list-row-meta' }, m))),
     h('span', { class: 'list-row-trail' }, trail || null, icon('chevron', 18)));
 }

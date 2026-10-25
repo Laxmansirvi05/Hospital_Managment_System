@@ -7,8 +7,12 @@ import { sniffOk } from '../server/adapters/storage.js';
 import { scrub } from '../server/log.js';
 import { dropRewriteParam } from '../api/v1/[...path].js';
 import { toListings } from '../scripts/collect-osm.js';
-import { parseDoctor } from '../scripts/collect-care-doctors.js';
-import { careBranchMatcher } from '../scripts/load-listings.js';
+import { parseDoctor, branchOf, branches as careBranches } from '../scripts/sources/care.js';
+import { timingsFrom } from '../scripts/sources/kims.js';
+import { toRecord as gleneaglesRecord } from '../scripts/sources/gleneagles.js';
+import { robotsRules, splitQualifications } from '../scripts/lib/web.js';
+import { SOURCES } from '../scripts/collect-doctors.js';
+import { readFileSync } from 'node:fs';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -208,15 +212,46 @@ describe('CARE doctor pages (D-52, D-54)', () => {
   it('returns null when the page has no doctor', () => {
     expect(parseDoctor('<html><body>Not found</body></html>', url)).toBeNull();
   });
-  it('matches a branch only by its locality, never by distance', () => {
-    const osm = { suburbs: [], hospitals: [
-      { sourceRef: 'osm:node/1', name: 'Care Hospital', address: 'Road No.1, Banjara Hills', area: 'Masab Tank' },
-      { sourceRef: 'osm:node/2', name: 'Care Hospitals', address: 'Hi Tech City Main Road', area: 'Khajaguda' },
-      { sourceRef: 'osm:node/3', name: 'Medicare Hospital', address: 'Malakpet', area: 'Malakpet' },
-    ] };
-    const match = careBranchMatcher(osm);
-    expect(match('CARE Hospitals, Banjara Hills, Hyderabad')).toBe('osm:node/1');
-    expect(match('CARE Hospitals Outpatient Centre, HITEC City, Hyderabad')).toBe('osm:node/2');
-    expect(match('CARE Hospitals, Malakpet, Hyderabad')).toBeNull();
+  it('maps a branch only by its locality name, never by distance', () => {
+    expect(careBranches[branchOf('CARE Hospitals, Banjara Hills, Hyderabad')]).toBe('osm:way/337928613');
+    expect(branchOf('CARE Hospitals Outpatient Centre, HITEC City, Hyderabad')).toBe('HITEC City');
+    expect(branchOf('CARE Hospitals, Malakpet, Hyderabad')).toBeNull();
+  });
+});
+
+describe('collector helpers (P-29, D-56)', () => {
+  it('honours robots.txt for every agent, longest rule winning', () => {
+    const ok = robotsRules('User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nDisallow: /doctors/\nAllow: /doctors/public/\nDisallow: /*?\n');
+    expect(ok('/hospitals/')).toBe(true);
+    expect(ok('/doctors/dr-a')).toBe(false);
+    expect(ok('/doctors/public/dr-a')).toBe(true);
+    expect(ok('/search?q=x')).toBe(false);
+  });
+  it('splits qualifications only on commas outside brackets', () => {
+    expect(splitQualifications('MBBS, MD (Medicine, AIIMS), DM')).toEqual(['MBBS', 'MD (Medicine, AIIMS)', 'DM']);
+  });
+  it('turns a KIMS timings table into one line', () => {
+    const row = (cells) => `<tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`;
+    const html = `<table>${row(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])}${row(['10:00am - 04:00pm', '10:00am - 04:00pm', '10:00am - 04:00pm', '10:00am - 04:00pm', '10:00am - 04:00pm', '09:00am - 01:00pm', 'Not Available'])}</table>`;
+    expect(timingsFrom(html)).toBe('Monday to Friday, 10:00am to 04:00pm; Saturday, 09:00am to 01:00pm');
+  });
+  it('reads a Gleneagles doctor page, including the consultation fee', () => {
+    const html = `<html><head><meta property="og:image" content="https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com/x.png"></head><body><h1>Dr Test</h1><p>Dr Test</p><p>Senior Consultant</p><p>Speciality</p><p>Cardiology</p><p>Qualification</p><p>MD</p><p>DM</p><p>Experience</p><p>18 Years</p><p>Language Spoken</p><p>English</p><p>Telugu</p><p>Location</p><p>Hyderabad,Lakdi-Ka-Pul</p><p>Consultation Charges</p><p>800</p><p>×</p></body></html>`;
+    const r = gleneaglesRecord(html, 'https://www.gleneagleshospitals.co.in/hyderabad/lakdi-ka-pul/doctors/dr-test', '2026-10-25');
+    expect(r).toMatchObject({ name: 'Dr Test', title: 'Senior Consultant', specialization: 'Cardiology', qualifications: ['MD', 'DM'], experienceYears: 18, languages: ['English', 'Telugu'], branch: 'Lakdi-Ka-Pul', consultationFeeInr: 800 });
+    expect(r.bookingUrl).toContain('book-an-appointment');
+  });
+});
+
+describe('doctor photos (D-55)', () => {
+  it('allows every source photo host in the production and local CSP, and nothing wider', () => {
+    const csp = (text) => /img-src ([^;]+);/.exec(text)[1].split(' ');
+    const prod = csp(readFileSync('vercel.json', 'utf8'));
+    const local = csp(readFileSync('scripts/dev.js', 'utf8'));
+    for (const host of SOURCES.flatMap((s) => s.photoHosts)) {
+      expect(prod).toContain(`https://${host}`);
+      expect(local).toContain(`https://${host}`);
+    }
+    expect(prod.some((h) => h === 'https:' || h === '*' || h === 'https://*')).toBe(false);
   });
 });
