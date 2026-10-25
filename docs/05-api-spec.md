@@ -203,6 +203,8 @@ Implemented on `main`. Not in the Postman collection yet; add them with the owne
 | POST `/patients/me/reminders/{id}/doses` | patient | Record `taken` or `skipped` for `date` and `time` |
 | GET, POST `/patients/me/appointments`; PATCH, DELETE `/patients/me/appointments/{id}` | patient | Appointment log (D-37). CareRoute does not book. |
 | GET `/patients/me/dashboard?date=` | patient | Dashboard in one call (D-40) |
+| GET `/insights` | signed in | Aggregates for the Explore page: totals, counts by type, area, speciality, hospital group, pharmacy chain and medicine group, common test prices, fee range, and listing coordinates (`kind`, `type`, `lat`, `lng`, rounded). No personal data. Cached on the server for 5 minutes. |
+| GET `/test-prices` | signed in | Published diagnostic test prices. Query `q`, `provider`, `limit` (max 50). Returns `{ tests: [{ name, provider, priceInr, centresOffering, url, checkedAt }] }`. |
 | GET `/areas` | signed in | Hyderabad areas for filters, built from the active listings (sorted by name). The `area` search parameter accepts any text up to 80 characters; an unknown area returns an empty list, not an error. |
 | GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
 

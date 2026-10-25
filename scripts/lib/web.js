@@ -54,6 +54,8 @@ export async function get(url, { json = false } = {}) {
   lastHit.set(host, Date.now());
   const res = await fetch(url, { headers: { 'user-agent': USER_AGENT, accept: json ? 'application/json' : 'text/html,application/xml' }, signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${res.status} for ${url}`);
+  // A redirect to another host is fetched only if that host's robots.txt allows the final address too.
+  if (res.redirected && new URL(res.url).host !== host && !(await allowedBy(res.url))) throw new Error(`robots.txt disallows ${res.url}`);
   return json ? res.json() : res.text();
 }
 

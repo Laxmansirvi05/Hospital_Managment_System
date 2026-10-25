@@ -44,6 +44,13 @@ export function clearCookies(req) {
   ];
 }
 
+/** The session id inside the refresh cookie, or null when there is no well-formed cookie. */
+export function refreshSessionId(req) {
+  const raw = parseCookies(req.headers.cookie)[REFRESH_COOKIE] || '';
+  const id = raw.slice(0, raw.indexOf('.'));
+  return UUID.test(id) ? id : null;
+}
+
 /** Rotates the refresh token. Presenting a rotated-out token revokes the whole session. */
 export async function refreshSession(req) {
   const { jwtSecret, pepper } = getConfig();

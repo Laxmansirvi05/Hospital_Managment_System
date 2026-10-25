@@ -57,6 +57,7 @@ Consent text is part of the product and follows `12-ux-and-content.md`.
 | Gemini, Groq, OpenRouter | Symptom text, age, language. Discovery assistant text. Report content, only after Q-25. | Name, phone, email, location, user id |
 | Mapbox | Coordinates of ambulances and the patient, for routing | Names, phone numbers, medical data |
 | Provider websites (outbound links) | Whatever the user chooses to send them after leaving CareRoute. CareRoute adds no tracking parameters. | Anything from CareRoute |
+| Hospital websites' image hosts (D-55): CARE, KIMS, Rainbow and Gleneagles (on AWS S3), Continental, Ankura, Citizens, L V Prasad | Image requests from the browser, which reveal the visitor's IP and which doctor's photo is loaded. The request carries no CareRoute address (`referrerpolicy="no-referrer"`). | Anything else. Owner to confirm this flow is accepted with D-55; the alternative is serving photos through the API (PROPOSED). |
 | MapTiler | Tile requests from the browser, which reveal the viewed area and the browser's IP | Anything else |
 | Twilio | Contact phone number, message text with the tracking link | Health detail |
 | Supabase | All stored data | Not applicable, it is the data store. Choose the project region deliberately (OPEN). |

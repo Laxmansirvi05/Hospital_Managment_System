@@ -61,13 +61,20 @@ export function createPostgresStore(url) {
   const json = (v) => sql.json(v ?? {});
   const point = (lat, lng) => sql`extensions.st_setsrid(extensions.st_makepoint(${lng}, ${lat}), 4326)::extensions.geography`;
 
+  // sql.unsafe is used only on these fixed column expressions; anything else is a programming error.
+  const COLUMNS = new Set(['location', 'coalesce(h.location, d.clinic_location)']);
+  const column = (col) => {
+    if (!COLUMNS.has(col)) throw new Error('nearFilter: column not allowed');
+    return sql.unsafe(col);
+  };
+
   function nearFilter(col, p) {
     if (p.lat == null) return { dist: sql`null::float8`, where: sql`true`, order: sql`name` };
     const origin = point(p.lat, p.lng);
     return {
-      dist: sql`round((extensions.st_distance(${sql.unsafe(col)}, ${origin}) / 1000)::numeric, 2)::float8`,
-      where: p.radiusKm ? sql`extensions.st_dwithin(${sql.unsafe(col)}, ${origin}, ${p.radiusKm * 1000})` : sql`true`,
-      order: sql`${sql.unsafe(col)} operator(extensions.<->) ${origin}`,
+      dist: sql`round((extensions.st_distance(${column(col)}, ${origin}) / 1000)::numeric, 2)::float8`,
+      where: p.radiusKm ? sql`extensions.st_dwithin(${column(col)}, ${origin}, ${p.radiusKm * 1000})` : sql`true`,
+      order: sql`${column(col)} operator(extensions.<->) ${origin}`,
     };
   }
 
@@ -88,7 +95,7 @@ export function createPostgresStore(url) {
       : { kind: 'clinic', id: null, name: r.clinic_name, area: r.clinic_area, address: r.clinic_address, phone: r.clinic_phone, lat: r.p_lat, lng: r.p_lng },
     ...(r.distance_km !== null && r.distance_km !== undefined ? { distanceKm: r.distance_km } : {}),
   });
-  const latlng = (col) => sql`extensions.st_y(${sql.unsafe(col)}::extensions.geometry) as lat, extensions.st_x(${sql.unsafe(col)}::extensions.geometry) as lng`;
+  const latlng = (col) => sql`extensions.st_y(${column(col)}::extensions.geometry) as lat, extensions.st_x(${column(col)}::extensions.geometry) as lng`;
 
   async function doctorsQuery(where, p = {}) {
     const loc = 'coalesce(h.location, d.clinic_location)';

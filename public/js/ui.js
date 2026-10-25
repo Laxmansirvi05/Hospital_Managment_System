@@ -72,6 +72,11 @@ export function leaveNote() {
   return h('p', { class: 't-footnote muted' }, 'Links open the provider’s own website. CareRoute does not book appointments, sell medicines or take payments.');
 }
 
+/** An https address for a link, or null. Collected addresses are checked again here, not only in the database. */
+export function safeHref(href) {
+  return /^https:\/\/[^\s"'<>]+$/i.test(String(href || '')) ? href : null;
+}
+
 export function extLink(href, label) {
   // Defence in depth: the database already requires http or https, but a javascript: link must never render.
   if (!/^https?:\/\//i.test(String(href))) return h('span', {}, label);

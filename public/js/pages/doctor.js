@@ -1,7 +1,7 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { pageHead, extLink, telHref, source, leaveNote, doctorPhoto, listingRow } from '../ui.js';
+import { pageHead, extLink, telHref, source, leaveNote, doctorPhoto, listingRow, safeHref } from '../ui.js';
 import { idParam, notFoundPage } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 import { km, inr } from '../format.js';
@@ -25,8 +25,8 @@ try {
   const book = h('section', { class: 'card card-raised stack-16', 'aria-labelledby': 'book-h' },
     h('h2', { class: 't-title-3', id: 'book-h' }, 'Book an appointment'),
     d.consultationFeeInr !== null ? h('div', { class: 'fee' }, h('span', { class: 't-footnote muted' }, 'Consultation fee'), h('span', { class: 't-title-1 num' }, inr(d.consultationFeeInr))) : null,
-    d.bookingUrl ? h('a', { class: 'btn btn-primary btn-block', href: d.bookingUrl, target: '_blank', rel: 'noopener noreferrer' }, icon('calendar', 18), `Book on the ${sourceName} website`) : null,
-    d.place.phone ? h('a', { class: `btn ${d.bookingUrl ? 'btn-secondary' : 'btn-primary'} btn-block`, href: telHref(d.place.phone) }, icon('phone', 18), `Call ${d.place.phone}`)
+    safeHref(d.bookingUrl) ? h('a', { class: 'btn btn-primary btn-block', href: safeHref(d.bookingUrl), target: '_blank', rel: 'noopener noreferrer' }, icon('calendar', 18), `Book on the ${sourceName} website`) : null,
+    d.place.phone ? h('a', { class: `btn ${safeHref(d.bookingUrl) ? 'btn-secondary' : 'btn-primary'} btn-block`, href: telHref(d.place.phone) }, icon('phone', 18), `Call ${d.place.phone}`)
       : h('p', { class: 't-subhead muted' }, 'No phone number is listed.'),
     d.distanceKm !== undefined ? h('p', { class: 't-subhead muted' }, `${km(d.distanceKm)} away`) : null,
     h('p', { class: 't-footnote muted' }, 'Booking happens on the hospital’s own website or by phone. CareRoute does not take bookings or payments.'),

@@ -48,6 +48,12 @@ describe('auth', () => {
     expect((await app.api('/auth/login', { body: { email: u.email, password: 'correct horse' } })).status).toBe(200);
   });
 
+  it('refuses a refresh with no cookie before any rate limit counts it', async () => {
+    let last;
+    for (let i = 0; i < 70; i++) last = await app.api('/auth/refresh', { method: 'POST', headers: { 'x-careroute-csrf': '1', 'x-forwarded-for': '10.7.7.7' } });
+    expect(last.status).toBe(401);
+    expect(last.body.error.code).toBe('refresh_invalid');
+  });
   it('rotates the refresh token and revokes the session when an old one is reused', async () => {
     const u = await app.user();
     const first = cookieHeader(u.cookies);

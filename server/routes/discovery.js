@@ -72,6 +72,8 @@ export const medicineView = (m) => ({
   listings: m.listings.map((l) => ({ platform: l.platform, priceInr: l.priceInr, productUrl: l.productUrl, checkedAt: l.checkedAt })),
 });
 
+let insightsCache = null;
+
 const ROUTES = [
   {
     method: 'GET', path: '/test-prices', roles: SIGNED_IN,
@@ -83,8 +85,15 @@ const ROUTES = [
   {
     method: 'GET', path: '/insights', roles: SIGNED_IN,
     async handler() {
-      const x = await getStore().listings.insights();
-      return { body: x, headers: { 'Cache-Control': 'private, max-age=300' } };
+      // Eight aggregate queries; listings change only when an import runs, so five minutes is fresh enough.
+      if (!insightsCache || insightsCache.at < Date.now() - 300_000) insightsCache = { at: Date.now(), x: await getStore().listings.insights() };
+      const x = insightsCache.x;
+      const body = {
+        totals: x.totals, byType: x.byType, byArea: x.byArea, bySpeciality: x.bySpeciality, bySource: x.bySource, byChain: x.byChain,
+        medicines: x.medicines, byMedicineGroup: x.byMedicineGroup, commonTests: x.commonTests, fees: x.fees,
+        points: x.points.map((p) => ({ kind: p.kind, type: p.type, lat: p.lat, lng: p.lng })),
+      };
+      return { body, headers: { 'Cache-Control': 'private, max-age=300' } };
     },
   },
   { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: await getStore().listings.areas() } }; } },

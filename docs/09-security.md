@@ -67,6 +67,7 @@ This is the section the owner flagged. Treat it as the highest-priority rule set
 | `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` | Server only | No | Use an API key pair rather than the account auth token (PROPOSED) |
 | `TWILIO_FROM_NUMBER` | Server only | No | |
 | `TRACKING_TOKEN_PEPPER` | Server only | No | Pepper for hashing refresh tokens now, tracking tokens later |
+| `PROD_IMPORT_DATABASE_URL` | `scripts/load-listings.js --prod` only, on the owner's machine | No | Logs in as `careroute_import` (P-31): select, insert, update on listing tables only; no delete, no patient tables. Never in Vercel. Scripts that read it are outside `server/`, so this is an exception to the `server/config.js` rule (owner to confirm). |
 | `ALLOW_PRIVILEGED_SIGNUP` | Server only | No | Not a secret. `true` lets non-patient roles self-register. Never set in production (D-21). |
 | `TRUST_PROXY` | Server only | No | Not a secret. `true` only behind a proxy that overwrites `X-Forwarded-For`. Vercel sets `VERCEL=1`, which turns it on there. Otherwise the client IP is the socket address, so per-IP limits cannot be dodged with a forged header. |
 
@@ -133,7 +134,7 @@ A 404 is returned instead of 403 when revealing that a resource exists would its
 
 ## 7. Rate limits and abuse
 
-Counters are stored in Postgres (D-25). Values designed for WP-1, all PROPOSED: register 10 per hour per IP, login 30 per 15 minutes per IP and 10 per 15 minutes per account, refresh 60 per 15 minutes per session. Values for other surfaces are set when they are built.
+Counters are stored in Postgres (D-25). Values designed for WP-1, all PROPOSED: register 10 per hour per IP, login 30 per 15 minutes per IP and 10 per 15 minutes per account, refresh 30 per 15 minutes per session, plus 600 per 15 minutes per IP; a request with no refresh cookie is refused before any counter, so shared mobile network addresses do not lock people out. Values for other surfaces are set when they are built.
 
 | Surface | Limit by |
 | --- | --- |
@@ -160,7 +161,7 @@ Counters are stored in Postgres (D-25). Values designed for WP-1, all PROPOSED: 
 
 | Header or setting | Value |
 | --- | --- |
-| `Content-Security-Policy` | Default to own origin. Allow only the Supabase project (https and wss) and the MapTiler tile origin. No inline scripts and no inline event handlers. Headers are set in `vercel.json`. Confirm exact origins in WP-0. |
+| `Content-Security-Policy` | Default to own origin. Allow only the Supabase project (https and wss), the MapTiler tile origin, and, for `img-src` only, the exact image hosts of the hospital websites whose doctor photos are shown (D-55; listed in each `scripts/sources/*.js` and checked by a unit test). No inline scripts and no inline event handlers. Headers are set in `vercel.json`. Confirm exact origins in WP-0. |
 | `Strict-Transport-Security` | Enabled |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` site wide, `no-referrer` on the tracking page |

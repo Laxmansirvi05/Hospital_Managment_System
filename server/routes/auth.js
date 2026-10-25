@@ -4,7 +4,7 @@ import { getStore } from '../db/index.js';
 import { parse, readJson, conflict, forbidden, unauthorized } from '../http.js';
 import { limit, clientIp } from '../limits.js';
 import { hashPassword, verifyPassword, dummyVerify } from '../auth/crypto.js';
-import { startSession, refreshSession, clearCookies } from '../auth/session.js';
+import { startSession, refreshSession, refreshSessionId, clearCookies } from '../auth/session.js';
 
 export const ROLES = ['patient', 'driver', 'admin'];
 
@@ -69,7 +69,12 @@ export const routes = [
     async handler({ req }) {
       // The refresh cookie is the credential here, so the CSRF header is required.
       if (req.headers['x-careroute-csrf'] !== '1') throw forbidden('csrf_failed', 'Missing request header.');
-      await limit('refresh-ip', clientIp(req), 60, 900);
+      // No cookie means nothing to refresh, and it must not use up a limit other people share:
+      // many patients reach the internet through one mobile network address.
+      const sid = refreshSessionId(req);
+      if (!sid) throw unauthorized('refresh_invalid', 'Sign in again.');
+      await limit('refresh-session', sid, 30, 900);
+      await limit('refresh-ip', clientIp(req), 600, 900);
       const { user, token, cookies } = await refreshSession(req);
       return { body: { token, user: publicUser(user) }, headers: { 'Set-Cookie': cookies } };
     },

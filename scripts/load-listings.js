@@ -35,6 +35,8 @@ async function main() {
   const url = prod ? process.env.PROD_IMPORT_DATABASE_URL : process.env.DATABASE_URL;
   if (!url) throw new Error(prod ? 'Set PROD_IMPORT_DATABASE_URL in .env.local (P-31)' : 'Set DATABASE_URL in .env.local');
   const dropSamples = process.argv.includes('--drop-samples');
+  // Dropping samples deletes reviews; the production import role must never be asked to (P-31).
+  if (prod && dropSamples) throw new Error('--drop-samples is for careroute-dev only');
   const osm = JSON.parse(await readFile('.cache/osm.json', 'utf8'));
   let care = { pages: {} };
   try { care = JSON.parse(await readFile('.cache/care-doctors.json', 'utf8')); } catch (err) { if (err.code !== 'ENOENT') throw err; }

@@ -2,7 +2,7 @@ import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
-import { pageHead, extLink } from '../ui.js';
+import { pageHead, extLink, safeHref } from '../ui.js';
 import { idParam, notFoundPage, contactCard } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 import { rupees } from '../format.js';
@@ -19,7 +19,7 @@ function testPrices(provider) {
     const mine = ++seq;
     const r = await api(`/test-prices?provider=${encodeURIComponent(provider)}&q=${encodeURIComponent(q)}&limit=8`).catch(() => ({ tests: [] }));
     if (mine !== seq) return;
-    list.replaceChildren(...(r.tests.length ? r.tests.map((t) => h('a', { class: 'price-row', href: t.url, target: '_blank', rel: 'noopener noreferrer' },
+    list.replaceChildren(...(r.tests.length ? r.tests.map((t) => h('a', { class: 'price-row', href: safeHref(t.url) || undefined, target: '_blank', rel: 'noopener noreferrer' },
       h('span', { class: 't-callout' }, t.name), h('span', { class: 't-headline num' }, rupees(t.priceInr)))) : [h('p', { class: 't-subhead muted' }, 'No published price for that test.')]));
   };
   let timer;
