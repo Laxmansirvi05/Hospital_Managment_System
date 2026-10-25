@@ -75,7 +75,9 @@ export const lines = (html) => decode(html
 
 /** Every schema.org object in the page's JSON-LD blocks, flattened. */
 export const jsonLd = (html) => [...html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)]
-  .map((m) => { try { return JSON.parse(m[1]); } catch { return null; } })
+  // Some sites put raw line breaks inside JSON strings, which is invalid; outside strings a
+  // control character is only whitespace, so replacing them all with spaces is safe.
+  .map((m) => { try { return JSON.parse(m[1].replace(/[\u0000-\u001F]+/g, ' ')); } catch { return null; } })
   .flatMap((j) => (j ? [].concat(j).flatMap((x) => [].concat(x['@graph'] || x)) : []))
   .filter((x) => x && typeof x === 'object');
 
