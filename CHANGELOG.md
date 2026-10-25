@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Numbered pages in search
+
+- At the owner's request, search lists show 20 results per page with Previous and Next at the bottom instead of a Show more button. The page number is in the address, so Back and shared links keep it; any new search, area or filter starts again at page 1. One extra row is requested to know whether a next page exists. Checked in the browser on careroute-dev: doctors page 1 and 2 (1 to 20, 21 to 40), Back returns to page 1, diagnostic centres page 8 shows 141 to 151 with Next disabled, a new search resets to page 1.
+
 ### Show more in every search
 
 - Searches returned only the first 50 results with no way to see the rest, so most of the 1,650 care places, 1,486 doctors, 151 diagnostic centres and 2,096 medicines were unreachable from search. Search endpoints now take `offset` (max 5,000), and every search list has a "Show 50 more" button that appends the next page and moves focus to its first row. Checked in the browser against careroute-dev: hospitals 50 to 150 with no repeats, medicines 50 to 100, diagnostic centres all 151 with the button gone at the end. One API test added (86 pass).

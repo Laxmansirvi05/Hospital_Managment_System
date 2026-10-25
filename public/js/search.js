@@ -40,6 +40,7 @@ export async function searchPage({ main, title, sub, tabs }) {
 
   function update(changes, push = true) {
     const p = params();
+    if (!('page' in changes)) p.delete('page');
     for (const [k, v] of Object.entries(changes)) {
       if (v === '' || v === null || v === undefined || v === false) p.delete(k);
       else p.set(k, v === true ? '1' : v);
@@ -97,64 +98,44 @@ export async function searchPage({ main, title, sub, tabs }) {
     const mine = ++seq;
     results.replaceChildren(skeletonList(4));
     side.replaceChildren(tab.aside || h('div', { class: 'skeleton skeleton-block skeleton-block-l' }));
-    // Every tab pages 50 at a time; Show more asks for the next 50 from where the list ends.
-    const pageUrl = (offset) => {
-      const u = new URL(tab.endpoint(p, origin), location.origin);
-      u.searchParams.set('limit', String(PAGE));
-      if (offset) u.searchParams.set('offset', String(offset));
-      return `${u.pathname.replace(/^\/api\/v1/, '')}${u.search}`;
-    };
+    // Pages of PAGE results. One extra row is asked for only to know whether a next page exists.
+    const page = Math.max(1, Math.min(250, Number.parseInt(p.get('page') || '1', 10) || 1));
+    const u = new URL(tab.endpoint(p, origin), location.origin);
+    u.searchParams.set('limit', String(PAGE + 1));
+    if (page > 1) u.searchParams.set('offset', String((page - 1) * PAGE));
     let data;
     try {
-      data = await api(pageUrl(0));
+      data = await api(`${u.pathname.replace(/^\/api\/v1/, '')}${u.search}`);
     } catch (err) {
       if (mine !== seq) return;
       results.replaceChildren(empty({ iconName: 'alert', title: 'Search did not work', text: err.message, action: h('button', { class: 'btn btn-primary', type: 'button', onclick: draw }, 'Try again') }));
       return;
     }
     if (mine !== seq) return;
-    const list = data[tab.key];
+    const rows = data[tab.key];
+    const hasNext = rows.length > PAGE;
+    const list = rows.slice(0, PAGE);
     const q = p.get('q');
-    const filtersOn = [...p.keys()].some((k) => k !== 'tab');
+    const filtersOn = [...p.keys()].some((k) => k !== 'tab' && k !== 'page');
     const plural = tab.plural || `${tab.noun}s`;
-    const heading = h('h2', { class: 't-title-2' });
-    const listEl = h('div', { class: 'list' }, list.map(tab.row));
-    const more = h('button', { class: 'btn btn-secondary btn-block', type: 'button' }, `Show ${PAGE} more`);
-    const note = h('p', { class: 't-footnote muted' });
-    const credit = h('div');
-    const refresh = (hasMore) => {
-      heading.textContent = hasMore ? `${list.length} ${plural} shown` : `${list.length} ${list.length === 1 ? tab.noun : plural}`;
-      note.textContent = hasMore ? `${tab.pin ? 'Nearest first. ' : ''}Show more, or search by name, area or filter to narrow the list.` : '';
-      note.hidden = !hasMore;
-      more.hidden = !hasMore;
-      credit.replaceChildren(...[osmCredit(list)].filter(Boolean));
-    };
-    more.addEventListener('click', async () => {
-      more.disabled = true;
-      more.textContent = 'Loading';
-      try {
-        const next = (await api(pageUrl(list.length)))[tab.key];
-        if (mine !== seq) return;
-        const firstNew = list.length;
-        list.push(...next);
-        listEl.append(...next.map(tab.row));
-        refresh(next.length >= PAGE);
-        listEl.children[firstNew]?.focus();
-      } catch (err) {
-        toast(err.message);
-      } finally {
-        more.disabled = false;
-        more.textContent = `Show ${PAGE} more`;
-      }
-    });
-    refresh(list.length >= PAGE);
+    const from = (page - 1) * PAGE + 1;
+    const heading = h('h2', { class: 't-title-2' },
+      page === 1 && !hasNext ? `${list.length} ${list.length === 1 ? tab.noun : plural}`
+        : list.length ? `${plural[0].toUpperCase()}${plural.slice(1)} ${from} to ${from + list.length - 1}` : `No more ${plural}`);
+    const go = (n) => { update({ page: n === 1 ? '' : String(n) }); results.scrollIntoView({ block: 'start' }); };
+    const pager = page > 1 || hasNext ? h('nav', { class: 'pager', 'aria-label': 'Pages' },
+      h('button', { class: 'btn btn-secondary', type: 'button', disabled: page === 1, onclick: () => go(page - 1) }, icon('back', 18), 'Previous'),
+      h('span', { class: 't-subhead muted', 'aria-current': 'page' }, `Page ${page}`),
+      h('button', { class: 'btn btn-secondary', type: 'button', disabled: !hasNext, onclick: () => go(page + 1) }, 'Next', icon('chevron', 18))) : null;
     results.replaceChildren(...[
       h('div', { class: 'spread' },
         heading,
         filtersOn ? h('button', { class: 'btn btn-text btn-sm', type: 'button', onclick: () => update({ q: '', area: '', speciality: '', test: '', open24: '', emergency: '', type: '', chain: '', language: '', group: '', sort: '' }) }, 'Clear search') : null),
       q ? h('p', { class: 't-subhead muted' }, `Matching “${q}”${p.get('area') ? ` in ${p.get('area')}` : ''}`) : null,
-      list.length ? listEl : empty({ title: `No ${plural} found`, text: 'Try a shorter search, another area, or fewer filters.' }),
-      note, more, credit,
+      tab.pin && list.length ? h('p', { class: 't-footnote muted' }, 'Nearest first.') : null,
+      list.length ? h('div', { class: 'list' }, list.map(tab.row)) : empty({ title: `No ${plural} found`, text: page > 1 ? 'This page is past the end of the list.' : 'Try a shorter search, another area, or fewer filters.' }),
+      pager,
+      osmCredit(list),
     ].filter(Boolean));
     if (tab.pin) {
       const pins = list.slice(0, 10).map((item, i) => ({ ...tab.pin(item), showLabel: i === 0, active: i === 0 }));
@@ -171,8 +152,8 @@ export async function searchPage({ main, title, sub, tabs }) {
   draw();
 }
 
-// Results per search; the server allows up to 50.
-const PAGE = 50;
+// Results per page. The owner asked for about 20 a page with Previous and Next.
+const PAGE = 20;
 
 export function chip(label, on, onClick) {
   return h('button', { class: `chip${on ? ' chip-on' : ''}`, type: 'button', 'aria-pressed': String(on), onclick: onClick }, on ? icon('check', 16) : null, label);

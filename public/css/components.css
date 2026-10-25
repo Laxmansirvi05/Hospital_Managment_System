@@ -1406,3 +1406,12 @@ a.hbars-row:focus-visible {
 @media (max-width: 640px) {
   .hbars-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
 }
+
+/* Previous and Next under a result list. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding-top: var(--space-8);
+}
