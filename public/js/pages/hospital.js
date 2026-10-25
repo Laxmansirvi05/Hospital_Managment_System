@@ -4,7 +4,7 @@ import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
 import { pageHead, listingRow, rating, doctorPhoto } from '../ui.js';
 import { hbars } from '../charts.js';
-import { idParam, notFoundPage, contactCard } from '../details.js';
+import { idParam, notFoundPage, contactCard, quickActions } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 
 const doctorRow = (d) => listingRow({ href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name, media: doctorPhoto(d, 'avatar-m'), meta: [[d.specialization, d.experienceYears !== null ? `${d.experienceYears} years` : ''].filter(Boolean).join(' · '), d.title], trail: rating(d) });
@@ -66,6 +66,7 @@ try {
   document.title = `${x.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ art: 'hospital', title: x.name, crumbs: [['Hospitals and doctors', '/search/hospitals/'], [x.name]], large: false }),
+    quickActions(x),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },

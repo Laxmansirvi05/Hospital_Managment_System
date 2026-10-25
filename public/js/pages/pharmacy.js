@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
 import { pageHead } from '../ui.js';
-import { idParam, notFoundPage, contactCard } from '../details.js';
+import { idParam, notFoundPage, contactCard, quickActions } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 
 const { main, user } = await shell({ nav: 'medicines', title: 'Pharmacy' });
@@ -13,6 +13,7 @@ try {
   document.title = `${p.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ art: 'medicine', title: p.name, crumbs: [['Medicines and pharmacies', '/search/medicines/?tab=pharmacies'], [p.name]], large: false }),
+    quickActions(p),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },

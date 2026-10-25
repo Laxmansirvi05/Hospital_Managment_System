@@ -580,3 +580,50 @@ html.text-large {
 .legal-links a {
   color: var(--text-2);
 }
+
+/* Maps: no inner border, rounded like the cards. On detail pages the map is a wide, short band,
+   so the facts below it are reached without scrolling past empty space. */
+.map3d {
+  border: 0;
+  border-radius: var(--radius-xl);
+}
+
+.hero-detail .map3d-stage {
+  aspect-ratio: 1000 / 470;
+}
+
+.hero-detail .map3d-plane {
+  top: 8%;
+  left: 10%;
+  right: 10%;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: calc(var(--space-8) * -1);
+}
+
+/* Explore: the map shares the first screen with two charts instead of filling it alone. */
+.explore-top {
+  display: grid;
+  gap: var(--space-16);
+}
+
+@media (min-width: 1024px) {
+  .explore-top {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.explore-grid {
+  gap: var(--space-16);
+}
+
+@media (min-width: 1600px) {
+  .explore-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

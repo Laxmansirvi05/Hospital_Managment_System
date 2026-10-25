@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { createMap } from '../map3d.js';
 import { pageHead, extLink, safeHref } from '../ui.js';
-import { idParam, notFoundPage, contactCard } from '../details.js';
+import { idParam, notFoundPage, contactCard, quickActions } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 import { rupees, dateLong } from '../format.js';
 
@@ -46,6 +46,7 @@ try {
   document.title = `${c.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ art: 'diagnostic', title: c.name, crumbs: [['Diagnostic centres', '/search/diagnostics/'], [c.name]], large: false }),
+    quickActions(c),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },
