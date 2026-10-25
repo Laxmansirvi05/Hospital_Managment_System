@@ -107,7 +107,7 @@ export function createPostgresStore(url) {
       from public.doctors d left join public.hospitals h on h.id = d.hospital_id
       where d.active and ${where} and ${n.where}
       order by ${p.sort === 'experience' ? sql`d.experience_years desc nulls last, d.name` : p.lat == null ? sql`d.name` : n.order}
-      limit ${p.limit ?? 50}`;
+      limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
   }
 
   return {
@@ -315,7 +315,7 @@ export function createPostgresStore(url) {
         const rows = await sql`select * from public.test_prices where active
           and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')})
           and (${p.provider ?? null}::text is null or provider = ${p.provider ?? null})
-          order by ${p.q ? sql`extensions.similarity(name, ${p.q}) desc,` : sql``} price_inr limit ${p.limit ?? 50}`;
+          order by ${p.q ? sql`extensions.similarity(name, ${p.q}) desc,` : sql``} price_inr limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         return rows.map((r) => ({ name: r.name, provider: r.provider, priceInr: num(r.price_inr), centresOffering: r.centres_offering, url: r.url, checkedAt: day(r.checked_at) }));
       },
       async areas() {
@@ -340,7 +340,7 @@ export function createPostgresStore(url) {
             -- Sources spell specialities their own way, so the filter matches part of a name, ignoring case.
             and (${p.speciality ?? null}::text is null or exists (select 1 from unnest(specialities) s where s ilike ${like(p.speciality ?? '')}))
             and ${n.where}
-          order by ${n.order} limit ${p.limit ?? 50}`;
+          order by ${n.order} limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         return rows.map(hospitalOut);
       },
       async hospital(id) { const [r] = await sql`select *, ${latlng('location')} from public.hospitals where id = ${id} and active`; return r ? hospitalOut(r) : null; },
@@ -361,7 +361,7 @@ export function createPostgresStore(url) {
         const meds = await sql`select * from public.medicines where active
           and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or category ilike ${like(p.q ?? '')})
           and (${p.category ?? null}::text is null or category = ${p.category ?? null})
-          order by name limit ${p.limit ?? 50}`;
+          order by name limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         if (!meds.length) return [];
         const listings = await sql`select * from public.medicine_listings where active and medicine_id in ${sql(meds.map((m) => m.id))} order by price_inr`;
         return meds.map((m) => ({
@@ -382,7 +382,7 @@ export function createPostgresStore(url) {
           where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null}) and (${p.open24 ?? false} = false or open_24)
             and (${p.chain ?? null}::text is null or chain = ${p.chain ?? null}) and ${n.where}
-          order by ${n.order} limit ${p.limit ?? 50}`;
+          order by ${n.order} limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         return rows.map((r) => ({ ...listingBase(r), chain: r.chain, hours: r.hours, open24: r.open_24 }));
       },
       async pharmacy(id) { const [r] = await sql`select *, ${latlng('location')} from public.pharmacies where id = ${id} and active`; return r ? { ...listingBase(r), chain: r.chain, hours: r.hours, open24: r.open_24 } : null; },
@@ -393,7 +393,7 @@ export function createPostgresStore(url) {
           where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')} or array_to_string(tests_listed, ' ') ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null})
             and (${p.test ?? null}::text is null or array_to_string(tests_listed, ' ') ilike ${like(p.test ?? '')}) and ${n.where}
-          order by ${n.order} limit ${p.limit ?? 50}`;
+          order by ${n.order} limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         return rows.map((r) => ({ ...listingBase(r), hours: r.hours, description: r.description, testsListed: r.tests_listed }));
       },
       async diagnostic(id) {

@@ -272,6 +272,15 @@ describe('discovery (D-36)', () => {
     expect((await app.api('/doctors?language=Telugu&group=CARE%20Hospitals%20website', { token: u.token })).status).toBe(200);
     expect((await app.api('/doctors?sort=popular', { token: u.token })).status).toBe(422);
   });
+  it('pages search results with offset, without repeats, and caps the offset', async () => {
+    const u = await app.user();
+    const first = (await app.api('/hospitals?limit=3', { token: u.token })).body.hospitals.map((x) => x.id);
+    const second = (await app.api('/hospitals?limit=3&offset=3', { token: u.token })).body.hospitals.map((x) => x.id);
+    expect(first).toHaveLength(3);
+    expect(second.length).toBeGreaterThan(0);
+    expect(second.some((id) => first.includes(id))).toBe(false);
+    expect((await app.api('/hospitals?offset=5001', { token: u.token })).status).toBe(422);
+  });
   it('returns a title on every doctor (D-54)', async () => {
     const u = await app.user();
     const r = await app.api('/doctors', { token: u.token });

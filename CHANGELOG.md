@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Show more in every search
+
+- Searches returned only the first 50 results with no way to see the rest, so most of the 1,650 care places, 1,486 doctors, 151 diagnostic centres and 2,096 medicines were unreachable from search. Search endpoints now take `offset` (max 5,000), and every search list has a "Show 50 more" button that appends the next page and moves focus to its first row. Checked in the browser against careroute-dev: hospitals 50 to 150 with no repeats, medicines 50 to 100, diagnostic centres all 151 with the button gone at the end. One API test added (86 pass).
+
 ### Decided
 
 - D-60: the `careroute_import` production role (was P-31) is approved: listing tables only, select, insert and update, no delete, no patient data, password only in `.env.local`.

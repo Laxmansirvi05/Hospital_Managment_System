@@ -17,6 +17,8 @@ const searchQuery = z.object({
   lng: z.coerce.number().min(-180, 'location longitude must be between -180 and 180').max(180, 'location longitude must be between -180 and 180').optional(),
   radiusKm: z.coerce.number().min(0.5).max(50).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(30),
+  // For Show more: skip the rows already shown. Capped so a request cannot walk the table cheaply.
+  offset: z.coerce.number().int().min(0).max(5000).default(0),
   speciality: z.string().trim().max(60).optional(),
   specialization: z.string().trim().max(60).optional(),
   emergencyOnly: flag.optional(),

@@ -97,9 +97,16 @@ export async function searchPage({ main, title, sub, tabs }) {
     const mine = ++seq;
     results.replaceChildren(skeletonList(4));
     side.replaceChildren(tab.aside || h('div', { class: 'skeleton skeleton-block skeleton-block-l' }));
+    // Every tab pages 50 at a time; Show more asks for the next 50 from where the list ends.
+    const pageUrl = (offset) => {
+      const u = new URL(tab.endpoint(p, origin), location.origin);
+      u.searchParams.set('limit', String(PAGE));
+      if (offset) u.searchParams.set('offset', String(offset));
+      return `${u.pathname.replace(/^\/api\/v1/, '')}${u.search}`;
+    };
     let data;
     try {
-      data = await api(tab.endpoint(p, origin));
+      data = await api(pageUrl(0));
     } catch (err) {
       if (mine !== seq) return;
       results.replaceChildren(empty({ iconName: 'alert', title: 'Search did not work', text: err.message, action: h('button', { class: 'btn btn-primary', type: 'button', onclick: draw }, 'Try again') }));
@@ -109,16 +116,45 @@ export async function searchPage({ main, title, sub, tabs }) {
     const list = data[tab.key];
     const q = p.get('q');
     const filtersOn = [...p.keys()].some((k) => k !== 'tab');
+    const plural = tab.plural || `${tab.noun}s`;
+    const heading = h('h2', { class: 't-title-2' });
+    const listEl = h('div', { class: 'list' }, list.map(tab.row));
+    const more = h('button', { class: 'btn btn-secondary btn-block', type: 'button' }, `Show ${PAGE} more`);
+    const note = h('p', { class: 't-footnote muted' });
+    const credit = h('div');
+    const refresh = (hasMore) => {
+      heading.textContent = hasMore ? `${list.length} ${plural} shown` : `${list.length} ${list.length === 1 ? tab.noun : plural}`;
+      note.textContent = hasMore ? `${tab.pin ? 'Nearest first. ' : ''}Show more, or search by name, area or filter to narrow the list.` : '';
+      note.hidden = !hasMore;
+      more.hidden = !hasMore;
+      credit.replaceChildren(...[osmCredit(list)].filter(Boolean));
+    };
+    more.addEventListener('click', async () => {
+      more.disabled = true;
+      more.textContent = 'Loading';
+      try {
+        const next = (await api(pageUrl(list.length)))[tab.key];
+        if (mine !== seq) return;
+        const firstNew = list.length;
+        list.push(...next);
+        listEl.append(...next.map(tab.row));
+        refresh(next.length >= PAGE);
+        listEl.children[firstNew]?.focus();
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        more.disabled = false;
+        more.textContent = `Show ${PAGE} more`;
+      }
+    });
+    refresh(list.length >= PAGE);
     results.replaceChildren(...[
       h('div', { class: 'spread' },
-        // A full page means there are more; say "nearest" rather than implying this is all of them.
-        h('h2', { class: 't-title-2' }, list.length >= PAGE ? `The ${PAGE} nearest ${tab.plural || `${tab.noun}s`}` : `${list.length} ${list.length === 1 ? tab.noun : tab.plural || `${tab.noun}s`}`),
+        heading,
         filtersOn ? h('button', { class: 'btn btn-text btn-sm', type: 'button', onclick: () => update({ q: '', area: '', speciality: '', test: '', open24: '', emergency: '', type: '', chain: '', language: '', group: '', sort: '' }) }, 'Clear search') : null),
       q ? h('p', { class: 't-subhead muted' }, `Matching “${q}”${p.get('area') ? ` in ${p.get('area')}` : ''}`) : null,
-      list.length ? h('div', { class: 'list' }, list.map(tab.row))
-        : empty({ title: `No ${tab.plural || `${tab.noun}s`} found`, text: 'Try a shorter search, another area, or fewer filters.' }),
-      list.length >= PAGE ? h('p', { class: 't-footnote muted' }, 'There are more. Search by name, choose an area or add a filter to see others.') : null,
-      osmCredit(list),
+      list.length ? listEl : empty({ title: `No ${plural} found`, text: 'Try a shorter search, another area, or fewer filters.' }),
+      note, more, credit,
     ].filter(Boolean));
     if (tab.pin) {
       const pins = list.slice(0, 10).map((item, i) => ({ ...tab.pin(item), showLabel: i === 0, active: i === 0 }));
@@ -146,7 +182,6 @@ export function chip(label, on, onClick) {
 export function withOrigin(path, params, origin, keys) {
   const q = new URLSearchParams();
   for (const k of keys) if (params.get(k)) q.set(k === 'emergency' ? 'emergencyOnly' : k, params.get(k));
-  q.set('limit', String(PAGE));
   q.set('lat', String(origin.lat));
   q.set('lng', String(origin.lng));
   return `${path}?${q}`;

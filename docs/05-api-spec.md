@@ -119,7 +119,7 @@ Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_
 - Hospitals have `emergencyAvailable`: `true`, `false`, or `null` when the source does not say. `emergencyOnly` returns only `true`.
 - Doctors also have `title` (string, may be empty, D-54), `photoUrl` (the hospital's own image address or `null`, D-55), `languages` and `expertise` (string arrays), `bookingUrl` (the hospital's own booking page or `null`, D-57) and `consultationFeeInr` (number or `null`). A doctor's `place.phone` is the hospital's appointment number for that doctor when published, else the hospital's main number.
 - `rating` and `reviewCount` appear only once Q-24 is decided. Until then they are absent, not zero.
-- Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` and `cursor`. They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
+- Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` (max 50) and `offset` (max 5000, for Show more; replaces the planned `cursor`). They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
 - Only listings marked active by the admin are returned.
 
 ## 4. Discovery (PROPOSED, P-19)
@@ -204,7 +204,7 @@ Implemented on `main`. Not in the Postman collection yet; add them with the owne
 | GET, POST `/patients/me/appointments`; PATCH, DELETE `/patients/me/appointments/{id}` | patient | Appointment log (D-37). CareRoute does not book. |
 | GET `/patients/me/dashboard?date=` | patient | Dashboard in one call (D-40) |
 | GET `/insights` | signed in | Aggregates for the Explore page: totals, counts by type, area, speciality, hospital group, pharmacy chain and medicine group, common test prices, fee range, and listing coordinates (`kind`, `type`, `lat`, `lng`, rounded). No personal data. Cached on the server for 5 minutes; browsers revalidate (`Cache-Control: private, no-cache`). |
-| GET `/test-prices` | signed in | Published diagnostic test prices. Query `q`, `provider`, `limit` (max 50). Returns `{ tests: [{ name, provider, priceInr, centresOffering, url, checkedAt }] }`. |
+| GET `/test-prices` | signed in | Published diagnostic test prices. Query `q`, `provider`, `limit` (max 50), `offset`. Returns `{ tests: [{ name, provider, priceInr, centresOffering, url, checkedAt }] }`. |
 | GET `/areas` | signed in | Hyderabad areas for filters, built from the active listings (sorted by name). The `area` search parameter accepts any text up to 80 characters; an unknown area returns an empty list, not an error. |
 | GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
 
