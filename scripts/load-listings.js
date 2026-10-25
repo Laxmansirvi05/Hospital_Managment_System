@@ -117,7 +117,8 @@ async function main() {
           const hospitalId = ids.get(src.branches[d.branch ?? src.fallbackBranch?.(d) ?? named]);
           if (!hospitalId) { unplaced[d.branchText || 'no location'] = (unplaced[d.branchText || 'no location'] || 0) + 1; continue; }
           // A photo is shown only from the hospital's own image host, which the CSP also allows (D-55).
-          const photo = d.photoUrl && src.photoHosts.includes(new URL(d.photoUrl).host) ? d.photoUrl : null;
+          // Browsers refuse images served as a generic file type, so only real image addresses are kept.
+          const photo = d.photoUrl && src.photoHosts.includes(new URL(d.photoUrl).host) && /\.(jpe?g|png|webp|gif|avif)$/i.test(new URL(d.photoUrl).pathname) ? d.photoUrl : null;
           const cols = {
             source_ref: d.sourceRef, name: d.name, title: d.title, specialization: d.specialization.slice(0, 120), qualifications: d.qualifications.slice(0, 20),
             experience_years: d.experienceYears !== null && d.experienceYears <= 70 ? d.experienceYears : null,
