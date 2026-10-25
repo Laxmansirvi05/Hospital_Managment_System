@@ -1327,3 +1327,78 @@ dialog.sheet::backdrop {
   gap: var(--space-4);
   font-weight: 600;
 }
+
+/* Ranked horizontal bars (Explore). One hue: magnitude, not identity. */
+.hbars-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hbars-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto;
+  gap: var(--space-12);
+  align-items: center;
+  padding: var(--space-8);
+  border-radius: var(--radius-s);
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+a.hbars-row:hover,
+a.hbars-row:focus-visible {
+  background: var(--surface-sunken);
+}
+
+.hbars-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-subhead);
+}
+
+.hbars-track {
+  height: 12px;
+  border-radius: var(--radius-s);
+  background: var(--surface-sunken);
+}
+
+.hbars-bar {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+}
+
+.hbars-value {
+  font-size: var(--fs-subhead);
+  color: var(--text-2);
+}
+
+/* Dot map of listings (Explore). Three categorical hues, validated for colour vision deficiency. */
+.dotmap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+}
+
+.dotmap-bg { fill: var(--surface-sunken); stroke: var(--border-soft); }
+.dots circle { stroke: var(--surface); stroke-width: 1.5; }
+.dots-c circle, .swatch-c { fill: #0066CC; background: #0066CC; }
+.dots-p circle, .swatch-p { fill: #C25E00; background: #C25E00; }
+.dots-d circle, .swatch-d { fill: #7B3FB8; background: #7B3FB8; }
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+@media (max-width: 560px) {
+  .hbars-row { grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto; }
+}

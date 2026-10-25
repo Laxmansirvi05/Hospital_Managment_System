@@ -260,6 +260,35 @@ export function createPostgresStore(url) {
     },
 
     listings: {
+      /** Aggregates for the Explore page. Every number is a count of published listings, no personal data. */
+      async insights() {
+        const [totals] = await sql`select
+          (select count(*) from public.hospitals where active)::int as care_places,
+          (select count(*) from public.doctors where active)::int as doctors,
+          (select count(*) from public.pharmacies where active)::int as pharmacies,
+          (select count(*) from public.diagnostic_centres where active)::int as diagnostic_centres,
+          (select count(*) from public.doctors where active and photo_url is not null)::int as doctors_with_photo,
+          (select count(*) from public.hospitals where active and emergency_available is true)::int as emergency`;
+        const byType = await sql`select facility_type as key, count(*)::int as n from public.hospitals where active group by 1 order by 2 desc`;
+        const byArea = await sql`select area as key, count(*)::int as n from public.hospitals where active group by 1 order by 2 desc, 1 limit 12`;
+        const bySpeciality = await sql`select specialization as key, count(*)::int as n from public.doctors where active group by 1 order by 2 desc, 1 limit 12`;
+        const bySource = await sql`select source_platform as key, count(*)::int as n from public.doctors where active group by 1 order by 2 desc`;
+        const byChain = await sql`select coalesce(chain, 'Independent') as key, count(*)::int as n from public.pharmacies where active group by 1 order by 2 desc`;
+        const [fees] = await sql`select count(*)::int as n, min(consultation_fee_inr)::float as min,
+          percentile_cont(0.5) within group (order by consultation_fee_inr)::float as median, max(consultation_fee_inr)::float as max
+          from public.doctors where active and consultation_fee_inr is not null`;
+        const points = await sql`
+          select 'c' as k, facility_type as t, round(extensions.st_y(location::extensions.geometry)::numeric, 4)::float as lat, round(extensions.st_x(location::extensions.geometry)::numeric, 4)::float as lng from public.hospitals where active
+          union all select 'p', null, round(extensions.st_y(location::extensions.geometry)::numeric, 4)::float, round(extensions.st_x(location::extensions.geometry)::numeric, 4)::float from public.pharmacies where active
+          union all select 'd', null, round(extensions.st_y(location::extensions.geometry)::numeric, 4)::float, round(extensions.st_x(location::extensions.geometry)::numeric, 4)::float from public.diagnostic_centres where active`;
+        const pairs = (rows) => rows.map((r) => ({ key: r.key, count: r.n }));
+        return {
+          totals: { carePlaces: totals.care_places, doctors: totals.doctors, pharmacies: totals.pharmacies, diagnosticCentres: totals.diagnostic_centres, doctorsWithPhoto: totals.doctors_with_photo, emergency: totals.emergency },
+          byType: pairs(byType), byArea: pairs(byArea), bySpeciality: pairs(bySpeciality), bySource: pairs(bySource), byChain: pairs(byChain),
+          fees: fees.n ? { count: fees.n, min: fees.min, median: fees.median, max: fees.max } : null,
+          points: points.map((p) => ({ kind: p.k, type: p.t, lat: p.lat, lng: p.lng })),
+        };
+      },
       async areas() {
         const rows = await sql`
           select area from (

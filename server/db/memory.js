@@ -188,6 +188,19 @@ export function createMemoryStore() {
     },
 
     listings: {
+      async insights() {
+        const count = (list, key) => Object.entries(list.reduce((a, x) => ({ ...a, [key(x)]: (a[key(x)] || 0) + 1 }), {}))
+          .map(([k, n]) => ({ key: k, count: n })).sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+        const docs = doctors.map(doctorView);
+        const fees = docs.map((d) => d.consultationFeeInr).filter((f) => f !== null && f !== undefined).sort((a, b) => a - b);
+        return {
+          totals: { carePlaces: hospitals.length, doctors: docs.length, pharmacies: PHARMACIES.length, diagnosticCentres: DIAGNOSTICS.length, doctorsWithPhoto: docs.filter((d) => d.photoUrl).length, emergency: hospitals.filter((h) => h.emergencyAvailable === true).length },
+          byType: count(hospitals, (h) => h.facilityType ?? 'hospital'), byArea: count(hospitals, (h) => h.area).slice(0, 12),
+          bySpeciality: count(docs, (d) => d.specialization).slice(0, 12), bySource: count(docs, (d) => d.sourcePlatform), byChain: count(PHARMACIES, (p) => p.chain ?? 'Independent'),
+          fees: fees.length ? { count: fees.length, min: fees[0], median: fees[Math.floor(fees.length / 2)], max: fees.at(-1) } : null,
+          points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...PHARMACIES.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...DIAGNOSTICS.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
+        };
+      },
       async areas() { return [...AREAS]; },
       async hospitals(p) {
         return near(hospitals.filter((h) =>

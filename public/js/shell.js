@@ -10,6 +10,7 @@ const NAV = [
   {
     group: 'Find care',
     items: [
+      { id: 'explore', href: '/explore/', label: 'Explore Hyderabad', icon: 'chart' },
       { id: 'hospitals', href: '/search/hospitals/', label: 'Hospitals and doctors', icon: 'hospital' },
       { id: 'medicines', href: '/search/medicines/', label: 'Medicines and pharmacies', icon: 'pill' },
       { id: 'diagnostics', href: '/search/diagnostics/', label: 'Diagnostic centres', icon: 'flask' },

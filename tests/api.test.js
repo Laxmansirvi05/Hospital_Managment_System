@@ -239,6 +239,16 @@ describe('discovery (D-36)', () => {
     expect(r.body.hospitals.every((h) => h.facilityType === 'hospital')).toBe(true);
     expect((await app.api('/hospitals?type=spa', { token: u.token })).status).toBe(422);
   });
+  it('serves Explore insights only to signed-in users, with counts and map points', async () => {
+    expect((await app.api('/insights')).status).toBe(401);
+    const u = await app.user();
+    const r = await app.api('/insights', { token: u.token });
+    expect(r.status).toBe(200);
+    expect(r.body.totals.carePlaces).toBeGreaterThan(0);
+    expect(r.body.byType.reduce((a, x) => a + x.count, 0)).toBe(r.body.totals.carePlaces);
+    expect(r.body.points.length).toBe(r.body.totals.carePlaces + r.body.totals.pharmacies + r.body.totals.diagnosticCentres);
+    expect(Object.keys(r.body.points[0]).sort()).toEqual(['kind', 'lat', 'lng', 'type']);
+  });
   it('returns a title on every doctor (D-54)', async () => {
     const u = await app.user();
     const r = await app.api('/doctors', { token: u.token });

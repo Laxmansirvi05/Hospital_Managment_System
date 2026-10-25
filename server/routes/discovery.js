@@ -68,6 +68,13 @@ export const medicineView = (m) => ({
 });
 
 const ROUTES = [
+  {
+    method: 'GET', path: '/insights', roles: SIGNED_IN,
+    async handler() {
+      const x = await getStore().listings.insights();
+      return { body: x, headers: { 'Cache-Control': 'private, max-age=300' } };
+    },
+  },
   { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: await getStore().listings.areas() } }; } },
 
   {

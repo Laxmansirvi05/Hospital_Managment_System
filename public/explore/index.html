@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Explore Hyderabad · CareRoute</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/pages/explore.js"></script>
+</head>
+<body>
+  <a class="visually-hidden" href="#main">Skip to content</a>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main"></aside>
+    <div>
+      <div class="mode-banner" id="mode-banner" role="note" hidden></div>
+      <div class="offline notice notice-warning notice-flat" role="status">You are offline. Changes will not save until you reconnect.</div>
+      <header class="topbar" id="topbar"></header>
+      <main class="main" id="main" tabindex="-1">
+        <div class="page" aria-busy="true">
+          <div class="skeleton skeleton-hero"></div>
+          <div class="skeleton skeleton-block"></div>
+          <div class="skeleton skeleton-block skeleton-block-l"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+  <div aria-live="polite" class="visually-hidden" id="live"></div>
+</body>
+</html>
