@@ -35,8 +35,11 @@ function website(t) {
   return v && v.length <= 300 ? v : null;
 }
 
+// A single doctor's practice often lists the doctor's own mobile or email; keep only its phone (D-54).
+const personalPractice = (t) => t.amenity === 'doctors' || t.healthcare === 'doctor';
+
 function phone(t) {
-  const p = first(t.phone, t['contact:phone'], t['contact:mobile'], t.mobile);
+  const p = personalPractice(t) ? first(t.phone, t['contact:phone']) : first(t.phone, t['contact:phone'], t['contact:mobile'], t.mobile);
   return p ? p.split(/[;,]/)[0].trim().slice(0, 40) : null;
 }
 
@@ -104,7 +107,7 @@ export function toListings(elements, checkedAt) {
     const area = areaFor({ lat, lng }, t);
     const base = {
       sourceRef: ref, name: name.slice(0, 200), area, address: address(t, area), lat, lng,
-      phone: phone(t), email: first(t.email, t['contact:email']), website: website(t),
+      phone: phone(t), email: personalPractice(t) ? null : first(t.email, t['contact:email']), website: website(t),
       sourcePlatform: 'OpenStreetMap', sourceUrl: `https://www.openstreetmap.org/${e.type}/${e.id}`, checkedAt,
     };
     if (kind === 'hospital') {

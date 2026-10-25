@@ -265,6 +265,11 @@ describe('doctor photos (D-55)', () => {
 });
 
 describe('care place types and pharmacy chains (D-59)', () => {
+  it('keeps no mobile or email for a single doctor practice (D-54)', () => {
+    const [p] = toListings([{ type: 'node', id: 9, lat: 17.42, lon: 78.45, tags: { amenity: 'doctors', name: 'Dr Rao Clinic', 'contact:mobile': '+91 98480 00000', email: 'dr.rao@example.test' } }], '2026-10-25').hospitals;
+    expect(p.phone).toBeNull();
+    expect(p.email).toBeNull();
+  });
   it('types places by tags first, then name', () => {
     expect(facilityType({ amenity: 'dentist', name: 'Smile Care' })).toBe('dental');
     expect(facilityType({ amenity: 'clinic', name: 'Vasan Eye Care' })).toBe('eye');
