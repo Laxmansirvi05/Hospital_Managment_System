@@ -326,11 +326,14 @@ export function createPostgresStore(url) {
       },
       async doctor(id) { const [r] = await doctorsQuery(sql`d.id = ${id}`); return r ? doctorOut(r) : null; },
       async medicines(p) {
-        const meds = await sql`select * from public.medicines where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')}) order by name limit ${p.limit ?? 50}`;
+        const meds = await sql`select * from public.medicines where active
+          and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or category ilike ${like(p.q ?? '')})
+          and (${p.category ?? null}::text is null or category = ${p.category ?? null})
+          order by name limit ${p.limit ?? 50}`;
         if (!meds.length) return [];
         const listings = await sql`select * from public.medicine_listings where active and medicine_id in ${sql(meds.map((m) => m.id))} order by price_inr`;
         return meds.map((m) => ({
-          id: m.id, name: m.name, form: m.form, pack: m.pack, prescriptionRequired: m.prescription_required,
+          id: m.id, name: m.name, form: m.form, pack: m.pack, category: m.category, prescriptionRequired: m.prescription_required,
           listings: listings.filter((l) => l.medicine_id === m.id).map((l) => ({ platform: l.platform, priceInr: num(l.price_inr), productUrl: l.product_url, checkedAt: l.checked_at.toISOString() })),
         }));
       },
@@ -338,7 +341,7 @@ export function createPostgresStore(url) {
         const [m] = await sql`select * from public.medicines where id = ${id} and active`;
         if (!m) return null;
         const listings = await sql`select * from public.medicine_listings where medicine_id = ${id} and active order by price_inr`;
-        return { id: m.id, name: m.name, form: m.form, pack: m.pack, prescriptionRequired: m.prescription_required, listings: listings.map((l) => ({ platform: l.platform, priceInr: num(l.price_inr), productUrl: l.product_url, checkedAt: l.checked_at.toISOString() })) };
+        return { id: m.id, name: m.name, form: m.form, pack: m.pack, category: m.category, prescriptionRequired: m.prescription_required, listings: listings.map((l) => ({ platform: l.platform, priceInr: num(l.price_inr), productUrl: l.product_url, checkedAt: l.checked_at.toISOString() })) };
       },
       async pharmacies(p) {
         const n = nearFilter('location', p);

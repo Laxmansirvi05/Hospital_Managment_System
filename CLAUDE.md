@@ -63,5 +63,6 @@ Building started on 2026-10-25 (D-41). All work is on `main`.
 | Regenerate `supabase/seed.sql` | `node scripts/gen-seed.js` |
 | Collect OpenStreetMap listings into `.cache/` | `node scripts/collect-osm.js` |
 | Collect doctors from hospital websites into `.cache/` (slow: 3 s per request per site) | `node scripts/collect-doctors.js [care kims rainbow continental gleneagles]` |
+| Collect the Jan Aushadhi medicine and MRP list into `.cache/` | `node scripts/collect-medicines.js` |
 | Load `.cache/` into careroute-dev | `node --env-file=.env.local scripts/load-listings.js` |
 | Load `.cache/` into careroute-prod (P-31) | `node --env-file=.env.local scripts/load-listings.js --prod` |

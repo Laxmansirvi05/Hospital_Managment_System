@@ -9,13 +9,13 @@ const { main } = await shell({ nav: 'medicines', title: 'Medicines and pharmacie
 const howPrices = h('aside', { class: 'card stack-12' },
   h('span', { class: 'empty-art' }, icon('pill', 30)),
   h('h2', { class: 't-title-3' }, 'How prices are shown'),
-  h('p', { class: 't-subhead muted' }, 'Each price is the listed price on that platform when it was last checked. The price on the platform may differ. You buy on the platform’s own website. CareRoute does not sell medicines.'),
+  h('p', { class: 't-subhead muted' }, 'Prices come from the government’s Jan Aushadhi product list: the MRP of each generic medicine at Jan Aushadhi Kendras. Each price shows the date it was checked. CareRoute does not sell medicines.'),
   h('p', { class: 't-subhead muted' }, 'Prescription medicines need a valid prescription on every platform. CareRoute compares prices only and does not suggest which medicine to take.'));
 
 searchPage({
   main,
   title: 'Medicines and pharmacies',
-  sub: 'Compare a medicine’s listed price across online platforms, or find a pharmacy near you with its rating, location and contact details.',
+  sub: 'Find a medicine’s official generic price (Jan Aushadhi MRP) and compare listed prices where more than one source has them, or find a pharmacy near you.',
   tabs: [
     {
       id: 'medicines', label: 'Compare medicine prices', noun: 'medicine', key: 'medicines', usesArea: false,
@@ -27,9 +27,9 @@ searchPage({
         const high = m.listings[m.listings.length - 1];
         return listingRow({
           href: `/medicine/?id=${m.id}`, kind: 'medicine', title: m.name,
-          meta: [`${m.form} · ${m.pack}`, h('span', { class: 'row-8' },
+          meta: [[m.form, m.pack, m.category].filter(Boolean).join(' · '), h('span', { class: 'row-8' },
             m.prescriptionRequired ? h('span', { class: 'tag tag-warning' }, 'Prescription required') : null,
-            h('span', { class: 't-footnote' }, `${m.listings.length} platforms`))],
+            h('span', { class: 't-footnote' }, m.listings.length === 1 ? `Price from ${m.listings[0].platform}` : `${m.listings.length} platforms`))],
           trail: low ? h('span', { class: 'stack-4', style: 'text-align:right' },
             h('span', { class: 't-headline num', style: 'color:var(--text-1)' }, `From ${rupees(low.priceInr)}`),
             h('span', { class: 't-footnote' }, high.priceInr > low.priceInr ? `Prices differ by ${rupees(high.priceInr - low.priceInr)}` : `on ${low.platform}`)) : null,

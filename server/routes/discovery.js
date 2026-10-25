@@ -24,6 +24,7 @@ const searchQuery = z.object({
   test: z.string().trim().max(60).optional(),
   type: z.enum(['hospital', 'clinic', 'nursing_home', 'dental', 'eye', 'maternity', 'ayush']).optional(),
   chain: z.string().trim().max(60).optional(),
+  category: z.string().trim().max(80).optional(),
 }).strict().refine((v) => (v.lat === undefined) === (v.lng === undefined), { message: 'Send both lat and lng for location', path: ['location'] });
 
 function q(query) {
@@ -63,7 +64,7 @@ export const doctorView = (d) => ({
 export const pharmacyView = (x) => ({ ...base(x), chain: x.chain ?? null, hours: x.hours, open24: x.open24 });
 export const diagnosticView = (x) => ({ ...base(x), hours: x.hours, description: x.description, testsListed: x.testsListed });
 export const medicineView = (m) => ({
-  id: m.id, name: m.name, form: m.form, pack: m.pack, prescriptionRequired: m.prescriptionRequired,
+  id: m.id, name: m.name, form: m.form, pack: m.pack, category: m.category ?? null, prescriptionRequired: m.prescriptionRequired ?? null,
   listings: m.listings.map((l) => ({ platform: l.platform, priceInr: l.priceInr, productUrl: l.productUrl, checkedAt: l.checkedAt })),
 });
 

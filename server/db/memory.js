@@ -223,7 +223,7 @@ export function createMemoryStore() {
       },
       async doctor(id) { const d = doctors.find((x) => x.id === id); return d ? clone(doctorView(d)) : null; },
       async medicines(p) {
-        return MEDICINES.filter((m) => matches(m.name, p.q)).slice(0, p.limit ?? 50).map((m) => ({ ...clone(m), listings: clone(m.listings).sort((a, b) => a.priceInr - b.priceInr) }));
+        return MEDICINES.filter((m) => matches(m.name, p.q) && (!p.category || m.category === p.category)).slice(0, p.limit ?? 50).map((m) => ({ ...clone(m), listings: clone(m.listings).sort((a, b) => a.priceInr - b.priceInr) }));
       },
       async medicine(id) { const m = MEDICINES.find((x) => x.id === id); return m ? { ...clone(m), listings: clone(m.listings).sort((a, b) => a.priceInr - b.priceInr) } : null; },
       async pharmacies(p) {

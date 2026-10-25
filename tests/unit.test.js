@@ -14,6 +14,7 @@ import { fallbackBranch as rainbowBranch } from '../scripts/sources/rainbow.js';
 import { robotsRules, splitQualifications } from '../scripts/lib/web.js';
 import { SOURCES } from '../scripts/collect-doctors.js';
 import { readFileSync } from 'node:fs';
+import { toMedicines, formOf } from '../scripts/collect-medicines.js';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -275,5 +276,18 @@ describe('care place types and pharmacy chains (D-59)', () => {
     expect(chainOf({ name: 'Apollo Pharmacy Madhapur' })).toBe('Apollo Pharmacy');
     expect(chainOf({ brand: 'MedPlus', name: 'Store 42' })).toBe('MedPlus');
     expect(chainOf({ name: 'Ravi Medicals' })).toBeNull();
+  });
+});
+
+describe('Jan Aushadhi medicines (D-53)', () => {
+  it('keeps priced active products with a stable reference and reads the dosage form', () => {
+    const m = toMedicines([
+      { drugCode: 1, genericName: 'Paracetamol Tablets IP 500 mg', unitSize: "10's", mrp: 9.5, groupName: 'Analgesic', status: 1 },
+      { drugCode: 2, genericName: 'Zero priced item', unitSize: '1', mrp: 0, groupName: 'X', status: 1 },
+      { drugCode: 3, genericName: 'Withdrawn item', unitSize: '1', mrp: 5, groupName: 'X', status: 0 },
+    ], '2026-10-25');
+    expect(m).toEqual([{ sourceRef: 'janaushadhi:1', name: 'Paracetamol Tablets IP 500 mg', form: 'Tablet', pack: "10's", category: 'Analgesic', priceInr: 9.5, drugCode: 1, checkedAt: '2026-10-25' }]);
+    expect(formOf('Ceftriaxone Injection IP 1 g')).toBe('Injection');
+    expect(formOf('Amoxycillin Oral Suspension IP')).toBe('Syrup');
   });
 });

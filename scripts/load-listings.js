@@ -8,6 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import postgres from 'postgres';
 import { SOURCES } from './collect-doctors.js';
+import { LIST_PAGE as JAN_AUSHADHI_PAGE } from './collect-medicines.js';
 
 const point = (sql, x) => sql`extensions.st_setsrid(extensions.st_makepoint(${x.lng}, ${x.lat}), 4326)::extensions.geography`;
 
@@ -51,12 +52,34 @@ async function main() {
         const h = await tx`delete from public.hospitals where source_ref is null`;
         const p = await tx`delete from public.pharmacies where source_ref is null`;
         const c = await tx`delete from public.diagnostic_centres where source_ref is null`;
+        const m = await tx`delete from public.medicines where source_ref is null`;
+        console.log(`sample medicines removed: ${m.count}`);
         console.log(`samples removed: ${h.count} hospitals, ${d.count} doctors, ${p.count} pharmacies, ${c.count} diagnostic centres`);
       }
       const hh = await upsertPlaces(tx, 'hospitals', osm.hospitals, (r) => ({ ...withPoint(r), facility_type: r.facilityType ?? 'hospital', description: r.description, emergency_available: r.emergencyAvailable, specialities: r.specialities }));
       const ph = await upsertPlaces(tx, 'pharmacies', osm.pharmacies, (r) => ({ ...withPoint(r), chain: r.chain ?? null, hours: r.hours, open_24: r.open24 }));
       const dh = await upsertPlaces(tx, 'diagnostic_centres', osm.diagnostics, (r) => ({ ...withPoint(r), hours: r.hours, description: r.description, tests_listed: r.testsListed }));
       console.log(`OpenStreetMap: ${osm.hospitals.length} hospitals, ${osm.pharmacies.length} pharmacies, ${osm.diagnostics.length} diagnostic centres (${hh + ph + dh} no longer listed, hidden)`);
+
+      let meds = null;
+      try { meds = JSON.parse(await readFile('.cache/medicines-janaushadhi.json', 'utf8')); } catch (err) { if (err.code !== 'ENOENT') throw err; }
+      if (meds) {
+        // Batches keep this to a handful of round trips for about two thousand medicines.
+        for (let i = 0; i < meds.medicines.length; i += 500) {
+          const chunk = meds.medicines.slice(i, i + 500);
+          const rows = chunk.map((m) => ({ source_ref: m.sourceRef, name: m.name, form: m.form, pack: m.pack, category: m.category, prescription_required: null, active: true }));
+          const saved = await tx`insert into public.medicines ${tx(rows)}
+            on conflict (source_ref) do update set name = excluded.name, form = excluded.form, pack = excluded.pack, category = excluded.category, active = true, updated_at = now()
+            returning id, source_ref`;
+          const idOf = new Map(saved.map((r) => [r.source_ref, r.id]));
+          const listings = chunk.map((m) => ({ medicine_id: idOf.get(m.sourceRef), platform: 'Jan Aushadhi', price_inr: m.priceInr, product_url: JAN_AUSHADHI_PAGE, checked_at: m.checkedAt, active: true }));
+          await tx`insert into public.medicine_listings ${tx(listings)}
+            on conflict (medicine_id, platform) do update set price_inr = excluded.price_inr, product_url = excluded.product_url, checked_at = excluded.checked_at, active = true, updated_at = now()`;
+        }
+        const refs = meds.medicines.map((m) => m.sourceRef);
+        await tx`update public.medicines set active = false, updated_at = now() where source_ref like 'janaushadhi:%' and active and not (source_ref = any(${refs}))`;
+        console.log(`Jan Aushadhi: ${meds.medicines.length} medicines with MRP`);
+      }
 
       const ids = new Map((await tx`select id, source_ref from public.hospitals where source_ref is not null and active`).map((r) => [r.source_ref, r.id]));
       for (const src of SOURCES) {
