@@ -4,6 +4,15 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Reviews acted on, more doctors, loader fixes
+
+- Security review (no critical findings): refresh limited per session and skipped with no cookie; `--drop-samples` refused with `--prod`; https check on booking and test price links; `/insights` cached on the server and not by browsers; raw SQL helpers restricted to fixed columns; robots.txt re-checked after a cross-host redirect. P-31 now lists the import role's real grants (listing tables only, no delete).
+- Design review: chart colour tokens without purple, map marks differ by shape, a written caption for the map, focus kept after chips redraw, 44 px targets, wrapping bar labels, outbound links labelled, error state for test prices, copy fixes.
+- Doctors: Ankura, Citizens (JSON-LD with raw line breaks now readable) and L V Prasad added. Photos kept only when the address is a real image. Single-doctor practices in OpenStreetMap keep no mobile or email.
+- Loader bug: loading Vijaya centres hid every OpenStreetMap diagnostic centre; each source now hides only its own rows. Sample medicines removed from careroute-dev.
+- Loaded into careroute-dev and careroute-prod (counts checked by SQL on prod): 1,650 care places, 244 pharmacies, 151 diagnostic centres, 1,486 doctors (1,362 with photos), 2,096 medicines, 1,079 Vijaya Hyderabad test prices. The earlier prod load had hidden the OSM diagnostic centres; this load restored them.
+- Live production smoke test: register, insights, doctor search by language and experience, test prices, medicines, account deletion; no test users left.
+
 ### More sources, photos, prices and Explore
 
 - Decided D-55 (doctor photos, shown from the hospital's own image address), D-56 (doctors and facilities from every site that allows it, facts only), D-57 (booking by the source's call number and booking page), D-58 (no test filter chips on diagnostic search), D-59 (greater Hyderabad, clinics and care place types).
