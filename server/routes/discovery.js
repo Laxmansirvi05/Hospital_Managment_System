@@ -22,6 +22,8 @@ const searchQuery = z.object({
   emergencyOnly: flag.optional(),
   open24: flag.optional(),
   test: z.string().trim().max(60).optional(),
+  type: z.enum(['hospital', 'clinic', 'nursing_home', 'dental', 'eye', 'maternity', 'ayush']).optional(),
+  chain: z.string().trim().max(60).optional(),
 }).strict().refine((v) => (v.lat === undefined) === (v.lng === undefined), { message: 'Send both lat and lng for location', path: ['location'] });
 
 function q(query) {
@@ -49,7 +51,7 @@ const base = (x) => ({
   source: { platform: x.sourcePlatform, url: x.sourceUrl, checkedAt: x.checkedAt },
   ...(x.distanceKm !== undefined ? { distanceKm: x.distanceKm } : {}),
 });
-export const hospitalView = (x) => ({ ...base(x), description: x.description, emergencyAvailable: x.emergencyAvailable, specialities: x.specialities, departments: x.departments });
+export const hospitalView = (x) => ({ ...base(x), facilityType: x.facilityType ?? 'hospital', description: x.description, emergencyAvailable: x.emergencyAvailable, specialities: x.specialities, departments: x.departments });
 export const doctorView = (d) => ({
   id: d.id, name: d.name, title: d.title ?? '', specialization: d.specialization, qualifications: d.qualifications, experienceYears: d.experienceYears,
   publishedTimings: d.publishedTimings, profileUrl: d.profileUrl, rating: d.rating ?? null, ratingCount: d.ratingCount ?? null,
@@ -58,7 +60,7 @@ export const doctorView = (d) => ({
   source: { platform: d.sourcePlatform, url: d.sourceUrl, checkedAt: d.checkedAt },
   ...(d.distanceKm !== undefined ? { distanceKm: d.distanceKm } : {}),
 });
-export const pharmacyView = (x) => ({ ...base(x), hours: x.hours, open24: x.open24 });
+export const pharmacyView = (x) => ({ ...base(x), chain: x.chain ?? null, hours: x.hours, open24: x.open24 });
 export const diagnosticView = (x) => ({ ...base(x), hours: x.hours, description: x.description, testsListed: x.testsListed });
 export const medicineView = (m) => ({
   id: m.id, name: m.name, form: m.form, pack: m.pack, prescriptionRequired: m.prescriptionRequired,

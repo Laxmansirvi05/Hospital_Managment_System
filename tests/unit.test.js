@@ -6,10 +6,11 @@ import { dosesFor } from '../server/db/geo.js';
 import { sniffOk } from '../server/adapters/storage.js';
 import { scrub } from '../server/log.js';
 import { dropRewriteParam } from '../api/v1/[...path].js';
-import { toListings } from '../scripts/collect-osm.js';
+import { toListings, facilityType, chainOf } from '../scripts/collect-osm.js';
 import { parseDoctor, branchOf, branches as careBranches } from '../scripts/sources/care.js';
 import { timingsFrom } from '../scripts/sources/kims.js';
 import { toRecord as gleneaglesRecord } from '../scripts/sources/gleneagles.js';
+import { fallbackBranch as rainbowBranch } from '../scripts/sources/rainbow.js';
 import { robotsRules, splitQualifications } from '../scripts/lib/web.js';
 import { SOURCES } from '../scripts/collect-doctors.js';
 import { readFileSync } from 'node:fs';
@@ -167,28 +168,29 @@ describe('OpenStreetMap collection (D-50, D-51)', () => {
     { type: 'way', id: 7, center: { lat: 17.5, lon: 78.6 }, tags: { amenity: 'hospital', name: 'Far Hospital', phone: '+91 40 1234 5678; +91 98490 00000', website: 'javascript:alert(1)', 'addr:suburb': 'Uppal' } },
   ], '2026-10-25');
 
-  it('sorts places into the three listing types and drops unnamed or plain clinics', () => {
-    expect(data.hospitals.map((h) => h.name)).toEqual(['City Hospital', 'Far Hospital']);
+  it('sorts places into the three listing types, keeps clinics as clinics (D-59) and drops unnamed places', () => {
+    expect(data.hospitals.map((h) => h.name)).toEqual(['City Hospital', 'Family Clinic', 'Far Hospital']);
+    expect(data.hospitals.map((h) => h.facilityType)).toEqual(['hospital', 'clinic', 'hospital']);
     expect(data.pharmacies.map((p) => p.name)).toEqual(['Corner Pharmacy']);
     expect(data.diagnostics.map((d) => d.name)).toEqual(['Vijaya Diagnostic Centre']);
   });
   it('keeps a missing phone as null and the first of several numbers', () => {
     expect(data.hospitals[0].phone).toBeNull();
-    expect(data.hospitals[1].phone).toBe('+91 40 1234 5678');
+    expect(data.hospitals[2].phone).toBe('+91 40 1234 5678');
   });
   it('only accepts http and https websites', () => {
     expect(data.hospitals[0].website).toBe('https://www.city.example');
-    expect(data.hospitals[1].website).toBeNull();
+    expect(data.hospitals[2].website).toBeNull();
   });
   it('names the area from the nearest suburb, else the address tag, and never invents a street', () => {
     expect(data.hospitals[0].area).toBe('Banjara Hills');
-    expect(data.hospitals[1].area).toBe('Uppal');
+    expect(data.hospitals[2].area).toBe('Uppal');
     expect(data.hospitals[0].address).toBe('Banjara Hills, Hyderabad (no street address listed)');
   });
   it('keeps the source, licence link target and a stable reference', () => {
-    expect(data.hospitals[1]).toMatchObject({ sourceRef: 'osm:way/7', sourcePlatform: 'OpenStreetMap', sourceUrl: 'https://www.openstreetmap.org/way/7', checkedAt: '2026-10-25' });
+    expect(data.hospitals[2]).toMatchObject({ sourceRef: 'osm:way/7', sourcePlatform: 'OpenStreetMap', sourceUrl: 'https://www.openstreetmap.org/way/7', checkedAt: '2026-10-25' });
     expect(data.hospitals[0]).toMatchObject({ emergencyAvailable: true, specialities: ['General', 'Paediatrics'] });
-    expect(data.hospitals[1].emergencyAvailable).toBeNull();
+    expect(data.hospitals[2].emergencyAvailable).toBeNull();
     expect(data.pharmacies[0].open24).toBe(true);
   });
 });
@@ -227,6 +229,11 @@ describe('collector helpers (P-29, D-56)', () => {
     expect(ok('/doctors/public/dr-a')).toBe(true);
     expect(ok('/search?q=x')).toBe(false);
   });
+  it('finds a Rainbow branch from its name list or its URL', () => {
+    expect(rainbowBranch({ branchText: 'Kondapur OP', profileUrl: 'https://www.rainbowhospitals.in/all/doctor/hyderabad/x/y/z' })).toBe('Kondapur');
+    expect(rainbowBranch({ branchText: '', profileUrl: 'https://www.rainbowhospitals.in/all/doctor/hyderabad/secunderabad/obstetrics-maternity-hospital/dr-a' })).toBe('Secunderabad');
+    expect(rainbowBranch({ branchText: 'Financial District', profileUrl: 'https://www.rainbowhospitals.in/all/doctor/hyderabad/financial-district/h/dr-b' })).toBeNull();
+  });
   it('splits qualifications only on commas outside brackets', () => {
     expect(splitQualifications('MBBS, MD (Medicine, AIIMS), DM')).toEqual(['MBBS', 'MD (Medicine, AIIMS)', 'DM']);
   });
@@ -253,5 +260,20 @@ describe('doctor photos (D-55)', () => {
       expect(local).toContain(`https://${host}`);
     }
     expect(prod.some((h) => h === 'https:' || h === '*' || h === 'https://*')).toBe(false);
+  });
+});
+
+describe('care place types and pharmacy chains (D-59)', () => {
+  it('types places by tags first, then name', () => {
+    expect(facilityType({ amenity: 'dentist', name: 'Smile Care' })).toBe('dental');
+    expect(facilityType({ amenity: 'clinic', name: 'Vasan Eye Care' })).toBe('eye');
+    expect(facilityType({ amenity: 'hospital', name: 'City Hospital' })).toBe('hospital');
+    expect(facilityType({ amenity: 'clinic', name: 'Sri Homoeo Clinic' })).toBe('ayush');
+    expect(facilityType({ amenity: 'doctors', name: 'Family Clinic' })).toBe('clinic');
+  });
+  it('names a pharmacy chain from the brand or name', () => {
+    expect(chainOf({ name: 'Apollo Pharmacy Madhapur' })).toBe('Apollo Pharmacy');
+    expect(chainOf({ brand: 'MedPlus', name: 'Store 42' })).toBe('MedPlus');
+    expect(chainOf({ name: 'Ravi Medicals' })).toBeNull();
   });
 });

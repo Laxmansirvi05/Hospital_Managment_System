@@ -194,6 +194,7 @@ export function createMemoryStore() {
           matches([h.name, h.area, ...h.specialities, ...h.departments].join(' '), p.q) &&
           (!p.area || h.area === p.area) &&
           (!p.emergencyOnly || h.emergencyAvailable === true) &&
+          (!p.type || (h.facilityType ?? 'hospital') === p.type) &&
           (!p.speciality || h.specialities.some((s) => s.toLowerCase().includes(p.speciality.toLowerCase())))), p).map(clone);
       },
       async hospital(id) { const h = hospitals.find((x) => x.id === id); return h ? clone(h) : null; },
@@ -213,7 +214,7 @@ export function createMemoryStore() {
       },
       async medicine(id) { const m = MEDICINES.find((x) => x.id === id); return m ? { ...clone(m), listings: clone(m.listings).sort((a, b) => a.priceInr - b.priceInr) } : null; },
       async pharmacies(p) {
-        return near(PHARMACIES.filter((x) => matches([x.name, x.area].join(' '), p.q) && (!p.area || x.area === p.area) && (!p.open24 || x.open24)), p).map(clone);
+        return near(PHARMACIES.filter((x) => matches([x.name, x.area].join(' '), p.q) && (!p.area || x.area === p.area) && (!p.open24 || x.open24) && (!p.chain || x.chain === p.chain)), p).map(clone);
       },
       async pharmacy(id) { const x = PHARMACIES.find((y) => y.id === id); return x ? clone(x) : null; },
       async diagnostics(p) {

@@ -73,7 +73,7 @@ export async function searchPage({ main, title, sub, tabs }) {
     const area = areaSelect(areas, p.get('area') || '');
     area.hidden = tab.usesArea === false;
     const seg = tabs.length > 1 ? h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Search for' },
-      tabs.map((t) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(t.id === tab.id), 'aria-pressed': String(t.id === tab.id), onclick: () => update({ tab: t.id === tabs[0].id ? '' : t.id, q: '', speciality: '', test: '', open24: '', emergency: '' }) }, t.label))) : null;
+      tabs.map((t) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(t.id === tab.id), 'aria-pressed': String(t.id === tab.id), onclick: () => update({ tab: t.id === tabs[0].id ? '' : t.id, q: '', speciality: '', test: '', open24: '', emergency: '', type: '', chain: '' }) }, t.label))) : null;
     form.replaceChildren(...[
       seg,
       h('div', { class: 'searchbar-row' },
@@ -108,7 +108,7 @@ export async function searchPage({ main, title, sub, tabs }) {
     results.replaceChildren(...[
       h('div', { class: 'spread' },
         h('h2', { class: 't-title-2' }, `${list.length} ${list.length === 1 ? tab.noun : tab.plural || `${tab.noun}s`}`),
-        filtersOn ? h('button', { class: 'btn btn-text btn-sm', type: 'button', onclick: () => update({ q: '', area: '', speciality: '', test: '', open24: '', emergency: '' }) }, 'Clear search') : null),
+        filtersOn ? h('button', { class: 'btn btn-text btn-sm', type: 'button', onclick: () => update({ q: '', area: '', speciality: '', test: '', open24: '', emergency: '', type: '', chain: '' }) }, 'Clear search') : null),
       q ? h('p', { class: 't-subhead muted' }, `Matching “${q}”${p.get('area') ? ` in ${p.get('area')}` : ''}`) : null,
       list.length ? h('div', { class: 'list' }, list.map(tab.row))
         : empty({ title: `No ${tab.plural || `${tab.noun}s`} found`, text: 'Try a shorter search, another area, or fewer filters.' }),

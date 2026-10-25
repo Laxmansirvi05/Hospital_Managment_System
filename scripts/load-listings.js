@@ -53,8 +53,8 @@ async function main() {
         const c = await tx`delete from public.diagnostic_centres where source_ref is null`;
         console.log(`samples removed: ${h.count} hospitals, ${d.count} doctors, ${p.count} pharmacies, ${c.count} diagnostic centres`);
       }
-      const hh = await upsertPlaces(tx, 'hospitals', osm.hospitals, (r) => ({ ...withPoint(r), description: r.description, emergency_available: r.emergencyAvailable, specialities: r.specialities }));
-      const ph = await upsertPlaces(tx, 'pharmacies', osm.pharmacies, (r) => ({ ...withPoint(r), hours: r.hours, open_24: r.open24 }));
+      const hh = await upsertPlaces(tx, 'hospitals', osm.hospitals, (r) => ({ ...withPoint(r), facility_type: r.facilityType ?? 'hospital', description: r.description, emergency_available: r.emergencyAvailable, specialities: r.specialities }));
+      const ph = await upsertPlaces(tx, 'pharmacies', osm.pharmacies, (r) => ({ ...withPoint(r), chain: r.chain ?? null, hours: r.hours, open_24: r.open24 }));
       const dh = await upsertPlaces(tx, 'diagnostic_centres', osm.diagnostics, (r) => ({ ...withPoint(r), hours: r.hours, description: r.description, tests_listed: r.testsListed }));
       console.log(`OpenStreetMap: ${osm.hospitals.length} hospitals, ${osm.pharmacies.length} pharmacies, ${osm.diagnostics.length} diagnostic centres (${hh + ph + dh} no longer listed, hidden)`);
 
@@ -65,7 +65,9 @@ async function main() {
         const refs = [];
         const unplaced = {};
         for (const d of Object.values(cache.records)) {
-          const hospitalId = ids.get(src.branches[d.branch]);
+          // Records collected before a branch was mapped still name it in their branch text.
+          const named = Object.keys(src.branches).find((k) => (d.branchText || '').toLowerCase().includes(k.toLowerCase()));
+          const hospitalId = ids.get(src.branches[d.branch ?? src.fallbackBranch?.(d) ?? named]);
           if (!hospitalId) { unplaced[d.branchText || 'no location'] = (unplaced[d.branchText || 'no location'] || 0) + 1; continue; }
           // A photo is shown only from the hospital's own image host, which the CSP also allows (D-55).
           const photo = d.photoUrl && src.photoHosts.includes(new URL(d.photoUrl).host) ? d.photoUrl : null;

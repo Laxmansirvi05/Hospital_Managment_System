@@ -13,6 +13,10 @@ function specialitySelect(params, update, key) {
   return sel;
 }
 
+// Care place types (D-59). Labels are what a patient would call them.
+const TYPES = [['hospital', 'Hospitals'], ['clinic', 'Clinics'], ['eye', 'Eye care'], ['dental', 'Dental'], ['maternity', 'Women and children'], ['nursing_home', 'Nursing homes'], ['ayush', 'AYUSH']];
+const TYPE_LABEL = Object.fromEntries([['hospital', 'Hospital'], ['clinic', 'Clinic'], ['eye', 'Eye care'], ['dental', 'Dental'], ['maternity', 'Women and children'], ['nursing_home', 'Nursing home'], ['ayush', 'AYUSH']]);
+
 const { main } = await shell({ nav: 'hospitals', title: 'Hospitals and doctors' });
 
 searchPage({
@@ -23,15 +27,16 @@ searchPage({
     {
       id: 'hospitals', label: 'Hospitals', noun: 'hospital', key: 'hospitals',
       placeholder: 'Hospital name, speciality or department',
-      endpoint: (p, o) => withOrigin('/hospitals', p, o, ['q', 'area', 'speciality', 'emergency']),
+      endpoint: (p, o) => withOrigin('/hospitals', p, o, ['q', 'area', 'speciality', 'emergency', 'type']),
       filters: (p, update) => [
         specialitySelect(p, update, 'speciality'),
         chip('Emergency department', p.get('emergency') === '1', () => update({ emergency: p.get('emergency') !== '1' })),
+        ...TYPES.map(([v, label]) => chip(label, p.get('type') === v, () => update({ type: p.get('type') === v ? '' : v }))),
       ],
       row: (x) => listingRow({
         href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name,
         meta: [[x.area, x.specialities.slice(0, 3).join(', ')].filter(Boolean).join(' · '),
-          h('span', { class: 'row-8' }, rating(x), x.emergencyAvailable ? h('span', { class: 'tag tag-success' }, 'Emergency department') : null)],
+          h('span', { class: 'row-8' }, h('span', { class: 'tag' }, TYPE_LABEL[x.facilityType] || 'Hospital'), rating(x), x.emergencyAvailable ? h('span', { class: 'tag tag-success' }, 'Emergency department') : null)],
         trail: distance(x),
       }),
       pin: (x) => ({ ...x.location, kind: 'hospital', label: x.name, href: `/hospital/?id=${x.id}` }),

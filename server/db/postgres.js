@@ -77,7 +77,7 @@ export function createPostgresStore(url) {
     rating: num(r.rating), ratingCount: r.rating_count, sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at),
     ...(r.distance_km !== null && r.distance_km !== undefined ? { distanceKm: r.distance_km } : {}),
   });
-  const hospitalOut = (r) => ({ ...listingBase(r), description: r.description, emergencyAvailable: r.emergency_available, specialities: r.specialities, departments: r.departments });
+  const hospitalOut = (r) => ({ ...listingBase(r), facilityType: r.facility_type, description: r.description, emergencyAvailable: r.emergency_available, specialities: r.specialities, departments: r.departments });
   const doctorOut = (r) => ({
     id: r.id, name: r.name, title: r.title, specialization: r.specialization, qualifications: r.qualifications, experienceYears: r.experience_years,
     hospitalId: r.hospital_id, publishedTimings: r.published_timings, profileUrl: r.profile_url, rating: num(r.rating), ratingCount: r.rating_count,
@@ -278,6 +278,7 @@ export function createPostgresStore(url) {
                  or array_to_string(specialities, ' ') ilike ${like(p.q ?? '')} or array_to_string(departments, ' ') ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null})
             and (${p.emergencyOnly ?? false} = false or emergency_available is true)
+            and (${p.type ?? null}::text is null or facility_type = ${p.type ?? null})
             -- Sources spell specialities their own way, so the filter matches part of a name, ignoring case.
             and (${p.speciality ?? null}::text is null or exists (select 1 from unnest(specialities) s where s ilike ${like(p.speciality ?? '')}))
             and ${n.where}
@@ -315,11 +316,12 @@ export function createPostgresStore(url) {
         const rows = await sql`
           select *, ${latlng('location')}, ${n.dist} as distance_km from public.pharmacies
           where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')})
-            and (${p.area ?? null}::text is null or area = ${p.area ?? null}) and (${p.open24 ?? false} = false or open_24) and ${n.where}
+            and (${p.area ?? null}::text is null or area = ${p.area ?? null}) and (${p.open24 ?? false} = false or open_24)
+            and (${p.chain ?? null}::text is null or chain = ${p.chain ?? null}) and ${n.where}
           order by ${n.order} limit ${p.limit ?? 50}`;
-        return rows.map((r) => ({ ...listingBase(r), hours: r.hours, open24: r.open_24 }));
+        return rows.map((r) => ({ ...listingBase(r), chain: r.chain, hours: r.hours, open24: r.open_24 }));
       },
-      async pharmacy(id) { const [r] = await sql`select *, ${latlng('location')} from public.pharmacies where id = ${id} and active`; return r ? { ...listingBase(r), hours: r.hours, open24: r.open_24 } : null; },
+      async pharmacy(id) { const [r] = await sql`select *, ${latlng('location')} from public.pharmacies where id = ${id} and active`; return r ? { ...listingBase(r), chain: r.chain, hours: r.hours, open24: r.open_24 } : null; },
       async diagnostics(p) {
         const n = nearFilter('location', p);
         const rows = await sql`

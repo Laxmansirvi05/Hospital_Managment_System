@@ -232,6 +232,13 @@ describe('discovery (D-36)', () => {
     expect(unknown.body.hospitals).toEqual([]);
     expect((await app.api(`/hospitals?area=${'x'.repeat(81)}`, { token: u.token })).status).toBe(422);
   });
+  it('filters care places by type and rejects an unknown type (D-59)', async () => {
+    const u = await app.user();
+    const r = await app.api('/hospitals?type=hospital', { token: u.token });
+    expect(r.status).toBe(200);
+    expect(r.body.hospitals.every((h) => h.facilityType === 'hospital')).toBe(true);
+    expect((await app.api('/hospitals?type=spa', { token: u.token })).status).toBe(422);
+  });
   it('returns a title on every doctor (D-54)', async () => {
     const u = await app.user();
     const r = await app.api('/doctors', { token: u.token });

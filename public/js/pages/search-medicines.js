@@ -40,13 +40,16 @@ searchPage({
       id: 'pharmacies', label: 'Pharmacies', noun: 'pharmacy', plural: 'pharmacies', key: 'pharmacies',
       placeholder: 'Pharmacy or medical store name',
       endpoint: (p, o) => {
-        const url = withOrigin('/pharmacies', p, o, ['q', 'area']);
+        const url = withOrigin('/pharmacies', p, o, ['q', 'area', 'chain']);
         return p.get('open24') === '1' ? `${url}&open24=true` : url;
       },
-      filters: (p, update) => [chip('Open 24 hours', p.get('open24') === '1', () => update({ open24: p.get('open24') !== '1' }))],
+      filters: (p, update) => [
+        chip('Open 24 hours', p.get('open24') === '1', () => update({ open24: p.get('open24') !== '1' })),
+        ...['Apollo Pharmacy', 'MedPlus', 'Hetero Pharmacy', 'Jan Aushadhi Kendra'].map((c) => chip(c, p.get('chain') === c, () => update({ chain: p.get('chain') === c ? '' : c }))),
+      ],
       row: (x) => listingRow({
         href: `/pharmacy/?id=${x.id}`, kind: 'pharmacy', title: x.name,
-        meta: [[x.area, x.hours].filter(Boolean).join(' · '), rating(x)],
+        meta: [[x.area, x.hours].filter(Boolean).join(' · '), h('span', { class: 'row-8' }, x.chain ? h('span', { class: 'tag tag-primary' }, x.chain) : null, rating(x))],
         trail: distance(x),
       }),
       pin: (x) => ({ ...x.location, kind: 'pharmacy', label: x.name, href: `/pharmacy/?id=${x.id}` }),

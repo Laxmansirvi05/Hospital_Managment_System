@@ -16,6 +16,19 @@ export const branches = {
   'LB Nagar': 'osm:node/4625163789',
 };
 
+// Rainbow's URLs name the branch: /all/doctor/hyderabad/{branch}/{hospital}/{doctor}.
+const SLUGS = { 'banjara-hills-road': 'Banjara Hills', 'banjara-hills': 'Banjara Hills', kondapur: 'Kondapur', secunderabad: 'Secunderabad', hydernagar: 'Hydernagar', 'lb-nagar': 'LB Nagar' };
+
+/** Branch from the listed branch names ("Kondapur OP" counts as Kondapur), else from the URL. */
+export function fallbackBranch(d) {
+  for (const piece of (d.branchText || '').split('/').map((x) => x.trim().toLowerCase())) {
+    const k = Object.keys(branches).find((b) => piece === b.toLowerCase() || piece.startsWith(`${b.toLowerCase()} op`));
+    if (k) return k;
+  }
+  const slug = new URL(d.profileUrl).pathname.split('/')[4];
+  return SLUGS[slug] ?? null;
+}
+
 export function toRecord(html, url, checkedAt) {
   const ld = jsonLd(html).find((x) => x['@type'] === 'Physician');
   const ls = lines(html);

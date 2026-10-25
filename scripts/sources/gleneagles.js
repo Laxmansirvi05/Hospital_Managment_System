@@ -7,7 +7,11 @@ export const id = 'gleneagles';
 export const hospital = 'Gleneagles Hospitals';
 export const sourcePlatform = 'Gleneagles Hospitals website';
 export const photoHosts = ['gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com'];
-export const branches = { 'Lakdi-Ka-Pul': 'osm:way/357057519' };
+export const branches = {
+  'Lakdi-Ka-Pul': 'osm:way/357057519',
+  // Gleneagles LB Nagar is the Aware Gleneagles Global hospital on Nagarjuna Sagar Road.
+  'LB Nagar': 'osm:node/6487288564',
+};
 
 const LABELS = ['Speciality', 'Qualification', 'Experience', 'Gender', 'Language Spoken', 'Location', 'Consultation Charges'];
 
