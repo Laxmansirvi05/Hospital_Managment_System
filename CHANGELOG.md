@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Production live on careroute-prod
+
+- careroute-prod: applied all 6 migrations, no seed data. Security advisor shows only the expected "RLS enabled, no policy" notice.
+- Created the `careroute_api` database role on careroute-prod for the API (PROPOSED; details in `docs/19-setup-checklist.md` section 3). Production `DATABASE_URL` uses it.
+- Vercel: Preview points at careroute-dev and Production at careroute-prod. Some dev entries had been moved to Production instead of copied; this was found by a live test that showed Production writing to careroute-dev, then fixed.
+- Live checks on the deployed app. Preview, against careroute-dev: 15 of 15 passed (pages, health, register, me, refresh, dashboard, six searches, account deletion, then 401). Production, against careroute-prod: 20 of 20 passed (pages, health, register, me, refresh, dashboard, medical ID save, six searches, document upload to the prod bucket, complete, list, download link, account deletion, then 401). SQL confirmed each test account was written to the right database and that no rows or stored files were left afterwards.
+
 ### Work on main only
 
 - D-41 changed at the owner's request: all work happens on `main`, not `wp-0/foundation`. Updated `CLAUDE.md` (project phase and Commands) and `docs/05-api-spec.md` to match.

@@ -16,9 +16,9 @@ Everything that must exist before building restarts. Each row says what to creat
 
 | # | Service | Needed for | Status |
 | --- | --- | --- | --- |
-| 1 | GitHub | Code and CI | Done. Repository `Laxmansirvi05/Hospital_Managment_System`, public, `main` is docs only. |
-| 2 | Supabase | Database, Storage, Realtime | Projects done. `careroute-dev` (ref `jelepdfgdxbkbmocrnnx`) and `careroute-prod` (ref `qbiltbhqtesdidjxpscf`), both in `ap-south-1`, free plan, new account. Keys and database passwords still to be copied by the owner into `.env.local` and Vercel. Account is at the 2 project free limit. |
-| 3 | Vercel | Hosting | Project `careroute` created on the Hobby plan, linked to the GitHub repository, function region `bom1` Mumbai (PROPOSED, next to Supabase `ap-south-1`). Vercel Authentication protects deployments. GitHub link confirmed by the first deploy. No environment variables yet. |
+| 1 | GitHub | Code and CI | Done. Repository `Laxmansirvi05/Hospital_Managment_System`, public. All work is on `main`. |
+| 2 | Supabase | Database, Storage, Realtime | Projects done. `careroute-dev` (ref `jelepdfgdxbkbmocrnnx`) and `careroute-prod` (ref `qbiltbhqtesdidjxpscf`), both in `ap-south-1`, free plan, new account. Both have all 6 migrations; dev also has the seed data, prod has none. `.env.local` and Vercel Preview point at dev; Vercel Production points at prod. Account is at the 2 project free limit. |
+| 3 | Vercel | Hosting | Project `careroute` created on the Hobby plan, linked to the GitHub repository, function region `bom1` Mumbai (PROPOSED, next to Supabase `ap-south-1`). Vercel Authentication protects deployments. GitHub link confirmed by the first deploy. Preview and Production environment variables set and checked on 2026-10-25. |
 | 4 | MapTiler | Map tiles | To do |
 | 5 | Mapbox | Road ETA and matrix | To do |
 | 6 | Google AI Studio (Gemini) | Triage, first choice | To do |
@@ -55,6 +55,20 @@ Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is usin
 - One project linked to the GitHub repository, production branch `main`.
 - Environment variables are added per environment (Development, Preview, Production) as the other services are set up.
 - `ALLOW_PRIVILEGED_SIGNUP=true` only in Development and Preview. Never in Production (D-21).
+- Each variable is a separate entry per environment. To give Production its own value, add a new entry with only Production ticked. Editing the environment ticks of an existing entry moves its value, it does not copy it.
+- Preview uses careroute-dev. Production uses careroute-prod.
+- Production `DATABASE_URL` logs in as the `careroute_api` role, not `postgres` (PROPOSED, see below). Preview and `.env.local` still use `postgres` on dev.
+
+#### Production database role `careroute_api` (PROPOSED)
+
+Created on careroute-prod on 2026-10-25 because the `postgres` password was not available. The owner allowed the SQL tool for this.
+
+- Login, `BYPASSRLS` (the API is the only reader and every table has RLS with no policies), `NOINHERIT`. No superuser, no `CREATEROLE`, owns nothing, cannot change the schema.
+- Grants: `USAGE` on schemas `public` and `extensions`; `SELECT, INSERT, UPDATE, DELETE` on all tables in `public`; sequences; `EXECUTE` on `public.hit_rate_limit`. Default privileges give it the same on tables and sequences that `postgres` creates later, so new migrations need no extra grant unless they add a function the API calls.
+- Connection: transaction pooler, user `careroute_api.qbiltbhqtesdidjxpscf`, host `aws-0-ap-south-1.pooler.supabase.com`, port 6543.
+- The password was generated locally; only its SCRAM-SHA-256 hash was sent to the database. The password exists only in Vercel Production `DATABASE_URL`. To rotate: `alter role careroute_api password '<new SCRAM hash>'`, then replace the Vercel value.
+- Migrations still run as `postgres` through the Supabase tools.
+- Not created on careroute-dev yet. Do the same there if the owner approves this setup.
 
 ### 4. MapTiler (D-08)
 
