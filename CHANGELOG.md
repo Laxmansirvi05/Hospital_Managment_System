@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Work on main only
+
+- D-41 changed at the owner's request: all work happens on `main`, not `wp-0/foundation`. Updated `CLAUDE.md` (project phase and Commands) and `docs/05-api-spec.md` to match.
+
 ### Vercel preview working
 
 - Two deploy bugs found on the first Vercel preview, both invisible locally. `trailingSlash: true` redirected every API call to a path with a slash, which then returned Vercel's 404. The `/api/v1/:path*` rewrite added `?path=...` to the URL, which the strict search schemas rejected with 422. Fixed by removing `trailingSlash` (all page links are absolute) and dropping the `path` param in `api/v1/[...path].js`. One unit test added; 59 tests pass.

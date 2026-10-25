@@ -189,7 +189,7 @@ Not in the collection. If approved, add these requests and tests to the collecti
 
 ## 10. Built on 2026-10-25 (D-36 to D-41)
 
-Implemented on branch `wp-0/foundation`. Not in the Postman collection yet; add them with the owner's approval.
+Implemented on `main`. Not in the Postman collection yet; add them with the owner's approval.
 
 | Method and path | Role | Purpose |
 | --- | --- | --- |

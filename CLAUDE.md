@@ -1,6 +1,6 @@
 # CareRoute
 
-Hyderabad-first healthcare discovery and assistance web app with three parts: discovery of hospitals, doctors, medicines, pharmacies and diagnostic centres; an AI healthcare assistant; and an emergency ambulance system. Roles are `patient`, `driver` and `admin`. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation, a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. UI frameworks and TypeScript are allowed when necessary, and other technology only where really required. Each one needs a written need and the owner's approval (`docs/02-trd.md` section 1.2). None has been chosen yet. Project phase right now: documentation and setup (cloud Supabase, accounts and keys). No application code on `main`. Do not start building until the owner says so.
+Hyderabad-first healthcare discovery and assistance web app with three parts: discovery of hospitals, doctors, medicines, pharmacies and diagnostic centres; an AI healthcare assistant; and an emergency ambulance system. Roles are `patient`, `driver` and `admin`. Built as a demo to production standard. HTML, CSS and JavaScript as the foundation, a Node.js API, Supabase (PostgreSQL with PostGIS, Storage, Realtime), Vercel. UI frameworks and TypeScript are allowed when necessary, and other technology only where really required. Each one needs a written need and the owner's approval (`docs/02-trd.md` section 1.2). None has been chosen yet. Project phase right now: building the patient side (D-41). All work happens on `main`; the owner asked for no other branches.
 
 ## Read in this order
 
@@ -53,7 +53,7 @@ Hyderabad-first healthcare discovery and assistance web app with three parts: di
 
 ## Commands
 
-Building started on 2026-10-25 (D-41) on branch `wp-0/foundation`.
+Building started on 2026-10-25 (D-41). All work is on `main`.
 
 | Purpose | Command |
 | --- | --- |
