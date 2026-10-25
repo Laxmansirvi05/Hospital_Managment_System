@@ -15,6 +15,7 @@ const howPrices = h('aside', { class: 'card stack-12' },
 searchPage({
   main,
   title: 'Medicines and pharmacies',
+  art: 'medicine',
   sub: 'Find a medicine’s official generic price (Jan Aushadhi MRP) and compare listed prices where more than one source has them, or find a pharmacy near you.',
   tabs: [
     {

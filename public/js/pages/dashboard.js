@@ -2,6 +2,7 @@ import { h, s, icon, toast, announce } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { empty, getOrigin, telHref } from '../ui.js';
+import { art3d } from '../art3d.js';
 import { km } from '../format.js';
 import { greeting, weekday, dateLong, relativeDay, monthShort, dayOfMonth, nowTimeIst, initials, bytes } from '../format.js';
 
@@ -27,6 +28,30 @@ function nearestEmergency() {
       h('p', { class: 't-footnote muted' }, `Measured from ${o.label || 'your area'}. Only hospitals whose listing says they have an emergency department are shown.`));
   }).catch(() => box.replaceChildren(h('p', { class: 't-subhead muted' }, 'Nearby emergency departments could not load. Call 112.')));
   return box;
+}
+
+/** Shortcuts into finding care, each with its 3D object and the live count of what CareRoute lists. */
+function findCare() {
+  const tiles = [
+    { key: 'carePlaces', label: 'Hospitals and clinics', href: '/search/hospitals/', art: 'hospital' },
+    { key: 'doctors', label: 'Doctors', href: '/search/hospitals/?tab=doctors', art: 'doctor' },
+    { key: 'medicines', label: 'Medicine prices', href: '/search/medicines/', art: 'medicine' },
+    { key: 'diagnosticCentres', label: 'Tests and labs', href: '/search/diagnostics/', art: 'diagnostic' },
+    { key: null, label: 'Explore Hyderabad', href: '/explore/', art: 'chart' },
+  ];
+  const counts = new Map();
+  const grid = h('div', { class: 'care-tiles' }, tiles.map((t) => {
+    const n = h('span', { class: 't-footnote muted num' }, t.key ? 'Loading' : 'Maps and charts');
+    if (t.key) counts.set(t.key, n);
+    const art = art3d(t.art);
+    art?.setAttribute('class', 'tile-art');
+    return h('a', { class: 'care-tile card-link', href: t.href }, art, h('span', { class: 't-headline' }, t.label), n);
+  }));
+  api('/insights').then((x) => {
+    const totals = { ...x.totals, medicines: x.medicines };
+    for (const [k, el] of counts) el.textContent = typeof totals[k] === 'number' ? `${totals[k].toLocaleString('en-IN')} listed` : '';
+  }).catch(() => { for (const el of counts.values()) el.textContent = ''; });
+  return h('section', { class: 'stack-12', 'aria-labelledby': 'find-h' }, h('h2', { class: 't-title-2', id: 'find-h' }, 'Find care'), grid);
 }
 
 const { main, user } = await shell({ nav: 'dashboard', title: 'Dashboard' });
@@ -163,6 +188,7 @@ function render(d, photoUrl) {
         h('a', { class: 'btn btn-secondary', href: '/appointments/#new' }, icon('calendar', 18), 'Log appointment'),
         h('a', { class: 'btn btn-primary', href: '/reminders/#new' }, icon('plus', 18), 'Add reminder'))),
     completeness,
+    findCare(),
     h('div', { class: 'stat-row' },
       h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, `${d.today.taken}/${d.today.total}`), h('span', { class: 't-subhead muted' }, 'Doses taken today')),
       h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, String(d.counts.reminders)), h('span', { class: 't-subhead muted' }, 'Active reminders')),

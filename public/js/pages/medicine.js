@@ -23,7 +23,7 @@ try {
   const low = m.listings[0];
   const high = m.listings[m.listings.length - 1];
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: m.name, crumbs: [['Medicines and pharmacies', '/search/medicines/'], [m.name]], large: false, sub: [m.form, m.pack, m.category].filter(Boolean).join(' · ') }),
+    pageHead({ art: 'medicine', title: m.name, crumbs: [['Medicines and pharmacies', '/search/medicines/'], [m.name]], large: false, sub: [m.form, m.pack, m.category].filter(Boolean).join(' · ') }),
     m.prescriptionRequired === true ? h('p', { class: 'notice notice-warning' }, icon('alert', 18), h('span', {}, 'Prescription required. Every platform asks for a valid prescription before it sells this medicine.'))
       : m.prescriptionRequired === null ? h('p', { class: 'notice notice-neutral' }, icon('info', 18), h('span', {}, 'The source does not say whether this medicine needs a prescription. Ask your pharmacist before you buy it.')) : null,
     h('div', { class: 'grid-main-side' },

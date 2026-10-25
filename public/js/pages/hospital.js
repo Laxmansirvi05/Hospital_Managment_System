@@ -65,7 +65,7 @@ try {
   const [x, docs] = await Promise.all([api(`/hospitals/${encodeURIComponent(id)}`), api(`/hospitals/${encodeURIComponent(id)}/doctors`)]);
   document.title = `${x.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: x.name, crumbs: [['Hospitals and doctors', '/search/hospitals/'], [x.name]], large: false }),
+    pageHead({ art: 'hospital', title: x.name, crumbs: [['Hospitals and doctors', '/search/hospitals/'], [x.name]], large: false }),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },

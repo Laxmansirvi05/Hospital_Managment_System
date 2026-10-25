@@ -24,7 +24,7 @@ try {
   for (const k of ['byType', 'byArea', 'bySpeciality', 'bySource', 'byChain', 'byMedicineGroup', 'commonTests', 'points']) x[k] ??= [];
   const t = x.totals;
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: 'Explore Hyderabad', sub: 'Every hospital, clinic, doctor, pharmacy and diagnostic centre CareRoute lists, at a glance. Select any bar to see those places.' }),
+    pageHead({ art: 'chart', title: 'Explore Hyderabad', sub: 'Every hospital, clinic, doctor, pharmacy and diagnostic centre CareRoute lists, at a glance. Select any bar to see those places.' }),
     h('div', { class: 'stat-row' },
       stat(t.carePlaces, 'Hospitals and clinics', '/search/hospitals/'),
       stat(t.doctors, 'Doctors with profiles', '/search/hospitals/?tab=doctors'),

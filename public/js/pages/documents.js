@@ -112,7 +112,7 @@ function uploadCard() {
 function render() {
   draw();
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: 'Documents', sub: 'Your medical documents in one private place.' }),
+    pageHead({ art: 'document', title: 'Documents', sub: 'Your medical documents in one private place.' }),
     h('div', { class: 'grid-main-side' },
       h('section', { class: 'card stack-16' }, h('h2', { class: 't-title-2' }, 'Your documents'), listEl),
       uploadCard())));

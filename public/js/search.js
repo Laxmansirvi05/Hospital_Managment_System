@@ -21,7 +21,7 @@ import { pageHead, skeletonList, empty, areaSelect, getOrigin, locateMe, osmCred
  */
 
 /** @param {{ main: HTMLElement, title: string, sub: string, tabs: Tab[] }} o */
-export async function searchPage({ main, title, sub, tabs }) {
+export async function searchPage({ main, title, sub, tabs, art }) {
   let areas = [];
   try {
     areas = (await api('/areas')).areas;
@@ -30,7 +30,7 @@ export async function searchPage({ main, title, sub, tabs }) {
   }
   let origin = getOrigin();
 
-  const results = h('section', { class: 'card stack-16', 'aria-live': 'polite' });
+  const results = h('section', { class: 'card stack-16 results-card', 'aria-live': 'polite' });
   const side = h('div', { class: 'stack-16 search-side' });
   const form = h('form', { class: 'searchbar', role: 'search' });
   const originLine = h('p', { class: 't-subhead muted row-8' });
@@ -146,7 +146,7 @@ export async function searchPage({ main, title, sub, tabs }) {
   window.addEventListener('popstate', draw);
   drawOrigin();
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title, sub }),
+    pageHead({ title, sub, art }),
     h('section', { class: 'card card-raised' }, form),
     h('div', { class: 'grid-main-side' }, results, side)));
   draw();

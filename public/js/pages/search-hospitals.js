@@ -33,6 +33,7 @@ const { main } = await shell({ nav: 'hospitals', title: 'Hospitals and doctors' 
 searchPage({
   main,
   title: 'Hospitals and doctors',
+  art: 'hospital',
   sub: 'Find hospitals by name, speciality or department, or find a doctor directly. Contact them to confirm timings before you go.',
   tabs: [
     {

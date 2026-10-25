@@ -9,6 +9,7 @@ const { main } = await shell({ nav: 'diagnostics', title: 'Diagnostic centres' }
 searchPage({
   main,
   title: 'Diagnostic centres',
+  art: 'diagnostic',
   sub: 'Find diagnostic centres, pathology labs and scan centres near you. Search by name or test, then call or visit the centre to book.',
   tabs: [
     {

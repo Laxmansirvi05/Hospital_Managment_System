@@ -81,7 +81,7 @@ function deleteCard() {
 }
 
 main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
-  pageHead({ title: 'Account and privacy', sub: `Signed in as ${user.email}.` }),
+  pageHead({ art: 'shield', title: 'Account and privacy', sub: `Signed in as ${user.email}.` }),
   passwordCard(),
   devicesCard(),
   h('section', { class: 'card stack-12' },

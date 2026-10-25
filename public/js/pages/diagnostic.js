@@ -45,7 +45,7 @@ try {
   const c = await api(`/diagnostic-centres/${encodeURIComponent(idParam())}`);
   document.title = `${c.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: c.name, crumbs: [['Diagnostic centres', '/search/diagnostics/'], [c.name]], large: false }),
+    pageHead({ art: 'diagnostic', title: c.name, crumbs: [['Diagnostic centres', '/search/diagnostics/'], [c.name]], large: false }),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },

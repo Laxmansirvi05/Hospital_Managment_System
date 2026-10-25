@@ -1,0 +1,493 @@
+/* Premium layer (D-61). Loaded after every other stylesheet, so it refines the existing system
+   rather than replacing it. Apple's own sites are the reference: wide canvases, few empty gaps,
+   rounded surfaces that float on soft layered shadows, large tight headlines, pill controls.
+   Still inside D-16: no gradients, no blur or translucency, nothing follows the cursor, no
+   opacity on buttons, nothing animates on scroll. Hover depth applies only where hover exists. */
+
+:root {
+  --radius-2xl: 28px;
+  --fs-display: 2.5rem;
+  --lh-display: 2.875rem;
+  /* Apple-like layered shadows: a tight contact shadow plus a wide soft one. */
+  --shadow-tile: 0 1px 1px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.05);
+  --shadow-tile-hover: 0 2px 4px rgba(0, 0, 0, 0.04), 0 12px 24px rgba(0, 0, 0, 0.08), 0 32px 64px rgba(0, 0, 0, 0.10);
+  --shadow-press: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(0, 0, 0, 0.06);
+  --surface-hover: #FBFBFD;
+  --lift: translateY(-4px);
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --fs-display: 3rem;
+    --lh-display: 3.375rem;
+  }
+}
+
+body {
+  letter-spacing: -0.003em;
+}
+
+/* Canvas: use the screen. The page grows with the window instead of stopping at 1200 px. */
+.main {
+  padding: var(--space-16) var(--space-16) calc(var(--space-80) + var(--space-48));
+}
+
+.page {
+  max-width: 1680px;
+  gap: var(--space-24);
+}
+
+@media (min-width: 640px) {
+  .main {
+    padding: var(--space-24) var(--space-24) calc(var(--space-80) + var(--space-48));
+  }
+}
+
+@media (min-width: 1024px) {
+  .shell {
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+
+  .main {
+    padding: var(--space-24) var(--space-32) var(--space-48);
+  }
+
+  .sidebar {
+    gap: var(--space-20);
+    padding: var(--space-20) var(--space-12);
+    background: var(--bg);
+    border-right: 0;
+  }
+}
+
+/* Headlines: Apple's large, tight, heavy titles. */
+.page-head {
+  gap: var(--space-4);
+}
+
+.page-head .t-large-title,
+.page-head .t-title-1 {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.page-head .t-callout {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-2);
+}
+
+.t-title-2 { letter-spacing: -0.015em; }
+.t-title-3 { letter-spacing: -0.01em; }
+
+/* Surfaces float instead of sitting in thin boxes. */
+.card,
+.stat,
+.user-card {
+  border: 0;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-tile);
+}
+
+.card {
+  padding: var(--space-20);
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: var(--space-24);
+  }
+}
+
+.card-raised {
+  box-shadow: var(--shadow-tile);
+}
+
+.card-link,
+.stat.card-link {
+  transition: transform var(--dur-toggle) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter), background-color var(--dur-toggle) linear;
+}
+
+@media (hover: hover) {
+  .card-link:hover,
+  .stat.card-link:hover {
+    transform: var(--lift);
+    box-shadow: var(--shadow-tile-hover);
+  }
+}
+
+.card-link:active,
+.stat.card-link:active {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-press);
+}
+
+/* Stat tiles: big numbers, Apple product-page style. */
+.stat {
+  padding: var(--space-20);
+  gap: var(--space-4);
+}
+
+.stat-value {
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  letter-spacing: -0.03em;
+}
+
+/* Controls: pill shapes, Apple style. */
+.btn {
+  border-radius: var(--radius-full);
+  padding-left: var(--space-20);
+  padding-right: var(--space-20);
+  font-weight: 600;
+  transition: background-color var(--dur-press) linear, box-shadow var(--dur-toggle) var(--ease-enter), transform var(--dur-press) var(--ease-enter);
+}
+
+.btn-primary {
+  box-shadow: 0 1px 2px rgba(0, 102, 204, 0.2), 0 4px 12px rgba(0, 102, 204, 0.18);
+}
+
+@media (hover: hover) {
+  .btn-primary:hover {
+    box-shadow: 0 2px 4px rgba(0, 102, 204, 0.24), 0 8px 20px rgba(0, 102, 204, 0.24);
+  }
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  border: 0;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover {
+    background: var(--surface-hover);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+}
+
+.input,
+.select,
+.textarea {
+  border-radius: var(--radius-m);
+}
+
+.searchbar-row .input,
+.searchbar-row .select {
+  border-radius: var(--radius-full);
+}
+
+.chip {
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  transition: background-color var(--dur-press) linear, box-shadow var(--dur-toggle) var(--ease-enter), transform var(--dur-press) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--surface-hover);
+    box-shadow: var(--shadow-press);
+  }
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+.tag {
+  border-radius: var(--radius-full);
+}
+
+/* Navigation: rounded pills on the page colour, the active page lifted on white. */
+.nav-group {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.nav a {
+  min-height: 40px;
+  border-radius: var(--radius-m);
+  font-size: var(--fs-subhead);
+  transition: background-color var(--dur-press) linear, box-shadow var(--dur-toggle) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    background: var(--surface);
+  }
+}
+
+.nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-tile);
+}
+
+.nav a[aria-current="page"] svg {
+  color: var(--primary);
+}
+
+.nav-label {
+  padding-top: var(--space-8);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.topbar {
+  border-bottom: 0;
+  box-shadow: 0 1px 0 var(--border-soft);
+}
+
+.tabbar {
+  box-shadow: 0 -1px 0 var(--border-soft), 0 -8px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* Result lists become tiles: two or three columns on wide screens, so the screen is used. */
+.list {
+  gap: var(--space-8);
+}
+
+.list > .list-row {
+  min-height: 72px;
+  padding: var(--space-12) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+  transition: transform var(--dur-toggle) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter), background-color var(--dur-press) linear;
+}
+
+@media (hover: hover) {
+  .list > a.list-row:hover,
+  .list-row.lift:hover {
+    transform: translateY(-2px);
+    background: var(--surface);
+    box-shadow: var(--shadow-tile-hover);
+  }
+}
+
+.list > a.list-row:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-press);
+}
+
+@media (min-width: 1280px) {
+  .results-card .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .results-card .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* The domain icon becomes a small 3D object: a raised face on a darker base. */
+.obj {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border-soft), 0 3px 0 var(--neutral-face-side), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Search pages: results take the wide column, the map stays beside them. */
+@media (min-width: 1024px) {
+  .grid-main-side {
+    grid-template-columns: minmax(0, 2.6fr) minmax(300px, 1fr);
+    gap: var(--space-24);
+  }
+
+  /* The side column (map, booking panel) stays in view instead of leaving a tall empty gap. */
+  .grid-main-side > :last-child {
+    position: sticky;
+    top: var(--space-24);
+  }
+}
+
+/* Dialogs and sheets keep their float, with the larger radius. */
+.dialog,
+.sheet {
+  border-radius: var(--radius-2xl);
+}
+
+/* Empty and error states: softer, centred object. */
+.empty-art {
+  border-radius: var(--radius-xl);
+  box-shadow: 0 3px 0 var(--neutral-face-side), 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* 3D scene in page heads (public/js/art3d.js). Flat faces only; depth comes from shape and shadow. */
+.page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.hero-art {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .page-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .hero-art {
+    display: block;
+    width: 180px;
+    height: 132px;
+    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.10));
+  }
+}
+
+.art-top { fill: var(--surface); }
+.art-left { fill: var(--border-soft); }
+.art-right { fill: var(--border); }
+.art-blue-top { fill: var(--primary-face-top); }
+.art-blue-left { fill: var(--primary); }
+.art-blue-right { fill: var(--primary-face-side); }
+.art-red-top { fill: var(--danger-face-top); }
+.art-red-left { fill: var(--danger); }
+.art-red-right { fill: var(--danger-face-side); }
+.art-line { fill: none; stroke: var(--surface); stroke-width: 3; stroke-linecap: round; }
+.art-window { fill: var(--map-water); }
+.art-ground { fill: var(--border-soft); }
+
+/* Legal and settings reading pages: Apple's legal pages keep text to a comfortable measure. */
+.prose {
+  display: grid;
+  gap: var(--space-16);
+  max-width: 760px;
+}
+
+.prose h2 {
+  font-size: var(--fs-title-2);
+  line-height: var(--lh-title-2);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  padding-top: var(--space-16);
+}
+
+.prose p,
+.prose li {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-1);
+}
+
+.prose ul {
+  display: grid;
+  gap: var(--space-8);
+  padding-left: var(--space-20);
+  list-style: disc;
+}
+
+.legal-meta {
+  font-size: var(--fs-footnote);
+  color: var(--text-2);
+}
+
+/* Settings rows: label on the left, control on the right, like iOS Settings. */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  min-height: 56px;
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
+}
+
+.setting-row .stack-4 {
+  min-width: 0;
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  cursor: pointer;
+  transition: background-color var(--dur-toggle) var(--ease-enter);
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform var(--dur-toggle) var(--ease-enter);
+}
+
+.switch[aria-checked="true"] {
+  background: var(--success);
+}
+
+.switch[aria-checked="true"]::after {
+  transform: translateX(20px);
+}
+
+/* Large text setting (Settings page): scales every rem-based size. */
+html.text-large {
+  font-size: 112.5%;
+}
+
+/* Dashboard: shortcuts into finding care, each a floating tile with its 3D object. */
+.care-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+@media (min-width: 640px) {
+  .care-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .care-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+.care-tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  padding: var(--space-16) var(--space-20) var(--space-20);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-tile);
+  color: var(--text-1);
+}
+
+.tile-art {
+  width: 96px;
+  height: 72px;
+  margin-bottom: var(--space-8);
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.10));
+}
+
+/* Empty states take less height, so the page shows more at once. */
+.empty {
+  padding: var(--space-20) var(--space-16);
+}

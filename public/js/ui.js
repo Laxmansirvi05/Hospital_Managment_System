@@ -1,12 +1,16 @@
 import { h, icon } from './h.js';
 import { dateLong, km } from './format.js';
+import { art3d } from './art3d.js';
 
-export function pageHead({ title, sub, crumbs, actions, large = true }) {
-  return h('header', { class: 'page-head' },
+/** Page heading; with `art`, a 3D object sits beside it on wide screens (D-61). */
+export function pageHead({ title, sub, crumbs, actions, large = true, art }) {
+  const head = h('header', { class: 'page-head' },
     crumbs ? h('nav', { class: 'crumbs', 'aria-label': 'Breadcrumb' },
       crumbs.map(([label, href], i) => [i ? icon('chevron', 14) : null, href ? h('a', { href }, label) : h('span', { 'aria-current': 'page' }, label)])) : null,
     h('div', { class: 'spread' }, h('h1', { class: large ? 't-large-title' : 't-title-1' }, title), actions || null),
     sub ? h('p', { class: 't-callout muted', style: 'max-width:680px' }, sub) : null);
+  const picture = art ? art3d(art) : null;
+  return picture ? h('div', { class: 'page-hero' }, head, picture) : head;
 }
 
 /** Rating as the source platform shows it. Who writes reviews is still open (Q-24). */
