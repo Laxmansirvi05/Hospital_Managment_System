@@ -4,6 +4,11 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### careroute_api on dev too
+
+- Created the `careroute_api` role (D-49) on careroute-dev. `.env.local` and Vercel Preview now use it; the dev `postgres` login is kept commented in `.env.local`. Checked that the role cannot create tables. The `db-migration` skill now says new API functions need an explicit grant.
+- Checks: 59 unit and API tests pass (in-memory store). Local server on careroute-dev as `careroute_api`: 10 of 10 passed, and `pg_stat_activity` showed the role connected. Preview on careroute-dev: 15 of 15 passed. No test rows left.
+
 ### Decided
 
 - D-49: production API connects as the `careroute_api` role. Owner approved the setup made earlier the same day.

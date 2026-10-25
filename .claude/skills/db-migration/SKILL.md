@@ -26,6 +26,7 @@ Database: Supabase PostgreSQL with PostGIS. Migrations are SQL files in `supabas
 9. Storage buckets are private.
 10. pg_cron jobs: confirm the installed version supports the interval before relying on it. Document the job name and schedule in the migration.
 11. Secrets never appear in a migration or in seed data. Seed data is synthetic only.
+12. The API connects as `careroute_api` (D-49). New tables and sequences get its grants by default privileges. A new function the API calls needs `grant execute on function ... to careroute_api` in the same migration, after revoking it from `public`, `anon` and `authenticated`. Migrations run as `postgres`.
 
 ## Verify
 

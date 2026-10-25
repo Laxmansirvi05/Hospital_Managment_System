@@ -57,18 +57,18 @@ Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is usin
 - `ALLOW_PRIVILEGED_SIGNUP=true` only in Development and Preview. Never in Production (D-21).
 - Each variable is a separate entry per environment. To give Production its own value, add a new entry with only Production ticked. Editing the environment ticks of an existing entry moves its value, it does not copy it.
 - Preview uses careroute-dev. Production uses careroute-prod.
-- Production `DATABASE_URL` logs in as the `careroute_api` role, not `postgres` (D-49, see below). Preview and `.env.local` still use `postgres` on dev.
+- Every `DATABASE_URL` (`.env.local`, Preview, Production) logs in as the `careroute_api` role, not `postgres` (D-49, see below).
 
-#### Production database role `careroute_api` (D-49, LOCKED)
+#### Database role `careroute_api` (D-49, LOCKED)
 
-Created on careroute-prod on 2026-10-25 because the `postgres` password was not available. The owner allowed the SQL tool for this.
+Created on careroute-prod and careroute-dev on 2026-10-25, first because the prod `postgres` password was not available, then on dev so both behave the same. The owner allowed the SQL tool for this.
 
 - Login, `BYPASSRLS` (the API is the only reader and every table has RLS with no policies), `NOINHERIT`. No superuser, no `CREATEROLE`, owns nothing, cannot change the schema.
 - Grants: `USAGE` on schemas `public` and `extensions`; `SELECT, INSERT, UPDATE, DELETE` on all tables in `public`; sequences; `EXECUTE` on `public.hit_rate_limit`. Default privileges give it the same on tables and sequences that `postgres` creates later, so new migrations need no extra grant unless they add a function the API calls.
-- Connection: transaction pooler, user `careroute_api.qbiltbhqtesdidjxpscf`, host `aws-0-ap-south-1.pooler.supabase.com`, port 6543.
-- The password was generated locally; only its SCRAM-SHA-256 hash was sent to the database. The password exists only in Vercel Production `DATABASE_URL`. To rotate: `alter role careroute_api password '<new SCRAM hash>'`, then replace the Vercel value.
+- Connection: transaction pooler, host `aws-0-ap-south-1.pooler.supabase.com`, port 6543. User `careroute_api.qbiltbhqtesdidjxpscf` on prod, `careroute_api.jelepdfgdxbkbmocrnnx` on dev.
+- Each password was generated locally; only its SCRAM-SHA-256 hash was sent to the database. The prod password exists only in Vercel Production `DATABASE_URL`. The dev password exists only in `.env.local` and Vercel Preview `DATABASE_URL`. The dev `postgres` login is kept as a comment in `.env.local` (`DATABASE_URL_OWNER`) for manual admin work; the app does not read it. To rotate: `alter role careroute_api password '<new SCRAM hash>'`, then replace the Vercel value.
 - Migrations still run as `postgres` through the Supabase tools.
-- Not created on careroute-dev yet; dev still uses `postgres`.
+- Checked on dev: a `create table` as `careroute_api` is refused (42501).
 
 ### 4. MapTiler (D-08)
 
