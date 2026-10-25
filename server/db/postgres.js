@@ -323,7 +323,8 @@ export function createPostgresStore(url) {
       },
       async hospital(id) { const [r] = await sql`select *, ${latlng('location')} from public.hospitals where id = ${id} and active`; return r ? hospitalOut(r) : null; },
       async hospitalDoctors(id, specialization) {
-        return (await doctorsQuery(sql`d.hospital_id = ${id} and (${specialization ?? null}::text is null or d.specialization ilike ${like(specialization ?? '')})`)).map(doctorOut);
+        // A large hospital lists hundreds of doctors; the page shows them all, grouped by speciality.
+        return (await doctorsQuery(sql`d.hospital_id = ${id} and (${specialization ?? null}::text is null or d.specialization ilike ${like(specialization ?? '')})`, { limit: 1000 })).map(doctorOut);
       },
       async doctors(p) {
         const where = sql`(${p.q ?? null}::text is null or d.name ilike ${like(p.q ?? '')} or d.specialization ilike ${like(p.q ?? '')} or coalesce(h.name, d.clinic_name) ilike ${like(p.q ?? '')})
