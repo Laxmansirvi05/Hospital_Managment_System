@@ -20,9 +20,11 @@ const q = (params) => `?${new URLSearchParams(params)}`;
 
 try {
   const x = await api('/insights');
+  // Sections added later may be missing from an older cached response; treat them as empty.
+  for (const k of ['byType', 'byArea', 'bySpeciality', 'bySource', 'byChain', 'byMedicineGroup', 'commonTests', 'points']) x[k] ??= [];
   const t = x.totals;
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: 'Healthcare in Hyderabad', sub: 'Every hospital, clinic, doctor, pharmacy and diagnostic centre CareRoute lists, at a glance. Select any bar to see those places.' }),
+    pageHead({ title: 'Explore Hyderabad', sub: 'Every hospital, clinic, doctor, pharmacy and diagnostic centre CareRoute lists, at a glance. Select any bar to see those places.' }),
     h('div', { class: 'stat-row' },
       stat(t.carePlaces, 'Hospitals and clinics', '/search/hospitals/'),
       stat(t.doctors, 'Doctors with profiles', '/search/hospitals/?tab=doctors'),
@@ -46,7 +48,7 @@ try {
         hbars({ title: 'Pharmacies by chain', items: x.byChain.map((r) => ({ label: r.key, value: r.count, href: r.key === 'Independent' ? '/search/medicines/?tab=pharmacies' : `/search/medicines/${q({ tab: 'pharmacies', chain: r.key })}` })) })),
       x.byMedicineGroup.length ? card('Generic medicines by group', `${x.medicines.toLocaleString('en-IN')} medicines with an official Jan Aushadhi price.`,
         hbars({ title: 'Generic medicines by therapeutic group', items: x.byMedicineGroup.map((r) => ({ label: r.key, value: r.count, href: `/search/medicines/${q({ q: r.key })}` })) })) : null,
-      x.commonTests.length ? card('Common test prices', 'Lowest published Hyderabad price for each test. Confirm with the centre.',
+      x.commonTests.length ? card('Common test prices', 'Lowest price published by Vijaya Diagnostic for Hyderabad, as checked when the data was last collected. Confirm with the centre.',
         hbars({ title: 'Common diagnostic test prices', unit: '', items: x.commonTests.map((t) => ({ label: t.key, value: t.price, display: inr(t.price), hint: `${t.key}: ${inr(t.price)}`, href: `/search/diagnostics/${q({ tab: 'tests', q: t.key.replace(/ \(.*\)$/, '') })}` })) })) : null,
       x.fees ? card('Consultation fees', `Published by ${x.fees.count.toLocaleString('en-IN')} doctors. Fees change; confirm with the hospital.`,
         h('dl', { class: 'facts facts-2' },

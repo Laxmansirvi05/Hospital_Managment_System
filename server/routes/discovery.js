@@ -93,7 +93,8 @@ const ROUTES = [
         medicines: x.medicines, byMedicineGroup: x.byMedicineGroup, commonTests: x.commonTests, fees: x.fees,
         points: x.points.map((p) => ({ kind: p.kind, type: p.type, lat: p.lat, lng: p.lng })),
       };
-      return { body, headers: { 'Cache-Control': 'private, max-age=300' } };
+      // The server caches; browsers revalidate, so a deploy never meets an older response shape.
+      return { body, headers: { 'Cache-Control': 'private, no-cache' } };
     },
   },
   { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: await getStore().listings.areas() } }; } },

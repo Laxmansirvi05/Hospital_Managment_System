@@ -2,6 +2,7 @@ import { h } from '../h.js';
 import { shell } from '../shell.js';
 import { searchPage, chip, withOrigin } from '../search.js';
 import { listingRow, rating, distance, doctorPhoto } from '../ui.js';
+import { inr } from '../format.js';
 
 const SPECIALITIES = ['Cardiology', 'Dermatology', 'ENT', 'Gastroenterology', 'General Medicine', 'General Surgery', 'Nephrology', 'Neonatology', 'Neurology', 'Obstetrics and Gynaecology', 'Ophthalmology', 'Orthopaedics', 'Paediatrics', 'Physiotherapy', 'Pulmonology', 'Spine Surgery', 'Urology'];
 
@@ -67,7 +68,7 @@ searchPage({
       row: (d) => listingRow({
         href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name, media: doctorPhoto(d, 'avatar-m'),
         meta: [[d.specialization, d.experienceYears !== null ? `${d.experienceYears} years` : ''].filter(Boolean).join(' · '), `${d.place.name}, ${d.place.area}`,
-          h('span', { class: 'row-8' }, rating(d), d.consultationFeeInr !== null ? h('span', { class: 'tag' }, `Fee ₹${d.consultationFeeInr}`) : null, d.bookingUrl ? h('span', { class: 'tag tag-success' }, 'Online booking') : null)],
+          h('span', { class: 'row-8' }, rating(d), d.consultationFeeInr !== null ? h('span', { class: 'tag' }, `Fee ${inr(d.consultationFeeInr)}`) : null, d.bookingUrl ? h('span', { class: 'tag tag-success' }, 'Online booking') : null)],
         trail: distance(d),
       }),
       pin: (d) => ({ ...d.place.location, kind: 'doctor', label: d.name, href: `/doctor/?id=${d.id}` }),

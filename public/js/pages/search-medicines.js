@@ -49,7 +49,7 @@ searchPage({
       ],
       row: (x) => listingRow({
         href: `/pharmacy/?id=${x.id}`, kind: 'pharmacy', title: x.name,
-        meta: [[x.area, x.hours].filter(Boolean).join(' · '), h('span', { class: 'row-8' }, x.chain ? h('span', { class: 'tag tag-primary' }, x.chain) : null, rating(x))],
+        meta: [[x.area, x.hours].filter(Boolean).join(' · '), h('span', { class: 'row-8' }, x.chain ? h('span', { class: 'tag' }, x.chain) : null, rating(x))],
         trail: distance(x),
       }),
       pin: (x) => ({ ...x.location, kind: 'pharmacy', label: x.name, href: `/pharmacy/?id=${x.id}` }),

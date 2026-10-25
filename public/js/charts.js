@@ -1,4 +1,4 @@
-import { h, s } from './h.js';
+import { h, s, icon } from './h.js';
 
 /**
  * Isometric 3D bar chart in SVG. Each bar is three flat faces, no gradients.
@@ -73,23 +73,34 @@ export function dotMap({ points, kinds, box, title }) {
   const layers = Object.fromEntries(kinds.map((k) => [k.key, s('g', { class: `dots dots-${k.key}` })]));
   for (const p of points) {
     if (!layers[p.kind] || p.lat < box.south || p.lat > box.north || p.lng < box.west || p.lng > box.east) continue;
-    layers[p.kind].append(s('circle', { cx: x(p.lng).toFixed(1), cy: y(p.lat).toFixed(1), r: 4.5 }));
+    const cx = x(p.lng);
+    const cy = y(p.lat);
+    // Shape as well as colour: circle for care places, square for pharmacies, diamond for diagnostics.
+    const mark = p.kind === 'p' ? s('rect', { x: (cx - 4).toFixed(1), y: (cy - 4).toFixed(1), width: 8, height: 8 })
+      : p.kind === 'd' ? s('path', { d: `M${cx.toFixed(1)} ${(cy - 5.5).toFixed(1)}l5.5 5.5l-5.5 5.5l-5.5 -5.5z` })
+        : s('circle', { cx: cx.toFixed(1), cy: cy.toFixed(1), r: 4.5 });
+    layers[p.kind].append(mark);
   }
   const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title },
     s('rect', { class: 'dotmap-bg', x: 0, y: 0, width: W, height: H, rx: 16 }),
     // Draw the most numerous kind first so the rarer kinds stay visible on top.
     kinds.map((k) => layers[k.key]));
-  const legend = h('div', { class: 'row-8 dotmap-legend' }, kinds.map((k) => {
-    const n = points.filter((p) => p.kind === k.key).length;
+  const counts = kinds.map((k) => ({ ...k, n: points.filter((p) => p.kind === k.key).length }));
+  const legend = h('div', { class: 'row-8 dotmap-legend' }, counts.map((k) => {
+    const check = icon('check', 16);
     const btn = h('button', { class: 'chip chip-on', type: 'button', 'aria-pressed': 'true' },
-      h('span', { class: `swatch swatch-${k.key}`, 'aria-hidden': 'true' }), `${k.label} (${n.toLocaleString('en-IN')})`);
+      check, h('span', { class: `swatch swatch-${k.key}`, 'aria-hidden': 'true' }), `${k.label} (${k.n.toLocaleString('en-IN')})`);
     btn.addEventListener('click', () => {
       const on = btn.getAttribute('aria-pressed') !== 'true';
       btn.setAttribute('aria-pressed', String(on));
       btn.classList.toggle('chip-on', on);
+      check.style.display = on ? '' : 'none';
       layers[k.key].style.display = on ? '' : 'none';
     });
     return btn;
   }));
-  return h('figure', { class: 'dotmap stack-12' }, legend, svg);
+  // The text alternative: what the map shows, in words.
+  const caption = h('figcaption', { class: 't-footnote muted' },
+    `${counts.map((k) => `${k.n.toLocaleString('en-IN')} ${k.label.toLowerCase()}`).join(', ')}. The chart of areas below lists where most places are.`);
+  return h('figure', { class: 'dotmap stack-12' }, legend, svg, caption);
 }

@@ -18,6 +18,12 @@
   --success: #1E7B34;
   --warning: #C93400;
   --primary-tint: #EAF3FF;
+  /* Chart categories, in this fixed order. Checked for colour vision deficiency with the dataviz
+     validator (adjacent pairs at least 11 delta E) and all at least 3:1 on --surface-sunken.
+     Not the interactive blue and not a status colour; maps also differ by shape. */
+  --chart-1: #1F5FA8;
+  --chart-2: #B45309;
+  --chart-3: #00866E;
   --danger-tint: #FFF1F0;
   --success-tint: #EAF7EC;
   --warning-tint: #FFF3E5;
@@ -70,6 +76,7 @@
   --space-64: 64px;
   --space-80: 80px;
 
+  --radius-xs: 4px;
   --radius-s: 8px;
   --radius-m: 12px;
   --radius-l: 16px;

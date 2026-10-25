@@ -23,13 +23,13 @@ try {
     : [];
 
   const book = h('section', { class: 'card card-raised stack-16', 'aria-labelledby': 'book-h' },
-    h('h2', { class: 't-title-3', id: 'book-h' }, 'Book an appointment'),
+    h('h2', { class: 't-title-3', id: 'book-h' }, 'How to book'),
     d.consultationFeeInr !== null ? h('div', { class: 'fee' }, h('span', { class: 't-footnote muted' }, 'Consultation fee'), h('span', { class: 't-title-1 num' }, inr(d.consultationFeeInr))) : null,
-    safeHref(d.bookingUrl) ? h('a', { class: 'btn btn-primary btn-block', href: safeHref(d.bookingUrl), target: '_blank', rel: 'noopener noreferrer' }, icon('calendar', 18), `Book on the ${sourceName} website`) : null,
+    safeHref(d.bookingUrl) ? h('a', { class: 'btn btn-primary btn-block', href: safeHref(d.bookingUrl), target: '_blank', rel: 'noopener noreferrer' }, icon('calendar', 18), `Book on the ${sourceName} website`, icon('external', 16)) : null,
     d.place.phone ? h('a', { class: `btn ${safeHref(d.bookingUrl) ? 'btn-secondary' : 'btn-primary'} btn-block`, href: telHref(d.place.phone) }, icon('phone', 18), `Call ${d.place.phone}`)
       : h('p', { class: 't-subhead muted' }, 'No phone number is listed.'),
     d.distanceKm !== undefined ? h('p', { class: 't-subhead muted' }, `${km(d.distanceKm)} away`) : null,
-    h('p', { class: 't-footnote muted' }, 'Booking happens on the hospital’s own website or by phone. CareRoute does not take bookings or payments.'),
+    h('p', { class: 't-footnote muted' }, 'The booking link opens the hospital’s own website in a new tab. CareRoute does not take bookings or payments.'),
     h('a', { class: 'btn btn-text btn-sm', href: `/appointments/?doctor=${encodeURIComponent(d.name)}&place=${encodeURIComponent(d.place.name)}&speciality=${encodeURIComponent(d.specialization)}#new` }, icon('calendar', 16), 'Log an appointment you booked'));
 
   main.replaceChildren(h('div', { class: 'page' },
@@ -45,7 +45,7 @@ try {
             d.title ? h('p', { class: 't-callout' }, d.title) : null,
             h('p', { class: 't-callout muted' }, placeLink(), `, ${d.place.area}`),
             h('div', { class: 'row-8' },
-              d.experienceYears !== null ? h('span', { class: 'tag tag-primary' }, `${d.experienceYears} years experience`) : null,
+              d.experienceYears !== null ? h('span', { class: 'tag' }, `${d.experienceYears} years of experience`) : null,
               d.consultationFeeInr !== null ? h('span', { class: 'tag' }, `Fee ${inr(d.consultationFeeInr)}`) : null,
               d.languages.length ? h('span', { class: 'tag' }, `Speaks ${d.languages.join(', ')}`) : null))),
         h('section', { class: 'card stack-16' },
@@ -57,7 +57,7 @@ try {
             fact('Address', d.place.address),
             fact('Languages', d.languages.join(', '))),
           d.qualifications.length ? null : h('p', { class: 't-subhead muted' }, 'The hospital does not list qualifications for this doctor.')),
-        d.expertise.length ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Areas of care'), tags(d.expertise, 'tag tag-primary')) : null,
+        d.expertise.length ? h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, 'Areas of care'), tags(d.expertise)) : null,
         h('section', { class: 'card stack-12' },
           h('h2', { class: 't-title-3' }, 'Consultation timings'),
           h('p', { class: 't-title-3' }, d.publishedTimings || 'Not published'),

@@ -5,22 +5,30 @@ import { createMap } from '../map3d.js';
 import { pageHead, extLink, safeHref } from '../ui.js';
 import { idParam, notFoundPage, contactCard } from '../details.js';
 import { reviewsSection } from '../reviews.js';
-import { rupees } from '../format.js';
+import { rupees, dateLong } from '../format.js';
 
 // Chains whose published Hyderabad test prices CareRoute holds, by the listing's source.
 const PRICE_PROVIDERS = { 'Vijaya Diagnostic website': 'Vijaya Diagnostic Centre' };
 
 /** Search box over the chain's published test prices, starting with common tests. */
 function testPrices(provider) {
-  const input = h('input', { class: 'input', type: 'search', placeholder: 'Search a test, for example thyroid', 'aria-label': 'Search test prices' });
+  const input = h('input', { class: 'input', type: 'search', id: 'test-q', placeholder: 'For example thyroid' });
   const list = h('div', { class: 'list' });
   let seq = 0;
   const load = async (q) => {
     const mine = ++seq;
-    const r = await api(`/test-prices?provider=${encodeURIComponent(provider)}&q=${encodeURIComponent(q)}&limit=8`).catch(() => ({ tests: [] }));
+    let r;
+    try {
+      r = await api(`/test-prices?provider=${encodeURIComponent(provider)}&q=${encodeURIComponent(q)}&limit=8`);
+    } catch {
+      if (mine !== seq) return;
+      list.replaceChildren(h('p', { class: 't-subhead muted' }, 'Test prices could not load. '), h('button', { class: 'btn btn-secondary', type: 'button', onclick: () => load(q) }, 'Try again'));
+      return;
+    }
     if (mine !== seq) return;
     list.replaceChildren(...(r.tests.length ? r.tests.map((t) => h('a', { class: 'price-row', href: safeHref(t.url) || undefined, target: '_blank', rel: 'noopener noreferrer' },
-      h('span', { class: 't-callout' }, t.name), h('span', { class: 't-headline num' }, rupees(t.priceInr)))) : [h('p', { class: 't-subhead muted' }, 'No published price for that test.')]));
+      h('span', { class: 'stack-4' }, h('span', { class: 't-callout' }, t.name), h('span', { class: 't-footnote muted' }, `Checked ${dateLong(t.checkedAt)}. Opens ${provider}’s website.`)),
+      h('span', { class: 'row-8' }, h('span', { class: 't-headline num' }, rupees(t.priceInr)), icon('external', 16)))) : [h('p', { class: 't-subhead muted' }, 'No published price for that test.')]));
   };
   let timer;
   input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => load(input.value.trim() || 'blood'), 250); });
@@ -28,7 +36,7 @@ function testPrices(provider) {
   return h('section', { class: 'card stack-12' },
     h('h2', { class: 't-title-3' }, 'Test prices'),
     h('p', { class: 't-footnote muted' }, `As ${provider} publishes them for Hyderabad, including taxes. Confirm at the centre.`),
-    input, list);
+    h('label', { class: 't-subhead', for: 'test-q' }, 'Search a test'), input, list);
 }
 
 const { main, user } = await shell({ nav: 'diagnostics', title: 'Diagnostic centre' });

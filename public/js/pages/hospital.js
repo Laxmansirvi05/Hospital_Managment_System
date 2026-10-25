@@ -22,15 +22,34 @@ function doctorsSection(all) {
   const chips = h('div', { class: 'row-8' });
   const list = h('div', { class: 'list' });
   const more = h('button', { class: 'btn btn-secondary', type: 'button' });
+  // Chips are built once and updated in place, so keyboard focus stays on the chip just pressed.
+  const chipButtons = [['', `All (${all.length})`], ...bySpec.slice(0, 10).map(([k, n]) => [k, `${k} (${n})`])].map(([k, label]) => {
+    const check = icon('check', 16);
+    const b = h('button', { class: 'chip', type: 'button', onclick: () => { chosen = k; shown = 20; draw(); } }, check, label);
+    b.dataset.key = k;
+    b.check = check;
+    return b;
+  });
+  chips.append(...chipButtons);
   const draw = () => {
     const rows = chosen ? all.filter((d) => d.specialization === chosen) : all;
-    chips.replaceChildren(...[['', `All (${all.length})`], ...bySpec.slice(0, 10).map(([k, n]) => [k, `${k} (${n})`])].map(([k, label]) =>
-      h('button', { class: `chip${chosen === k ? ' chip-on' : ''}`, type: 'button', 'aria-pressed': String(chosen === k), onclick: () => { chosen = k; shown = 20; draw(); } }, label)));
+    for (const b of chipButtons) {
+      const on = b.dataset.key === chosen;
+      b.classList.toggle('chip-on', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.check.style.display = on ? '' : 'none';
+    }
     list.replaceChildren(...rows.slice(0, shown).map(doctorRow));
     more.hidden = rows.length <= shown;
     more.textContent = `Show all ${rows.length} doctors`;
   };
-  more.addEventListener('click', () => { shown = Infinity; draw(); });
+  more.addEventListener('click', () => {
+    const before = list.children.length;
+    shown = Infinity;
+    draw();
+    // The button disappears; move focus to the first doctor that was just added.
+    list.children[before]?.focus();
+  });
   draw();
   section.append(
     h('h2', { class: 't-title-3', id: 'docs-h' }, `Doctors (${all.length})`),

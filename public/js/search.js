@@ -66,7 +66,10 @@ export async function searchPage({ main, title, sub, tabs }) {
       }, 'Use my location'));
   }
 
+  // Redrawing the form replaces its controls; put keyboard focus back on the one the user was on.
+  const keyOf = (el) => `${el.tagName}|${el.getAttribute('aria-label') || el.id || el.textContent.trim()}`;
   function drawForm() {
+    const active = form.contains(document.activeElement) ? keyOf(document.activeElement) : null;
     const p = params();
     const tab = currentTab();
     const q = h('input', { class: 'input', type: 'search', id: 'q', value: p.get('q') || '', placeholder: tab.placeholder, autocomplete: 'off' });
@@ -83,6 +86,7 @@ export async function searchPage({ main, title, sub, tabs }) {
       tab.filters ? h('div', { class: 'row-8' }, tab.filters(p, update)) : null,
     ].filter(Boolean));
     form.onsubmit = (e) => { e.preventDefault(); update({ q: q.value.trim(), area: area.hidden ? '' : area.value }); };
+    if (active) [...form.querySelectorAll('button, select, input')].find((el) => keyOf(el) === active)?.focus();
   }
 
   let seq = 0;

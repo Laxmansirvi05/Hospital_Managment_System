@@ -18,11 +18,11 @@ function nearestEmergency() {
   const o = getOrigin();
   api(`/hospitals/nearby?lat=${o.lat}&lng=${o.lng}&emergencyOnly=true&radiusKm=25&limit=3`).then((r) => {
     box.replaceChildren(
-      h('p', { class: 't-headline' }, 'Nearest emergency departments'),
+      h('h3', { class: 't-headline' }, 'Nearest emergency departments'),
       ...(r.hospitals.length ? r.hospitals.map((x) => h('div', { class: 'spread emergency-row' },
         h('a', { href: `/hospital/?id=${x.id}`, class: 'stack-4' }, h('span', { class: 't-callout' }, x.name), h('span', { class: 't-footnote muted' }, `${x.area} · ${km(x.distanceKm)}`)),
-        x.phone ? h('a', { class: 'btn btn-secondary btn-sm', href: telHref(x.phone), 'aria-label': `Call ${x.name}` }, icon('phone', 16), 'Call')
-          : h('a', { class: 'btn btn-secondary btn-sm', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer' }, icon('route', 16), 'Directions')))
+        x.phone ? h('a', { class: 'btn btn-secondary', href: telHref(x.phone), 'aria-label': `Call ${x.name}` }, icon('phone', 16), 'Call')
+          : h('a', { class: 'btn btn-secondary', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Directions to ${x.name} in Google Maps, opens in a new tab` }, icon('route', 16), 'Directions', icon('external', 16))))
         : [h('p', { class: 't-subhead muted' }, 'No hospital near you lists an emergency department. Call 112.')]),
       h('p', { class: 't-footnote muted' }, `Measured from ${o.label || 'your area'}. Only hospitals whose listing says they have an emergency department are shown.`));
   }).catch(() => box.replaceChildren(h('p', { class: 't-subhead muted' }, 'Nearby emergency departments could not load. Call 112.')));
