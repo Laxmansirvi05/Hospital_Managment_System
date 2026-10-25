@@ -281,6 +281,16 @@ describe('discovery (D-36)', () => {
     expect(second.some((id) => first.includes(id))).toBe(false);
     expect((await app.api('/hospitals?offset=5001', { token: u.token })).status).toBe(422);
   });
+  it('returns the number of results matching the filters, not the page size', async () => {
+    const u = await app.user();
+    const all = (await app.api('/hospitals?limit=50', { token: u.token })).body;
+    const page = (await app.api('/hospitals?limit=2', { token: u.token })).body;
+    expect(page.hospitals).toHaveLength(2);
+    expect(page.total).toBe(all.hospitals.length);
+    const emergency = (await app.api('/hospitals?limit=2&emergencyOnly=true', { token: u.token })).body;
+    expect(emergency.total).toBe(all.hospitals.filter((h) => h.emergencyAvailable === true).length);
+    expect(page.hospitals[0].total).toBeUndefined();
+  });
   it('returns a title on every doctor (D-54)', async () => {
     const u = await app.user();
     const r = await app.api('/doctors', { token: u.token });

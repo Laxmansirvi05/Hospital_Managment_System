@@ -76,12 +76,15 @@ export const medicineView = (m) => ({
 
 let insightsCache = null;
 
+/** A page of results plus the number matching the filters, so the page can say "1,486 doctors". */
+const paged = (key, rows, view) => ({ [key]: rows.map(view), total: rows[0]?.total ?? 0 });
+
 const ROUTES = [
   {
     method: 'GET', path: '/test-prices', roles: SIGNED_IN,
     async handler({ query }) {
       const p = q(query);
-      return { body: { tests: (await getStore().listings.testPrices(p)).map((t) => ({ name: t.name, provider: t.provider, priceInr: t.priceInr, centresOffering: t.centresOffering ?? null, url: t.url, checkedAt: t.checkedAt })) } };
+      return { body: paged('tests', await getStore().listings.testPrices(p), (t) => ({ name: t.name, provider: t.provider, priceInr: t.priceInr, centresOffering: t.centresOffering ?? null, url: t.url, checkedAt: t.checkedAt })) };
     },
   },
   {
@@ -106,10 +109,10 @@ const ROUTES = [
     async handler({ query }) {
       const p = q(query);
       if (p.lat === undefined) throw invalid('location', 'location lat and lng are required');
-      return { body: { hospitals: (await getStore().listings.hospitals({ ...p, radiusKm: p.radiusKm ?? 10 })).map(hospitalView) } };
+      return { body: paged('hospitals', await getStore().listings.hospitals({ ...p, radiusKm: p.radiusKm ?? 10 }), hospitalView) };
     },
   },
-  { method: 'GET', path: '/hospitals', roles: SIGNED_IN, async handler({ query }) { return { body: { hospitals: (await getStore().listings.hospitals(q(query))).map(hospitalView) } }; } },
+  { method: 'GET', path: '/hospitals', roles: SIGNED_IN, async handler({ query }) { return { body: paged('hospitals', await getStore().listings.hospitals(q(query)), hospitalView) }; } },
   { method: 'GET', path: '/hospitals/:id', roles: SIGNED_IN, async handler({ params }) { return { body: hospitalView(await found(getStore().listings.hospital(uuid(params)))) }; } },
   {
     method: 'GET', path: '/hospitals/:id/doctors', roles: SIGNED_IN,
@@ -121,16 +124,16 @@ const ROUTES = [
     },
   },
 
-  { method: 'GET', path: '/doctors', roles: SIGNED_IN, async handler({ query }) { return { body: { doctors: (await getStore().listings.doctors(q(query))).map(doctorView) } }; } },
+  { method: 'GET', path: '/doctors', roles: SIGNED_IN, async handler({ query }) { return { body: paged('doctors', await getStore().listings.doctors(q(query)), doctorView) }; } },
   { method: 'GET', path: '/doctors/:id', roles: SIGNED_IN, async handler({ params }) { return { body: doctorView(await found(getStore().listings.doctor(uuid(params)))) }; } },
 
-  { method: 'GET', path: '/medicines', roles: SIGNED_IN, async handler({ query }) { return { body: { medicines: (await getStore().listings.medicines(q(query))).map(medicineView) } }; } },
+  { method: 'GET', path: '/medicines', roles: SIGNED_IN, async handler({ query }) { return { body: paged('medicines', await getStore().listings.medicines(q(query)), medicineView) }; } },
   { method: 'GET', path: '/medicines/:id', roles: SIGNED_IN, async handler({ params }) { return { body: medicineView(await found(getStore().listings.medicine(uuid(params)))) }; } },
 
-  { method: 'GET', path: '/pharmacies', roles: SIGNED_IN, async handler({ query }) { return { body: { pharmacies: (await getStore().listings.pharmacies(q(query))).map(pharmacyView) } }; } },
+  { method: 'GET', path: '/pharmacies', roles: SIGNED_IN, async handler({ query }) { return { body: paged('pharmacies', await getStore().listings.pharmacies(q(query)), pharmacyView) }; } },
   { method: 'GET', path: '/pharmacies/:id', roles: SIGNED_IN, async handler({ params }) { return { body: pharmacyView(await found(getStore().listings.pharmacy(uuid(params)))) }; } },
 
-  { method: 'GET', path: '/diagnostic-centres', roles: SIGNED_IN, async handler({ query }) { return { body: { diagnosticCentres: (await getStore().listings.diagnostics(q(query))).map(diagnosticView) } }; } },
+  { method: 'GET', path: '/diagnostic-centres', roles: SIGNED_IN, async handler({ query }) { return { body: paged('diagnosticCentres', await getStore().listings.diagnostics(q(query)), diagnosticView) }; } },
   { method: 'GET', path: '/diagnostic-centres/:id', roles: SIGNED_IN, async handler({ params }) { return { body: diagnosticView(await found(getStore().listings.diagnostic(uuid(params)))) }; } },
 ];
 

@@ -118,14 +118,14 @@ export async function searchPage({ main, title, sub, tabs }) {
     const q = p.get('q');
     const filtersOn = [...p.keys()].some((k) => k !== 'tab' && k !== 'page');
     const plural = tab.plural || `${tab.noun}s`;
-    const from = (page - 1) * PAGE + 1;
-    const heading = h('h2', { class: 't-title-2' },
-      page === 1 && !hasNext ? `${list.length} ${list.length === 1 ? tab.noun : plural}`
-        : list.length ? `${plural[0].toUpperCase()}${plural.slice(1)} ${from} to ${from + list.length - 1}` : `No more ${plural}`);
+    // The server counts everything that matches the search and filters, not just this page.
+    const total = typeof data.total === 'number' ? data.total : list.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE));
+    const heading = h('h2', { class: 't-title-2' }, `${total.toLocaleString('en-IN')} ${total === 1 ? tab.noun : plural}`);
     const go = (n) => { update({ page: n === 1 ? '' : String(n) }); results.scrollIntoView({ block: 'start' }); };
     const pager = page > 1 || hasNext ? h('nav', { class: 'pager', 'aria-label': 'Pages' },
       h('button', { class: 'btn btn-secondary', type: 'button', disabled: page === 1, onclick: () => go(page - 1) }, icon('back', 18), 'Previous'),
-      h('span', { class: 't-subhead muted', 'aria-current': 'page' }, `Page ${page}`),
+      h('span', { class: 't-subhead muted', 'aria-current': 'page' }, `Page ${page} of ${pages}`),
       h('button', { class: 'btn btn-secondary', type: 'button', disabled: !hasNext, onclick: () => go(page + 1) }, 'Next', icon('chevron', 18))) : null;
     results.replaceChildren(...[
       h('div', { class: 'spread' },

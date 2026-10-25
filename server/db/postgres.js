@@ -81,7 +81,7 @@ export function createPostgresStore(url) {
   const like = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const listingBase = (r) => ({
     id: r.id, name: r.name, area: r.area, address: r.address, lat: r.lat, lng: r.lng, phone: r.phone, email: r.email, website: r.website,
-    rating: num(r.rating), ratingCount: r.rating_count, sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at),
+    rating: num(r.rating), ratingCount: r.rating_count, sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at), total: r.total_count,
     ...(r.distance_km !== null && r.distance_km !== undefined ? { distanceKm: r.distance_km } : {}),
   });
   const hospitalOut = (r) => ({ ...listingBase(r), facilityType: r.facility_type, description: r.description, emergencyAvailable: r.emergency_available, specialities: r.specialities, departments: r.departments });
@@ -89,7 +89,7 @@ export function createPostgresStore(url) {
     id: r.id, name: r.name, title: r.title, specialization: r.specialization, qualifications: r.qualifications, experienceYears: r.experience_years,
     hospitalId: r.hospital_id, publishedTimings: r.published_timings, profileUrl: r.profile_url, rating: num(r.rating), ratingCount: r.rating_count,
     photoUrl: r.photo_url, languages: r.languages, expertise: r.expertise, bookingUrl: r.booking_url, consultationFeeInr: num(r.consultation_fee_inr),
-    sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at),
+    sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at), total: r.total_count,
     place: r.hospital_id
       ? { kind: 'hospital', id: r.hospital_id, name: r.h_name, area: r.h_area, address: r.h_address, phone: r.appointment_phone ?? r.h_phone, lat: r.p_lat, lng: r.p_lng }
       : { kind: 'clinic', id: null, name: r.clinic_name, area: r.clinic_area, address: r.clinic_address, phone: r.clinic_phone, lat: r.p_lat, lng: r.p_lng },
@@ -101,7 +101,7 @@ export function createPostgresStore(url) {
     const loc = 'coalesce(h.location, d.clinic_location)';
     const n = nearFilter(loc, p);
     return sql`
-      select d.*, h.name as h_name, h.area as h_area, h.address as h_address, h.phone as h_phone,
+      select d.*, count(*) over()::int as total_count, h.name as h_name, h.area as h_area, h.address as h_address, h.phone as h_phone,
         extensions.st_y(${sql.unsafe(loc)}::extensions.geometry) as p_lat, extensions.st_x(${sql.unsafe(loc)}::extensions.geometry) as p_lng,
         ${n.dist} as distance_km
       from public.doctors d left join public.hospitals h on h.id = d.hospital_id
@@ -312,11 +312,11 @@ export function createPostgresStore(url) {
         };
       },
       async testPrices(p) {
-        const rows = await sql`select * from public.test_prices where active
+        const rows = await sql`select *, count(*) over()::int as total_count from public.test_prices where active
           and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')})
           and (${p.provider ?? null}::text is null or provider = ${p.provider ?? null})
           order by ${p.q ? sql`extensions.similarity(name, ${p.q}) desc,` : sql``} price_inr limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
-        return rows.map((r) => ({ name: r.name, provider: r.provider, priceInr: num(r.price_inr), centresOffering: r.centres_offering, url: r.url, checkedAt: day(r.checked_at) }));
+        return rows.map((r) => ({ name: r.name, provider: r.provider, priceInr: num(r.price_inr), centresOffering: r.centres_offering, url: r.url, checkedAt: day(r.checked_at), total: r.total_count }));
       },
       async areas() {
         const rows = await sql`
@@ -330,7 +330,7 @@ export function createPostgresStore(url) {
       async hospitals(p) {
         const n = nearFilter('location', p);
         const rows = await sql`
-          select *, ${latlng('location')}, ${n.dist} as distance_km from public.hospitals
+          select *, ${latlng('location')}, ${n.dist} as distance_km, count(*) over()::int as total_count from public.hospitals
           where active
             and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')}
                  or array_to_string(specialities, ' ') ilike ${like(p.q ?? '')} or array_to_string(departments, ' ') ilike ${like(p.q ?? '')})
@@ -358,14 +358,14 @@ export function createPostgresStore(url) {
       },
       async doctor(id) { const [r] = await doctorsQuery(sql`d.id = ${id}`); return r ? doctorOut(r) : null; },
       async medicines(p) {
-        const meds = await sql`select * from public.medicines where active
+        const meds = await sql`select *, count(*) over()::int as total_count from public.medicines where active
           and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or category ilike ${like(p.q ?? '')})
           and (${p.category ?? null}::text is null or category = ${p.category ?? null})
           order by name limit ${p.limit ?? 50} offset ${p.offset ?? 0}`;
         if (!meds.length) return [];
         const listings = await sql`select * from public.medicine_listings where active and medicine_id in ${sql(meds.map((m) => m.id))} order by price_inr`;
         return meds.map((m) => ({
-          id: m.id, name: m.name, form: m.form, pack: m.pack, category: m.category, prescriptionRequired: m.prescription_required,
+          id: m.id, name: m.name, form: m.form, pack: m.pack, category: m.category, prescriptionRequired: m.prescription_required, total: m.total_count,
           listings: listings.filter((l) => l.medicine_id === m.id).map((l) => ({ platform: l.platform, priceInr: num(l.price_inr), productUrl: l.product_url, checkedAt: l.checked_at.toISOString() })),
         }));
       },
@@ -378,7 +378,7 @@ export function createPostgresStore(url) {
       async pharmacies(p) {
         const n = nearFilter('location', p);
         const rows = await sql`
-          select *, ${latlng('location')}, ${n.dist} as distance_km from public.pharmacies
+          select *, ${latlng('location')}, ${n.dist} as distance_km, count(*) over()::int as total_count from public.pharmacies
           where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null}) and (${p.open24 ?? false} = false or open_24)
             and (${p.chain ?? null}::text is null or chain = ${p.chain ?? null}) and ${n.where}
@@ -389,7 +389,7 @@ export function createPostgresStore(url) {
       async diagnostics(p) {
         const n = nearFilter('location', p);
         const rows = await sql`
-          select *, ${latlng('location')}, ${n.dist} as distance_km from public.diagnostic_centres
+          select *, ${latlng('location')}, ${n.dist} as distance_km, count(*) over()::int as total_count from public.diagnostic_centres
           where active and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')} or array_to_string(tests_listed, ' ') ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null})
             and (${p.test ?? null}::text is null or array_to_string(tests_listed, ' ') ilike ${like(p.test ?? '')}) and ${n.where}

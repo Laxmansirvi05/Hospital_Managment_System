@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Result counts in search
+
+- At the owner's request the heading shows how many results match the search and filters (for example "356 doctors" for Telugu speakers) instead of "81 to 100", and the pager shows "Page N of M". Search responses carry `total` from a window count in Postgres (the memory store counts before paging). Checked against careroute-dev: 1,650 care places, 93 eye care, 1,486 doctors, 356 Telugu-speaking, 151 diagnostic centres, 2,096 medicines, 73 Apollo pharmacies, 5 thyroid test prices. One API test added (87 pass).
+
 ### Numbered pages in search
 
 - At the owner's request, search lists show 20 results per page with Previous and Next at the bottom instead of a Show more button. The page number is in the address, so Back and shared links keep it; any new search, area or filter starts again at page 1. One extra row is requested to know whether a next page exists. Checked in the browser on careroute-dev: doctors page 1 and 2 (1 to 20, 21 to 40), Back returns to page 1, diagnostic centres page 8 shows 141 to 151 with Next disabled, a new search resets to page 1.
