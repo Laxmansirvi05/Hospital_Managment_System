@@ -65,6 +65,7 @@ Rule for agents and contributors: never turn an OPEN item into a PROPOSED or LOC
 | D-46 | Listing and price data is gathered from as many internet sources as possible, not only Apollo, MedPlus and Tata 1mg. CareRoute only shows information and prices, never booking or selling. | Owner, 2026-10-25. Answers the source part of Q-28. The owner accepts the terms-of-use risk recorded in `19-setup-checklist.md`. Collection rules are PROPOSED (P-29). |
 | D-47 | AI providers run on free plans only, within their limits, relying on the fallback chain (D-07). | Owner, 2026-10-25. Answers Q-17 and Q-25. Free Gemini terms let Google use and review inputs, so the assistant and report explanation must say so before sending anything (see `10-privacy-and-data.md` section 4). |
 | D-48 | No landing page for now. The owner builds it later. | Owner, 2026-10-25. |
+| D-49 | In production the API connects to the database as the `careroute_api` role, not `postgres`. The role can log in and bypass Row Level Security, has data access only (select, insert, update, delete, sequences, `hit_rate_limit`), owns nothing and cannot change the schema. Migrations run as `postgres`. Its password exists only in Vercel Production `DATABASE_URL`. Details in `19-setup-checklist.md` section 3. | Owner, 2026-10-25. Created on careroute-prod the same day. Not yet on careroute-dev. |
 
 ## 2. Changes forced by locked decisions
 

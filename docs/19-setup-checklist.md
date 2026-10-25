@@ -57,9 +57,9 @@ Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is usin
 - `ALLOW_PRIVILEGED_SIGNUP=true` only in Development and Preview. Never in Production (D-21).
 - Each variable is a separate entry per environment. To give Production its own value, add a new entry with only Production ticked. Editing the environment ticks of an existing entry moves its value, it does not copy it.
 - Preview uses careroute-dev. Production uses careroute-prod.
-- Production `DATABASE_URL` logs in as the `careroute_api` role, not `postgres` (PROPOSED, see below). Preview and `.env.local` still use `postgres` on dev.
+- Production `DATABASE_URL` logs in as the `careroute_api` role, not `postgres` (D-49, see below). Preview and `.env.local` still use `postgres` on dev.
 
-#### Production database role `careroute_api` (PROPOSED)
+#### Production database role `careroute_api` (D-49, LOCKED)
 
 Created on careroute-prod on 2026-10-25 because the `postgres` password was not available. The owner allowed the SQL tool for this.
 
@@ -68,7 +68,7 @@ Created on careroute-prod on 2026-10-25 because the `postgres` password was not 
 - Connection: transaction pooler, user `careroute_api.qbiltbhqtesdidjxpscf`, host `aws-0-ap-south-1.pooler.supabase.com`, port 6543.
 - The password was generated locally; only its SCRAM-SHA-256 hash was sent to the database. The password exists only in Vercel Production `DATABASE_URL`. To rotate: `alter role careroute_api password '<new SCRAM hash>'`, then replace the Vercel value.
 - Migrations still run as `postgres` through the Supabase tools.
-- Not created on careroute-dev yet. Do the same there if the owner approves this setup.
+- Not created on careroute-dev yet; dev still uses `postgres`.
 
 ### 4. MapTiler (D-08)
 
