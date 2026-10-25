@@ -25,8 +25,10 @@ async function upsertPlaces(sql, table, rows, extra) {
     await sql`update ${sql(table)} set location = ${point(sql, r)} where source_ref = ${r.sourceRef}`;
   }
   const refs = rows.map((r) => r.sourceRef);
+  // Each source hides only its own rows that it no longer lists; another source's rows stay.
+  const platforms = [...new Set(rows.map((r) => r.sourcePlatform))];
   const hidden = await sql`update ${sql(table)} set active = false, updated_at = now()
-    where source_platform = 'OpenStreetMap' and active and not (source_ref = any(${refs}))`;
+    where source_platform = any(${platforms}) and active and not (source_ref = any(${refs}))`;
   return hidden.count;
 }
 
