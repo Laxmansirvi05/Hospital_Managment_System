@@ -30,7 +30,7 @@ searchPage({
       ],
       row: (x) => listingRow({
         href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name,
-        meta: [`${x.area} · ${x.specialities.slice(0, 3).join(', ')}`,
+        meta: [[x.area, x.specialities.slice(0, 3).join(', ')].filter(Boolean).join(' · '),
           h('span', { class: 'row-8' }, rating(x), x.emergencyAvailable ? h('span', { class: 'tag tag-success' }, 'Emergency department') : null)],
         trail: distance(x),
       }),
@@ -46,7 +46,7 @@ searchPage({
       filters: (p, update) => [specialitySelect(p, update, 'speciality')],
       row: (d) => listingRow({
         href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name,
-        meta: [`${d.specialization} · ${d.experienceYears} years`, `${d.place.name}, ${d.place.area}`, rating(d)],
+        meta: [[d.specialization, d.experienceYears !== null ? `${d.experienceYears} years` : ''].filter(Boolean).join(' · '), `${d.place.name}, ${d.place.area}`, rating(d)],
         trail: distance(d),
       }),
       pin: (d) => ({ ...d.place.location, kind: 'doctor', label: d.name, href: `/doctor/?id=${d.id}` }),

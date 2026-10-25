@@ -19,7 +19,7 @@ searchPage({
       filters: (p, update) => TESTS.map((t) => chip(t, p.get('test') === t, () => update({ test: p.get('test') === t ? '' : t }))),
       row: (c) => listingRow({
         href: `/diagnostic/?id=${c.id}`, kind: 'diagnostic', title: c.name,
-        meta: [`${c.area} · ${c.hours}`, c.testsListed.slice(0, 4).join(', '), h('span', { class: 'row-8' }, rating(c), c.website ? h('span', { class: 'tag' }, 'Website listed') : null)],
+        meta: [[c.area, c.hours].filter(Boolean).join(' · '), c.testsListed.slice(0, 4).join(', '), h('span', { class: 'row-8' }, rating(c), c.website ? h('span', { class: 'tag' }, 'Website listed') : null)],
         trail: distance(c),
       }),
       pin: (c) => ({ ...c.location, kind: 'diagnostic', label: c.name, href: `/diagnostic/?id=${c.id}` }),

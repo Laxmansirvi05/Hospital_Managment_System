@@ -6,6 +6,9 @@ import { dosesFor } from '../server/db/geo.js';
 import { sniffOk } from '../server/adapters/storage.js';
 import { scrub } from '../server/log.js';
 import { dropRewriteParam } from '../api/v1/[...path].js';
+import { toListings } from '../scripts/collect-osm.js';
+import { parseDoctor } from '../scripts/collect-care-doctors.js';
+import { careBranchMatcher } from '../scripts/load-listings.js';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -145,5 +148,75 @@ describe('Vercel entry point', () => {
     expect(dropRewriteParam('/api/v1/health?path=health')).toBe('/api/v1/health');
     expect(dropRewriteParam('/api/v1/areas')).toBe('/api/v1/areas');
     expect(dropRewriteParam('/api/v1/medicines?q=para')).toBe('/api/v1/medicines?q=para');
+  });
+});
+
+describe('OpenStreetMap collection (D-50, D-51)', () => {
+  const el = (id, tags, lat = 17.42, lon = 78.45) => ({ type: 'node', id, lat, lon, tags });
+  const data = toListings([
+    el(1, { place: 'suburb', name: 'Banjara Hills' }, 17.418, 78.44),
+    el(2, { amenity: 'hospital', name: 'City Hospital', emergency: 'yes', website: 'www.city.example', 'healthcare:speciality': 'general;paediatrics' }),
+    el(3, { amenity: 'pharmacy', name: 'Corner Pharmacy', opening_hours: '24/7' }),
+    el(4, { amenity: 'clinic', name: 'Vijaya Diagnostic Centre' }),
+    el(5, { amenity: 'clinic', name: 'Family Clinic' }),
+    el(6, { amenity: 'hospital' }),
+    { type: 'way', id: 7, center: { lat: 17.5, lon: 78.6 }, tags: { amenity: 'hospital', name: 'Far Hospital', phone: '+91 40 1234 5678; +91 98490 00000', website: 'javascript:alert(1)', 'addr:suburb': 'Uppal' } },
+  ], '2026-10-25');
+
+  it('sorts places into the three listing types and drops unnamed or plain clinics', () => {
+    expect(data.hospitals.map((h) => h.name)).toEqual(['City Hospital', 'Far Hospital']);
+    expect(data.pharmacies.map((p) => p.name)).toEqual(['Corner Pharmacy']);
+    expect(data.diagnostics.map((d) => d.name)).toEqual(['Vijaya Diagnostic Centre']);
+  });
+  it('keeps a missing phone as null and the first of several numbers', () => {
+    expect(data.hospitals[0].phone).toBeNull();
+    expect(data.hospitals[1].phone).toBe('+91 40 1234 5678');
+  });
+  it('only accepts http and https websites', () => {
+    expect(data.hospitals[0].website).toBe('https://www.city.example');
+    expect(data.hospitals[1].website).toBeNull();
+  });
+  it('names the area from the nearest suburb, else the address tag, and never invents a street', () => {
+    expect(data.hospitals[0].area).toBe('Banjara Hills');
+    expect(data.hospitals[1].area).toBe('Uppal');
+    expect(data.hospitals[0].address).toBe('Banjara Hills, Hyderabad (no street address listed)');
+  });
+  it('keeps the source, licence link target and a stable reference', () => {
+    expect(data.hospitals[1]).toMatchObject({ sourceRef: 'osm:way/7', sourcePlatform: 'OpenStreetMap', sourceUrl: 'https://www.openstreetmap.org/way/7', checkedAt: '2026-10-25' });
+    expect(data.hospitals[0]).toMatchObject({ emergencyAvailable: true, specialities: ['General', 'Paediatrics'] });
+    expect(data.hospitals[1].emergencyAvailable).toBeNull();
+    expect(data.pharmacies[0].open24).toBe(true);
+  });
+});
+
+describe('CARE doctor pages (D-52, D-54)', () => {
+  const page = (body) => `<html><head><script type="application/ld+json">{"@type":"Person","name":"Dr. Test Rao"}</script></head><body>${'<p>nav</p>'.repeat(45)}${body}</body></html>`;
+  const url = 'https://www.carehospitals.com/doctor/hyderabad/banjara-hills/test-rao';
+  it('reads only the published professional fields', () => {
+    const d = parseDoctor(page('<h1>Dr. Test Rao</h1><p>Consultant Cardiologist</p><p>Speciality</p><p>Cardiology</p><p>Qualification</p><p>MBBS, MD, DM</p><p>Experience</p><p>12 Years</p><p>Location</p><p>CARE Hospitals, Banjara Hills, Hyderabad, CARE Hospitals Outpatient Centre, Banjara Hills, Hyderabad</p><p>+91-40-68106529</p>'), url);
+    expect(d).toEqual({
+      sourceRef: 'care:/doctor/hyderabad/banjara-hills/test-rao', name: 'Dr. Test Rao', title: 'Consultant Cardiologist', specialization: 'Cardiology',
+      qualifications: ['MBBS', 'MD', 'DM'], experienceYears: 12,
+      locations: ['CARE Hospitals, Banjara Hills, Hyderabad', 'CARE Hospitals Outpatient Centre, Banjara Hills, Hyderabad'],
+      appointmentPhone: '+91 40 68106529', profileUrl: url,
+    });
+  });
+  it('reads a doctor with no title, with no structured data on the page', () => {
+    const html = `<html><body>${'<p>nav</p>'.repeat(45)}<h1>Dr. No Title</h1><p>Speciality</p><p>ENT</p><p>Qualification</p><p>MBBS, MS</p><p>Location</p><p>CARE Hospitals, Nampally, Hyderabad</p></body></html>`;
+    expect(parseDoctor(html, url)).toMatchObject({ name: 'Dr. No Title', title: '', specialization: 'ENT', experienceYears: null, appointmentPhone: null, locations: ['CARE Hospitals, Nampally, Hyderabad'] });
+  });
+  it('returns null when the page has no doctor', () => {
+    expect(parseDoctor('<html><body>Not found</body></html>', url)).toBeNull();
+  });
+  it('matches a branch only by its locality, never by distance', () => {
+    const osm = { suburbs: [], hospitals: [
+      { sourceRef: 'osm:node/1', name: 'Care Hospital', address: 'Road No.1, Banjara Hills', area: 'Masab Tank' },
+      { sourceRef: 'osm:node/2', name: 'Care Hospitals', address: 'Hi Tech City Main Road', area: 'Khajaguda' },
+      { sourceRef: 'osm:node/3', name: 'Medicare Hospital', address: 'Malakpet', area: 'Malakpet' },
+    ] };
+    const match = careBranchMatcher(osm);
+    expect(match('CARE Hospitals, Banjara Hills, Hyderabad')).toBe('osm:node/1');
+    expect(match('CARE Hospitals Outpatient Centre, HITEC City, Hyderabad')).toBe('osm:node/2');
+    expect(match('CARE Hospitals, Malakpet, Hyderabad')).toBeNull();
   });
 });

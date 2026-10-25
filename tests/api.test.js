@@ -220,6 +220,24 @@ describe('discovery (D-36)', () => {
     expect(p.body.pharmacies.length).toBeGreaterThan(0);
     expect(p.body.pharmacies.every((x) => x.open24)).toBe(true);
   });
+  it('lists areas from the data and filters by any listed area (D-50)', async () => {
+    const u = await app.user();
+    const areas = (await app.api('/areas', { token: u.token })).body.areas;
+    expect(areas.length).toBeGreaterThan(0);
+    const r = await app.api(`/hospitals?area=${encodeURIComponent(areas[0])}`, { token: u.token });
+    expect(r.status).toBe(200);
+    expect(r.body.hospitals.every((h) => h.area === areas[0])).toBe(true);
+    const unknown = await app.api('/hospitals?area=Nowhere%20Nagar', { token: u.token });
+    expect(unknown.status).toBe(200);
+    expect(unknown.body.hospitals).toEqual([]);
+    expect((await app.api(`/hospitals?area=${'x'.repeat(81)}`, { token: u.token })).status).toBe(422);
+  });
+  it('returns a title on every doctor (D-54)', async () => {
+    const u = await app.user();
+    const r = await app.api('/doctors', { token: u.token });
+    expect(r.body.doctors.length).toBeGreaterThan(0);
+    expect(r.body.doctors.every((d) => typeof d.title === 'string')).toBe(true);
+  });
   it('returns 404 for an unknown or malformed id', async () => {
     const u = await app.user();
     expect((await app.api('/hospitals/not-a-uuid', { token: u.token })).status).toBe(404);

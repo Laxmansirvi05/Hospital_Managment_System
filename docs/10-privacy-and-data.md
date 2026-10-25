@@ -4,7 +4,7 @@ This document sets the rules for personal and health data. It is a project polic
 
 ## 1. Demo data rule
 
-The demo runs on synthetic data only. No real patient, driver, hospital or report is used in development, previews or the demo. Seed data in `supabase/seed.sql` is invented. Exception: listing and medicine data comes from online platforms such as Apollo, MedPlus and Tata 1mg (D-35), so it is real public information. Business listings and prices may be real. Real doctor profiles wait for Q-22. Patient, driver, emergency and report data stay synthetic. The only real phone numbers are the few verified test numbers the Twilio trial needs, and they belong to people who agreed.
+The demo runs on synthetic data only. No real patient, driver, hospital or report is used in development, previews or the demo. Seed data in `supabase/seed.sql` is invented. Exception: listing and medicine data is real public information. Hospitals, pharmacies and diagnostic centres come from OpenStreetMap (D-50), medicine prices from government data (D-53), and doctor profiles from the hospitals' own websites with only the fields in D-54. Patient, driver, emergency and report data stay synthetic. The only real phone numbers are the few verified test numbers the Twilio trial needs, and they belong to people who agreed.
 
 ## 2. Data inventory
 

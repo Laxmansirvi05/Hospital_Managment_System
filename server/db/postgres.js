@@ -79,11 +79,11 @@ export function createPostgresStore(url) {
   });
   const hospitalOut = (r) => ({ ...listingBase(r), description: r.description, emergencyAvailable: r.emergency_available, specialities: r.specialities, departments: r.departments });
   const doctorOut = (r) => ({
-    id: r.id, name: r.name, specialization: r.specialization, qualifications: r.qualifications, experienceYears: r.experience_years,
+    id: r.id, name: r.name, title: r.title, specialization: r.specialization, qualifications: r.qualifications, experienceYears: r.experience_years,
     hospitalId: r.hospital_id, publishedTimings: r.published_timings, profileUrl: r.profile_url, rating: num(r.rating), ratingCount: r.rating_count,
     sourcePlatform: r.source_platform, sourceUrl: r.source_url, checkedAt: day(r.checked_at),
     place: r.hospital_id
-      ? { kind: 'hospital', id: r.hospital_id, name: r.h_name, area: r.h_area, address: r.h_address, phone: r.h_phone, lat: r.p_lat, lng: r.p_lng }
+      ? { kind: 'hospital', id: r.hospital_id, name: r.h_name, area: r.h_area, address: r.h_address, phone: r.appointment_phone ?? r.h_phone, lat: r.p_lat, lng: r.p_lng }
       : { kind: 'clinic', id: null, name: r.clinic_name, area: r.clinic_area, address: r.clinic_address, phone: r.clinic_phone, lat: r.p_lat, lng: r.p_lng },
     ...(r.distance_km !== null && r.distance_km !== undefined ? { distanceKm: r.distance_km } : {}),
   });
@@ -259,6 +259,15 @@ export function createPostgresStore(url) {
     },
 
     listings: {
+      async areas() {
+        const rows = await sql`
+          select area from (
+            select area from public.hospitals where active union all
+            select area from public.pharmacies where active union all
+            select area from public.diagnostic_centres where active) a
+          group by area order by area`;
+        return rows.map((r) => r.area);
+      },
       async hospitals(p) {
         const n = nearFilter('location', p);
         const rows = await sql`
@@ -267,20 +276,21 @@ export function createPostgresStore(url) {
             and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')} or area ilike ${like(p.q ?? '')}
                  or array_to_string(specialities, ' ') ilike ${like(p.q ?? '')} or array_to_string(departments, ' ') ilike ${like(p.q ?? '')})
             and (${p.area ?? null}::text is null or area = ${p.area ?? null})
-            and (${p.emergencyOnly ?? false} = false or emergency_available)
-            and (${p.speciality ?? null}::text is null or ${p.speciality ?? null} = any(specialities))
+            and (${p.emergencyOnly ?? false} = false or emergency_available is true)
+            -- Sources spell specialities their own way, so the filter matches part of a name, ignoring case.
+            and (${p.speciality ?? null}::text is null or exists (select 1 from unnest(specialities) s where s ilike ${like(p.speciality ?? '')}))
             and ${n.where}
           order by ${n.order} limit ${p.limit ?? 50}`;
         return rows.map(hospitalOut);
       },
       async hospital(id) { const [r] = await sql`select *, ${latlng('location')} from public.hospitals where id = ${id} and active`; return r ? hospitalOut(r) : null; },
       async hospitalDoctors(id, specialization) {
-        return (await doctorsQuery(sql`d.hospital_id = ${id} and (${specialization ?? null}::text is null or d.specialization = ${specialization ?? null})`)).map(doctorOut);
+        return (await doctorsQuery(sql`d.hospital_id = ${id} and (${specialization ?? null}::text is null or d.specialization ilike ${like(specialization ?? '')})`)).map(doctorOut);
       },
       async doctors(p) {
         const where = sql`(${p.q ?? null}::text is null or d.name ilike ${like(p.q ?? '')} or d.specialization ilike ${like(p.q ?? '')} or coalesce(h.name, d.clinic_name) ilike ${like(p.q ?? '')})
           and (${p.area ?? null}::text is null or coalesce(h.area, d.clinic_area) = ${p.area ?? null})
-          and (${p.specialization ?? null}::text is null or d.specialization = ${p.specialization ?? null})`;
+          and (${p.specialization ?? null}::text is null or d.specialization ilike ${like(p.specialization ?? '')})`;
         return (await doctorsQuery(where, p)).map(doctorOut);
       },
       async doctor(id) { const [r] = await doctorsQuery(sql`d.id = ${id}`); return r ? doctorOut(r) : null; },

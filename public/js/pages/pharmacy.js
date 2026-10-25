@@ -17,7 +17,7 @@ try {
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },
           h('div', { class: 'row' },
-            h('span', { class: `tag ${p.open24 ? 'tag-success' : ''}` }, icon('clock', 14), p.hours),
+            h('span', { class: `tag ${p.open24 ? 'tag-success' : ''}` }, icon('clock', 14), p.hours || 'Hours not listed'),
             h('span', { class: 't-subhead muted' }, p.area)),
           createMap({ pins: [{ ...p.location, kind: 'pharmacy', label: p.name, showLabel: true, active: true }], tilt: 40 })),
         reviewsSection({ kind: 'pharmacy', id: p.id, listing: p, canWrite: user.role === 'patient' }),

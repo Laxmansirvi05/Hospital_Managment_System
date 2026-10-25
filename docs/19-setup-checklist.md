@@ -25,7 +25,7 @@ Everything that must exist before building restarts. Each row says what to creat
 | 7 | Groq | Triage, second choice | To do |
 | 8 | OpenRouter | Triage, third choice | To do |
 | 9 | Twilio | SMS | To do |
-| 10 | Listing and medicine price data | Discovery | Source decided: online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Collection method and any accounts or keys wait for Q-28. |
+| 10 | Listing and medicine price data | Discovery | Hospitals, pharmacies and diagnostic centres from OpenStreetMap (D-50) and doctors from CARE Hospitals' website (D-52): loaded on 2026-10-25, see "Real listing data" below. Medicine prices (D-53): waiting for the owner's data.gov.in API key. Scheduled refresh waits for Q-28. |
 | 11 | Assistant external sources | AI assistant | Not chosen (Q-26). Nothing to create until the owner decides. |
 
 ## To connect the app to careroute-dev (next step for the owner)
@@ -164,6 +164,24 @@ Third-party scraping services and open-source scrapers for Apollo Pharmacy and 1
 2. 1mg's terms also forbid deep linking. Linking a medicine row straight to a 1mg product page (F-44) may conflict with that clause, even with no collection at all.
 3. The only official routes found are business relationships: 1mg's partnerships and API integration (by agreement), and possibly 1mg's affiliate scheme through a network (links only). Nothing equivalent was found for Apollo or MedPlus. Asking each company for written permission or a data agreement is the route their terms leave open.
 4. MedPlus's bot blocking means any automated collection from it would also be working against an active technical control.
+
+## Real listing data (collected 2026-10-25)
+
+Run by hand until Q-28 decides where a scheduled job runs. Commands are in `CLAUDE.md`.
+
+| Source | What | Rules followed | Result |
+| --- | --- | --- | --- |
+| OpenStreetMap, Overpass API | Hospitals, pharmacies, diagnostic centres inside the Hyderabad administrative area | One request per run, honest user agent. ODbL credit shown on every listing and search page (D-50). | 970 hospitals, 222 pharmacies, 29 diagnostic centres, in 126 suburb areas. About a third of hospitals and almost no pharmacies have a phone (D-51). |
+| CARE Hospitals website | Hyderabad doctor pages from CARE's own `doctors-sitemap.xml` | robots.txt checked before fetching; English pages only (language copies are disallowed); one request every 3 seconds; only the D-54 fields kept. | 331 pages allowed; 329 had doctor details; 297 doctors loaded at four CARE branches (Banjara Hills 144, HITEC City 83, Nampally 50, Musheerabad 20). Doctors at CARE Malakpet (32) are not shown: OpenStreetMap has no CARE Malakpet hospital to attach them to, and guessing by distance put them at the wrong branch. |
+| Yashoda Hospitals | Not used | robots.txt disallows `/doctors/` (checked 2026-10-25). | |
+| Apollo Hospitals | Not used | Returns 403 to automated clients, even for robots.txt (checked 2026-10-25). P-29 forbids getting around that. | |
+| Jan Aushadhi, NPPA | Not yet | The Jan Aushadhi site has no public download; NPPA did not answer from here. Both are published on data.gov.in, which needs the owner's free API key (D-53). | |
+
+Known data quality limits, all from the source:
+
+- OpenStreetMap tags some dental clinics, labs and eye clinics as hospitals. They appear in hospital search.
+- Whether a hospital has an emergency department is usually not tagged. CareRoute shows "Emergency department not listed", never "No emergency department", unless the source says no.
+- Specialities are free text in the source. The speciality filter matches part of a name, ignoring case.
 
 ## Done means
 

@@ -4,6 +4,18 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Real listing data
+
+- Decided D-50 (OpenStreetMap as the main listing source, ODbL credit), D-51 (a listing may have no phone), D-52 (doctors from hospitals' own websites, within P-29), D-53 (medicine prices from government data through data.gov.in), D-54 (the doctor fields published; was P-30). Closed Q-22. Proposed P-31 (`careroute_import` role for loading production).
+- Research for D-52: Yashoda's robots.txt disallows `/doctors/`; Apollo Hospitals returns 403 to automated clients even for robots.txt; CARE allows its doctor pages and publishes a doctors sitemap. Only CARE is used.
+- Migrations `20261025000600_real_listings` (optional phone, `source_ref` keys, doctor `title` and `appointment_phone`, area indexes) and `20261025000700_emergency_unknown` (emergency department may be unknown), applied to careroute-dev and careroute-prod.
+- New scripts: `collect-osm.js`, `collect-care-doctors.js` (robots.txt checked, one request every 3 seconds, resumable), `load-listings.js` (upserts by `source_ref`, hides rows a source drops, `--drop-samples`, `--prod`).
+- Loaded into both databases: 970 hospitals, 222 pharmacies, 29 diagnostic centres from OpenStreetMap, and 297 CARE doctors. careroute-dev's synthetic hospitals, doctors, pharmacies and diagnostic centres were removed; its 8 sample medicines stay until D-53 prices arrive. careroute-prod has no medicines yet.
+- API: `/areas` is built from the data (126 areas); `area` accepts any text; doctors return `title`; a doctor's call number is the hospital's appointment line; speciality filters match part of a name, ignoring case; `emergencyAvailable` may be `null`.
+- Pages: OpenStreetMap credit on listing and search pages; "No phone number is listed" with directions; "Emergency department not listed" instead of a wrong "No emergency department"; empty hours, tests, specialities and experience are hidden or explained; the doctor page now shows the hospital link in both places (one link node was being moved).
+- Not placed: 32 CARE Malakpet doctors, because OpenStreetMap has no CARE Malakpet hospital and a distance guess put them at Nampally. Known source limits are in `docs/19-setup-checklist.md`.
+- Checks: 70 unit and API tests pass (in-memory store, collectors and parser on fixtures). Pages checked in the browser against careroute-dev. Row counts checked by SQL in both databases.
+
 ### careroute_api on dev too
 
 - Created the `careroute_api` role (D-49) on careroute-dev. `.env.local` and Vercel Preview now use it; the dev `postgres` login is kept commented in `.env.local`. Checked that the role cannot create tables. The `db-migration` skill now says new API functions need an explicit grant.

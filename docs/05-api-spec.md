@@ -115,7 +115,9 @@ Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_
 
 ## 3. Shared rules for listing responses (PROPOSED, P-19, P-24)
 
-- Every listing has `id`, `name`, `kind`, `address`, `area`, `location { lat, lng }`, `phone`, `email` (only if public), `website`, `sourcePlatform`, `sourceUrl`, `checkedAt`.
+- Every listing has `id`, `name`, `kind`, `address`, `area`, `location { lat, lng }`, `phone` (may be `null`, D-51), `email` (only if public), `website`, `sourcePlatform`, `sourceUrl`, `checkedAt`.
+- Hospitals have `emergencyAvailable`: `true`, `false`, or `null` when the source does not say. `emergencyOnly` returns only `true`.
+- Doctors also have `title` (string, may be empty, D-54). A doctor's `place.phone` is the hospital's appointment number for that doctor when published, else the hospital's main number.
 - `rating` and `reviewCount` appear only once Q-24 is decided. Until then they are absent, not zero.
 - Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` and `cursor`. They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
 - Only listings marked active by the admin are returned.
@@ -201,7 +203,7 @@ Implemented on `main`. Not in the Postman collection yet; add them with the owne
 | POST `/patients/me/reminders/{id}/doses` | patient | Record `taken` or `skipped` for `date` and `time` |
 | GET, POST `/patients/me/appointments`; PATCH, DELETE `/patients/me/appointments/{id}` | patient | Appointment log (D-37). CareRoute does not book. |
 | GET `/patients/me/dashboard?date=` | patient | Dashboard in one call (D-40) |
-| GET `/areas` | signed in | Hyderabad areas for filters |
+| GET `/areas` | signed in | Hyderabad areas for filters, built from the active listings (sorted by name). The `area` search parameter accepts any text up to 80 characters; an unknown area returns an empty list, not an error. |
 | GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
 
 Section 8 (reports) is built with `kind` values `lab`, `prescription`, `scan`, `discharge`, `insurance`, `other`, and limits PDF, JPEG or PNG up to 10 MB (PROPOSED until Q-11).

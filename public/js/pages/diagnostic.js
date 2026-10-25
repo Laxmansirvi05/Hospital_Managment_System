@@ -17,14 +17,16 @@ try {
       h('div', { class: 'stack-24' },
         h('section', { class: 'card card-raised hero-detail' },
           h('div', { class: 'row' },
-            h('span', { class: 'tag' }, icon('clock', 14), c.hours),
+            h('span', { class: 'tag' }, icon('clock', 14), c.hours || 'Hours not listed'),
             h('span', { class: 't-subhead muted' }, c.area)),
           c.description ? h('p', { class: 't-callout', style: 'max-width:680px' }, c.description) : null,
           c.website ? h('p', {}, extLink(c.website, `Visit ${c.website.replace(/^https?:\/\//, '')}`)) : null,
           createMap({ pins: [{ ...c.location, kind: 'diagnostic', label: c.name, showLabel: true, active: true }], tilt: 40 })),
         h('section', { class: 'card stack-12' },
           h('h2', { class: 't-title-3' }, 'Tests listed publicly'),
-          h('div', { class: 'row-8' }, c.testsListed.map((t) => h('a', { class: 'tag tag-primary', href: `/search/diagnostics/?test=${encodeURIComponent(t)}` }, t))),
+          c.testsListed.length
+            ? h('div', { class: 'row-8' }, c.testsListed.map((t) => h('a', { class: 'tag tag-primary', href: `/search/diagnostics/?test=${encodeURIComponent(t)}` }, t)))
+            : h('p', { class: 't-callout muted' }, 'No tests are listed publicly for this centre. Call or visit its website to ask.'),
           h('p', { class: 't-footnote muted' }, 'Check prices and preparation with the centre. Bookings and reports are handled by the centre, not by CareRoute.')),
         reviewsSection({ kind: 'diagnostic_centre', id: c.id, listing: c, canWrite: user.role === 'patient' })),
       h('div', { class: 'stack-16' }, contactCard(c)))));

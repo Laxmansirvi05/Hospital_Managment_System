@@ -1,7 +1,7 @@
 // In-memory store (P-27). Same interface as postgres.js, used by tests and by the local
 // server until DATABASE_URL is set. Nothing survives a restart.
 import { randomUUID } from 'node:crypto';
-import { HOSPITALS, DOCTORS, PHARMACIES, DIAGNOSTICS, MEDICINES } from './seed-data.js';
+import { AREAS, HOSPITALS, DOCTORS, PHARMACIES, DIAGNOSTICS, MEDICINES } from './seed-data.js';
 import { distanceKm, dosesFor } from './geo.js';
 
 const clone = (v) => structuredClone(v);
@@ -188,22 +188,23 @@ export function createMemoryStore() {
     },
 
     listings: {
+      async areas() { return [...AREAS]; },
       async hospitals(p) {
         return near(hospitals.filter((h) =>
           matches([h.name, h.area, ...h.specialities, ...h.departments].join(' '), p.q) &&
           (!p.area || h.area === p.area) &&
-          (!p.emergencyOnly || h.emergencyAvailable) &&
-          (!p.speciality || h.specialities.includes(p.speciality))), p).map(clone);
+          (!p.emergencyOnly || h.emergencyAvailable === true) &&
+          (!p.speciality || h.specialities.some((s) => s.toLowerCase().includes(p.speciality.toLowerCase())))), p).map(clone);
       },
       async hospital(id) { const h = hospitals.find((x) => x.id === id); return h ? clone(h) : null; },
       async hospitalDoctors(id, specialization) {
-        return doctors.filter((d) => d.hospitalId === id && (!specialization || d.specialization === specialization)).map(doctorView).map(clone);
+        return doctors.filter((d) => d.hospitalId === id && (!specialization || d.specialization.toLowerCase().includes(specialization.toLowerCase()))).map(doctorView).map(clone);
       },
       async doctors(p) {
         const list = doctors.map(doctorView).filter((d) =>
           matches([d.name, d.specialization, d.place.name].join(' '), p.q) &&
           (!p.area || d.place.area === p.area) &&
-          (!p.specialization || d.specialization === p.specialization));
+          (!p.specialization || d.specialization.toLowerCase().includes(p.specialization.toLowerCase())));
         return near(list.map((d) => ({ ...d, lat: d.place.lat, lng: d.place.lng })), p).map(clone);
       },
       async doctor(id) { const d = doctors.find((x) => x.id === id); return d ? clone(doctorView(d)) : null; },

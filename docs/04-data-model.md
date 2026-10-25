@@ -77,15 +77,16 @@ Every discovery table below has these columns. They are listed once here.
 | --- | --- |
 | id, name | |
 | description | optional, plain text |
-| address, area | `area` is a Hyderabad locality used as a filter (D-27). The locality list is OPEN. |
+| address, area | `area` is a Hyderabad locality used as a filter (D-27). For OpenStreetMap rows it is the nearest OSM suburb within 4 km, else the place's own suburb tag (D-50). The filter list is built from the data. When a place has no street address, `address` says so instead of guessing. |
 | location | geography point, GiST index |
-| phone, email, website | `email` only if publicly listed. `website` is an `https` or `http` URL. |
+| phone, email, website | `phone` may be null (D-51). `email` only if publicly listed. `website` is an `https` or `http` URL. |
+| source_ref | stable key from the source, such as `osm:node/123` or `care:/doctor/hyderabad/...`. Unique. Null only for the synthetic samples. Imports update by this key. |
 | source_platform, source_url, checked_at | which online platform the data came from (D-35), the page address, and when it was last collected or checked (P-24) |
 | active | boolean. Hidden listings are kept, not deleted. |
 | search_vector | generated `tsvector` for full-text search, GIN index. Names also get a `pg_trgm` GIN index. |
 | created_by, updated_by | admin user ids, for the audit trail |
 
-Ratings and reviews are not modelled until Q-24 is decided. Data comes from online platforms (D-35). How it is collected is OPEN (Q-28). One real place can appear on several platforms, so matching duplicates into one listing is needed (PROPOSED: match on normalized name plus distance under a small threshold, with admin review).
+Platform ratings are kept when a source publishes them; CareRoute's own reviews are in `reviews` (D-43). Sources: OpenStreetMap for hospitals, pharmacies and diagnostic centres (D-50), hospital websites for doctors (D-52), government data for prices (D-53). Data is loaded by `scripts/collect-*.js` and `scripts/load-listings.js`; where a scheduled job runs is OPEN (Q-28). One real place can appear on several platforms, so matching duplicates into one listing is needed (PROPOSED: match on normalized name plus distance under a small threshold, with admin review).
 
 ### hospitals
 
@@ -93,7 +94,7 @@ Listing columns, plus:
 
 | Column | Notes |
 | --- | --- |
-| emergency_available | boolean, from public information |
+| emergency_available | boolean or null. Null means the source does not say; it is never read as "no". |
 | departments, specialities | text arrays |
 
 Bed counts were removed (D-28, D-30). `hospital_staff` was removed with the `hospital_admin` role (D-29).
@@ -106,12 +107,14 @@ Listing columns, plus:
 | --- | --- |
 | hospital_id | nullable. A doctor may practise at a clinic instead. |
 | clinic_name | when not linked to a hospital |
-| specialization, experience_years | |
+| title | the doctor's title as the hospital publishes it, for example "Senior Consultant Cardiologist" (D-54) |
+| specialization, experience_years | `experience_years` may be null |
+| appointment_phone | the hospital's appointment number for this doctor, as published. Never a personal number (D-54). |
 | qualifications | text array |
 | published_timings | text, only if officially published. Not live availability (D-28). |
 | profile_url | official profile page |
 
-The collection field `availableDays` from the old "Add doctor" request is replaced by `published_timings`. Doctor rows describe real people taken from online platforms, so Q-22 must be answered before real data is stored.
+The collection field `availableDays` from the old "Add doctor" request is replaced by `published_timings`. Doctor rows describe real people, so only the fields in D-54 are stored: no photo, no personal contact details.
 
 ### pharmacies (PROPOSED, P-19)
 

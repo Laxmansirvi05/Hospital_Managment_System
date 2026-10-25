@@ -1,0 +1,113 @@
+// Collects hospitals, pharmacies and diagnostic centres in Hyderabad from OpenStreetMap (D-50)
+// into .cache/osm.json. One Overpass request per run, sent with an honest user agent (P-29).
+// Load the result with scripts/load-listings.js. Run: node scripts/collect-osm.js
+import { mkdir, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { distanceKm } from '../server/db/geo.js';
+
+export const USER_AGENT = 'CareRouteCollector/0.1 (Hyderabad health listings; contact laxmansirvi2203@gmail.com)';
+const OVERPASS = 'https://overpass-api.de/api/interpreter';
+// Greater Hyderabad, including Secunderabad and the western IT corridor.
+const AREA = 'area["name"="Hyderabad"]["boundary"="administrative"]["admin_level"~"5|6|8"]->.a;';
+
+const QUERY = `[out:json][timeout:120];${AREA}
+(
+  nwr["amenity"~"^(hospital|pharmacy|clinic|doctors)$"](area.a);
+  nwr["healthcare"~"^(hospital|pharmacy|laboratory|diagnostic|radiology|clinic)$"](area.a);
+  node["place"~"^(suburb|neighbourhood|quarter)$"](area.a);
+);
+out tags center;`;
+
+// Clinics and doctors' practices are kept only when the name says they test or scan.
+const DIAGNOSTIC_NAME = /diagnos|\blab(s|oratory|oratories)?\b|scan|imaging|patholog|x-?ray|\bmri\b|\bct\b|ultrasound|radiolog/i;
+
+const clean = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
+const first = (...vals) => vals.map(clean).find(Boolean) || null;
+const titleCase = (s) => s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+function website(t) {
+  const w = first(t.website, t['contact:website'], t.url);
+  if (!w) return null;
+  // The database accepts only a lower-case scheme, and some OSM entries write HTTP://.
+  const v = /^https?:\/\//i.test(w) ? w.replace(/^https?/i, (m) => m.toLowerCase()) : /^www\./i.test(w) ? `https://${w}` : null;
+  return v && v.length <= 300 ? v : null;
+}
+
+function phone(t) {
+  const p = first(t.phone, t['contact:phone'], t['contact:mobile'], t.mobile);
+  return p ? p.split(/[;,]/)[0].trim().slice(0, 40) : null;
+}
+
+function address(t, area) {
+  if (t['addr:full']) return clean(t['addr:full']);
+  const parts = [[t['addr:housenumber'], t['addr:street']].map(clean).filter(Boolean).join(' '), t['addr:suburb'], t['addr:city'], t['addr:postcode']].map(clean).filter(Boolean);
+  // Without address tags only the area is known; the page says so rather than inventing a street.
+  return parts.length ? [...new Set(parts)].join(', ') : `${area}, Hyderabad (no street address listed)`;
+}
+
+function kindOf(t) {
+  if (t.amenity === 'hospital' || t.healthcare === 'hospital') return 'hospital';
+  if (t.amenity === 'pharmacy' || t.healthcare === 'pharmacy') return 'pharmacy';
+  if (['laboratory', 'diagnostic', 'radiology'].includes(t.healthcare)) return 'diagnostic';
+  if ((t.amenity === 'clinic' || t.amenity === 'doctors' || t.healthcare === 'clinic') && DIAGNOSTIC_NAME.test(t.name || '')) return 'diagnostic';
+  return null;
+}
+
+export function toListings(elements, checkedAt) {
+  // Suburbs are coarse enough for an area filter; neighbourhoods would give hundreds of choices.
+  const places = elements.filter((e) => e.tags?.place === 'suburb' && e.tags.name && e.lat != null).map((e) => ({ name: clean(e.tags['name:en'] || e.tags.name), lat: e.lat, lng: e.lon }));
+  const areaFor = (p, t) => {
+    let best = null;
+    for (const pl of places) {
+      const d = distanceKm(p, pl);
+      if (!best || d < best.d) best = { d, name: pl.name };
+    }
+    // Nearest suburb within 4 km; otherwise the place's own suburb tag.
+    return best && best.d <= 4 ? best.name : first(t['addr:suburb'], t['addr:city']) || 'Hyderabad';
+  };
+  const out = { hospitals: [], pharmacies: [], diagnostics: [] };
+  const seen = new Set();
+  for (const e of elements) {
+    const t = e.tags || {};
+    const kind = kindOf(t);
+    const name = clean(t.name || t['name:en']);
+    const lat = e.lat ?? e.center?.lat;
+    const lng = e.lon ?? e.center?.lon;
+    if (!kind || !name || lat == null) continue;
+    const ref = `osm:${e.type}/${e.id}`;
+    if (seen.has(ref)) continue;
+    seen.add(ref);
+    const area = areaFor({ lat, lng }, t);
+    const base = {
+      sourceRef: ref, name: name.slice(0, 200), area, address: address(t, area), lat, lng,
+      phone: phone(t), email: first(t.email, t['contact:email']), website: website(t),
+      sourcePlatform: 'OpenStreetMap', sourceUrl: `https://www.openstreetmap.org/${e.type}/${e.id}`, checkedAt,
+    };
+    if (kind === 'hospital') {
+      out.hospitals.push({ ...base, emergencyAvailable: t.emergency === 'yes' ? true : t.emergency === 'no' ? false : null, specialities: (t['healthcare:speciality'] || '').split(';').map(clean).filter(Boolean).map(titleCase), description: '' });
+    } else if (kind === 'pharmacy') {
+      out.pharmacies.push({ ...base, hours: clean(t.opening_hours), open24: clean(t.opening_hours) === '24/7' });
+    } else {
+      out.diagnostics.push({ ...base, hours: clean(t.opening_hours), description: '', testsListed: [] });
+    }
+  }
+  out.suburbs = places;
+  return out;
+}
+
+async function main() {
+  const res = await fetch(OVERPASS, {
+    method: 'POST',
+    headers: { 'user-agent': USER_AGENT, 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ data: QUERY }),
+  });
+  if (!res.ok) throw new Error(`Overpass answered ${res.status}`);
+  const json = await res.json();
+  const checkedAt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  const data = toListings(json.elements, checkedAt);
+  await mkdir('.cache', { recursive: true });
+  await writeFile('.cache/osm.json', JSON.stringify({ source: 'OpenStreetMap', licence: 'ODbL 1.0', collectedAt: new Date().toISOString(), ...data }));
+  console.log(`hospitals ${data.hospitals.length}, pharmacies ${data.pharmacies.length}, diagnostic centres ${data.diagnostics.length}`);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();

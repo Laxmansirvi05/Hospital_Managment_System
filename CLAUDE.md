@@ -61,3 +61,7 @@ Building started on 2026-10-25 (D-41). All work is on `main`.
 | Unit and API tests | `NODE_ENV=test pnpm test` |
 | Scan `public/` for secrets and unsafe HTML | `pnpm check` |
 | Regenerate `supabase/seed.sql` | `node scripts/gen-seed.js` |
+| Collect OpenStreetMap listings into `.cache/` | `node scripts/collect-osm.js` |
+| Collect CARE doctor pages into `.cache/` (slow: 3 s per page) | `node scripts/collect-care-doctors.js` |
+| Load `.cache/` into careroute-dev | `node --env-file=.env.local scripts/load-listings.js` |
+| Load `.cache/` into careroute-prod (P-31) | `node --env-file=.env.local scripts/load-listings.js --prod` |

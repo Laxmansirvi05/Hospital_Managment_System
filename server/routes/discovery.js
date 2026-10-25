@@ -3,7 +3,6 @@
 import { z } from 'zod';
 import { getStore } from '../db/index.js';
 import { parse, notFound, invalid } from '../http.js';
-import { AREAS } from '../db/seed-data.js';
 import { limit, clientIp, LIMITS } from '../limits.js';
 
 // Q-27 is open, so search needs a signed-in account for now (docs/09-security.md section 5).
@@ -12,7 +11,8 @@ const SIGNED_IN = ['patient', 'driver', 'admin'];
 const flag = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 const searchQuery = z.object({
   q: z.string().trim().max(80).optional(),
-  area: z.enum(AREAS).optional(),
+  // Areas come from the listings themselves (D-50), so any name the /areas list returns is accepted.
+  area: z.string().trim().min(1).max(80).optional(),
   lat: z.coerce.number().min(-90, 'location latitude must be between -90 and 90').max(90, 'location latitude must be between -90 and 90').optional(),
   lng: z.coerce.number().min(-180, 'location longitude must be between -180 and 180').max(180, 'location longitude must be between -180 and 180').optional(),
   radiusKm: z.coerce.number().min(0.5).max(50).optional(),
@@ -44,14 +44,14 @@ async function found(promise) {
 // Explicit field lists for every listing type.
 const base = (x) => ({
   id: x.id, name: x.name, area: x.area, address: x.address, location: { lat: x.lat, lng: x.lng },
-  phone: x.phone, email: x.email ?? null, website: x.website ?? null,
+  phone: x.phone ?? null, email: x.email ?? null, website: x.website ?? null,
   rating: x.rating ?? null, ratingCount: x.ratingCount ?? null,
   source: { platform: x.sourcePlatform, url: x.sourceUrl, checkedAt: x.checkedAt },
   ...(x.distanceKm !== undefined ? { distanceKm: x.distanceKm } : {}),
 });
 export const hospitalView = (x) => ({ ...base(x), description: x.description, emergencyAvailable: x.emergencyAvailable, specialities: x.specialities, departments: x.departments });
 export const doctorView = (d) => ({
-  id: d.id, name: d.name, specialization: d.specialization, qualifications: d.qualifications, experienceYears: d.experienceYears,
+  id: d.id, name: d.name, title: d.title ?? '', specialization: d.specialization, qualifications: d.qualifications, experienceYears: d.experienceYears,
   publishedTimings: d.publishedTimings, profileUrl: d.profileUrl, rating: d.rating ?? null, ratingCount: d.ratingCount ?? null,
   place: { kind: d.place.kind, id: d.place.id, name: d.place.name, area: d.place.area, address: d.place.address, phone: d.place.phone, location: { lat: d.place.lat, lng: d.place.lng } },
   source: { platform: d.sourcePlatform, url: d.sourceUrl, checkedAt: d.checkedAt },
@@ -65,7 +65,7 @@ export const medicineView = (m) => ({
 });
 
 const ROUTES = [
-  { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: AREAS } }; } },
+  { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: await getStore().listings.areas() } }; } },
 
   {
     method: 'GET', path: '/hospitals/nearby', roles: SIGNED_IN,

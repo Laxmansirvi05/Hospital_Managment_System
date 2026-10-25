@@ -46,7 +46,7 @@ searchPage({
       filters: (p, update) => [chip('Open 24 hours', p.get('open24') === '1', () => update({ open24: p.get('open24') !== '1' }))],
       row: (x) => listingRow({
         href: `/pharmacy/?id=${x.id}`, kind: 'pharmacy', title: x.name,
-        meta: [`${x.area} · ${x.hours}`, rating(x)],
+        meta: [[x.area, x.hours].filter(Boolean).join(' · '), rating(x)],
         trail: distance(x),
       }),
       pin: (x) => ({ ...x.location, kind: 'pharmacy', label: x.name, href: `/pharmacy/?id=${x.id}` }),

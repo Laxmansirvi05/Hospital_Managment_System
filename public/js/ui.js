@@ -28,7 +28,15 @@ export function ratingBlock(item) {
 }
 
 export function source(item) {
-  return h('p', { class: 't-footnote muted row-8' }, icon('info', 14), `Source: ${item.source.platform}. Checked on ${dateLong(item.source.checkedAt)}.`);
+  return h('div', { class: 'stack-4' },
+    h('p', { class: 't-footnote muted row-8' }, icon('info', 14), `Source: ${item.source.platform}. Checked on ${dateLong(item.source.checkedAt)}.`),
+    osmCredit([item]));
+}
+
+/** The ODbL credit OpenStreetMap requires wherever its data is shown (D-50). Null when none of the items came from it. */
+export function osmCredit(items) {
+  if (!items.some((x) => x.source?.platform === 'OpenStreetMap')) return null;
+  return h('p', { class: 't-footnote muted' }, 'Listing data ', extLink('https://www.openstreetmap.org/copyright', '© OpenStreetMap contributors'), ', available under the Open Database License.');
 }
 
 export function distance(item) {

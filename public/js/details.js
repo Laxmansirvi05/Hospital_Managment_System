@@ -16,7 +16,8 @@ export function notFoundPage(main, backHref, backLabel) {
 export function contactCard(x, extra = []) {
   return h('section', { class: 'card card-raised stack-16', 'aria-labelledby': 'contact-h' },
     h('h2', { class: 't-title-3', id: 'contact-h' }, 'Contact and location'),
-    x.phone ? h('a', { class: 'btn btn-primary btn-block', href: telHref(x.phone) }, icon('phone', 18), `Call ${x.phone}`) : null,
+    x.phone ? h('a', { class: 'btn btn-primary btn-block', href: telHref(x.phone) }, icon('phone', 18), `Call ${x.phone}`)
+      : h('p', { class: 't-subhead muted' }, 'No phone number is listed for this place. Use the directions below, or check its official website if it has one.'),
     h('dl', { class: 'facts' },
       h('div', {}, h('dt', {}, 'Address'), h('dd', {}, x.address)),
       x.email ? h('div', {}, h('dt', {}, 'Email'), h('dd', {}, h('a', { href: `mailto:${x.email}` }, x.email))) : null,

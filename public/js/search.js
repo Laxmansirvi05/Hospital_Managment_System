@@ -3,7 +3,7 @@
 import { h, icon, toast } from './h.js';
 import { api } from './api.js';
 import { createMap } from './map3d.js';
-import { pageHead, skeletonList, empty, areaSelect, getOrigin, locateMe } from './ui.js';
+import { pageHead, skeletonList, empty, areaSelect, getOrigin, locateMe, osmCredit } from './ui.js';
 
 /**
  * @typedef {object} Tab
@@ -112,6 +112,7 @@ export async function searchPage({ main, title, sub, tabs }) {
       q ? h('p', { class: 't-subhead muted' }, `Matching “${q}”${p.get('area') ? ` in ${p.get('area')}` : ''}`) : null,
       list.length ? h('div', { class: 'list' }, list.map(tab.row))
         : empty({ title: `No ${tab.plural || `${tab.noun}s`} found`, text: 'Try a shorter search, another area, or fewer filters.' }),
+      osmCredit(list),
     ].filter(Boolean));
     if (tab.pin) {
       const pins = list.slice(0, 10).map((item, i) => ({ ...tab.pin(item), showLabel: i === 0, active: i === 0 }));
