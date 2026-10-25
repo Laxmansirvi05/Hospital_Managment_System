@@ -84,7 +84,7 @@ export async function searchPage({ main, title, sub, tabs, art }) {
         h('label', { class: 'input-icon' }, h('span', { class: 'visually-hidden' }, 'Search'), icon('search'), q),
         area,
         h('button', { class: 'btn btn-primary', type: 'submit' }, 'Search')),
-      tab.filters ? h('div', { class: 'row-8' }, tab.filters(p, update)) : null,
+      tab.filters ? h('div', { class: 'row-8 filter-row', role: 'group', 'aria-label': 'Filters' }, tab.filters(p, update)) : null,
     ].filter(Boolean));
     form.onsubmit = (e) => { e.preventDefault(); update({ q: q.value.trim(), area: area.hidden ? '' : area.value }); };
     if (active) [...form.querySelectorAll('button, select, input')].find((el) => keyOf(el) === active)?.focus();

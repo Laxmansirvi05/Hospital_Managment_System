@@ -2,6 +2,17 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-10-26
+
+### Premium redesign (D-61)
+
+- Decided D-61: premium redesign of the signed-in app after Apple's sites, within the D-16 bans. `11-design-system.md` section 5.3 updated (floating cards, layered shadows, 3D objects, wider layout).
+- New `public/css/premium.css` on every signed-in page and the legal pages (not sign-in or sign-up): pages up to 1680 px wide with tighter gaps, Apple-sized headlines, borderless 28 px cards on layered shadows that lift on hover, pill buttons and chips, result lists as tiles in two or three columns, sticky side column, quieter sidebar with the active page lifted on white.
+- `public/js/art3d.js`: flat-faced isometric 3D objects (hospital, doctor, medicine, diagnostics, chart, document, settings, shield) in page heads and dashboard tiles.
+- Dashboard: Find care tiles with live counts. Detail pages: Call, Directions, Website (or Book online and Call) under the title; shorter map band. Explore: map beside two charts. Phones: one-line top bar, swipeable filter row, results on the first screen.
+- New pages: Settings (larger text, starting point, browser notifications, links), Privacy policy and Terms of use (public, written from what the app does today, marked as drafts not yet reviewed by a lawyer). Settings in the sidebar and phone top bar; Privacy and Terms linked from the sidebar.
+- Checked in the browser on careroute-dev at desktop and 375 px: no sideways scrolling on any page checked; text size switch saves and clears. Tests: 87 pass (in-memory store).
+
 ## 2026-10-25
 
 ### Result counts in search

@@ -627,3 +627,89 @@ html.text-large {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Phone top bar: brand on the left, compact actions on one line. */
+.topbar > .row-8 {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 639px) {
+  .topbar {
+    padding: var(--space-8) var(--space-12);
+  }
+
+  .topbar .brand-name {
+    font-size: var(--fs-headline);
+  }
+
+  .topbar .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .topbar .btn-sm {
+    padding-left: var(--space-12);
+    padding-right: var(--space-12);
+  }
+
+  /* Dashboard: the two header actions share one line. */
+  .dash-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .dash-actions .btn {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+    font-size: var(--fs-subhead);
+  }
+
+  .greeting .t-large-title {
+    font-size: var(--fs-title-1);
+    line-height: var(--lh-title-1);
+  }
+}
+
+@media (max-width: 639px) {
+  .care-tile {
+    padding: var(--space-12) var(--space-16) var(--space-16);
+  }
+
+  .tile-art {
+    width: 72px;
+    height: 54px;
+    margin-bottom: var(--space-4);
+  }
+}
+
+/* Phones: filters are one row you swipe sideways, so results start on the first screen. */
+@media (max-width: 639px) {
+  .filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 calc(var(--space-20) * -1);
+    padding: var(--space-4) var(--space-20);
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-row > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  .filter-row .select {
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  .page-head .t-callout {
+    font-size: var(--fs-subhead);
+    line-height: var(--lh-subhead);
+  }
+}

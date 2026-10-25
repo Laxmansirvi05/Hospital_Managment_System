@@ -184,7 +184,7 @@ function render(d, photoUrl) {
         h('div', { class: 'stack-4' },
           h('h1', { class: 't-large-title' }, `${greeting()}, ${first}`),
           h('p', { class: 't-callout muted' }, `${weekday(d.date)}, ${dateLong(d.date)}`))),
-      h('div', { class: 'row-8' },
+      h('div', { class: 'row-8 dash-actions' },
         h('a', { class: 'btn btn-secondary', href: '/appointments/#new' }, icon('calendar', 18), 'Log appointment'),
         h('a', { class: 'btn btn-primary', href: '/reminders/#new' }, icon('plus', 18), 'Add reminder'))),
     completeness,

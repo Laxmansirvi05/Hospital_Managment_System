@@ -147,8 +147,10 @@ Base unit 4 pixels. Only these steps exist: `4, 8, 12, 16, 20, 24, 32, 40, 48, 6
 | `--radius-l` | 16 | Cards |
 | `--radius-xl` | 24 | Sheets, dialogs |
 
-- Cards are flat: a solid surface and a 1 pixel `--border`. No colored edge on any side.
-- Light mode may use one subtle shadow for floating layers only (sheets, menus). Dark mode shows depth by stepping to a lighter surface, never by glow.
+- Cards float (D-61, owner 2026-10-26): a solid surface, no border, 28 pixel corners (`--radius-2xl`) and the layered `--shadow-tile`; on hover an interactive card lifts 4 pixels with `--shadow-tile-hover`. No colored edge on any side.
+- Shadows are soft and layered, never glowing. Dark mode shows depth by stepping to a lighter surface, never by glow.
+- 3D objects in page heads and dashboard tiles are isometric blocks with one flat colour per face (`public/js/art3d.js`), so depth reads without gradients.
+- Layout uses the screen: pages grow to 1680 pixels, result lists become two or three columns of tiles on wide screens, and the side column stays in view. The premium layer lives in `public/css/premium.css`, loaded after the other styles on signed-in pages only.
 - No blur, no translucency, no frosted panels (section 9).
 
 ## 6. Motion
