@@ -8,8 +8,8 @@ export const hospital = 'KIMS Hospitals';
 export const sourcePlatform = 'KIMS Hospitals website';
 export const photoHosts = ['assets.kimshospitals.com'];
 const API = 'https://www.kimshospitals.com/api';
-// KIMS branch ids in Hyderabad, mapped by address to OpenStreetMap buildings. Kompally (28) and
-// Arete HITEC City (30) have no OSM entry yet, so their doctors are not placed.
+// KIMS branch ids in Hyderabad, mapped by address to OpenStreetMap buildings. Kompally (28) has
+// no OSM entry yet, so its doctors are not placed.
 const BRANCH_IDS = { 1: 'Secunderabad', 2: 'Kondapur', 11: 'Gachibowli', 15: 'Begumpet', 28: 'Kompally', 30: 'Arete HITEC City' };
 export const branches = {
   Secunderabad: 'osm:way/274482470',
@@ -17,6 +17,8 @@ export const branches = {
   Gachibowli: 'osm:node/7248877410',
   // KIMS-Sunshine Begumpet is the former Sunshine Hospital on Penderghast Road.
   Begumpet: 'osm:way/361655217',
+  // KIMS Arete HITEC City is the former Arete Hospitals in Khajaguda.
+  'Arete HITEC City': 'osm:node/13423743515',
 };
 
 /** "Monday ... Sunday" header row and a times row from the OP timings table, as one line. */

@@ -25,6 +25,7 @@ const searchQuery = z.object({
   type: z.enum(['hospital', 'clinic', 'nursing_home', 'dental', 'eye', 'maternity', 'ayush']).optional(),
   chain: z.string().trim().max(60).optional(),
   category: z.string().trim().max(80).optional(),
+  provider: z.string().trim().max(80).optional(),
 }).strict().refine((v) => (v.lat === undefined) === (v.lng === undefined), { message: 'Send both lat and lng for location', path: ['location'] });
 
 function q(query) {
@@ -69,6 +70,13 @@ export const medicineView = (m) => ({
 });
 
 const ROUTES = [
+  {
+    method: 'GET', path: '/test-prices', roles: SIGNED_IN,
+    async handler({ query }) {
+      const p = q(query);
+      return { body: { tests: (await getStore().listings.testPrices(p)).map((t) => ({ name: t.name, provider: t.provider, priceInr: t.priceInr, centresOffering: t.centresOffering ?? null, url: t.url, checkedAt: t.checkedAt })) } };
+    },
+  },
   {
     method: 'GET', path: '/insights', roles: SIGNED_IN,
     async handler() {

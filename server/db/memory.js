@@ -201,6 +201,7 @@ export function createMemoryStore() {
           points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...PHARMACIES.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...DIAGNOSTICS.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
         };
       },
+      async testPrices() { return []; },
       async areas() { return [...AREAS]; },
       async hospitals(p) {
         return near(hospitals.filter((h) =>

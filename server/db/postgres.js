@@ -289,6 +289,13 @@ export function createPostgresStore(url) {
           points: points.map((p) => ({ kind: p.k, type: p.t, lat: p.lat, lng: p.lng })),
         };
       },
+      async testPrices(p) {
+        const rows = await sql`select * from public.test_prices where active
+          and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')})
+          and (${p.provider ?? null}::text is null or provider = ${p.provider ?? null})
+          order by ${p.q ? sql`extensions.similarity(name, ${p.q}) desc,` : sql``} price_inr limit ${p.limit ?? 50}`;
+        return rows.map((r) => ({ name: r.name, provider: r.provider, priceInr: num(r.price_inr), centresOffering: r.centres_offering, url: r.url, checkedAt: day(r.checked_at) }));
+      },
       async areas() {
         const rows = await sql`
           select area from (

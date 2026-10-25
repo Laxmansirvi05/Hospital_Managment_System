@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 import postgres from 'postgres';
 import { SOURCES } from './collect-doctors.js';
 import { LIST_PAGE as JAN_AUSHADHI_PAGE } from './collect-medicines.js';
+import { distanceKm } from '../server/db/geo.js';
 
 const point = (sql, x) => sql`extensions.st_setsrid(extensions.st_makepoint(${x.lng}, ${x.lat}), 4326)::extensions.geography`;
 
@@ -60,6 +61,27 @@ async function main() {
       const ph = await upsertPlaces(tx, 'pharmacies', osm.pharmacies, (r) => ({ ...withPoint(r), chain: r.chain ?? null, hours: r.hours, open_24: r.open24 }));
       const dh = await upsertPlaces(tx, 'diagnostic_centres', osm.diagnostics, (r) => ({ ...withPoint(r), hours: r.hours, description: r.description, tests_listed: r.testsListed }));
       console.log(`OpenStreetMap: ${osm.hospitals.length} hospitals, ${osm.pharmacies.length} pharmacies, ${osm.diagnostics.length} diagnostic centres (${hh + ph + dh} no longer listed, hidden)`);
+
+      let vijaya = null;
+      try { vijaya = JSON.parse(await readFile('.cache/diagnostics-vijaya.json', 'utf8')); } catch (err) { if (err.code !== 'ENOENT') throw err; }
+      if (vijaya) {
+        // Same area rule as OpenStreetMap places: the nearest suburb within 4 km.
+        const areaOf = (p) => {
+          const best = osm.suburbs.map((s) => ({ s, d: distanceKm(p, s) })).sort((a, b) => a.d - b.d)[0];
+          return best && best.d <= 4 ? best.s.name : 'Hyderabad';
+        };
+        const rows = Object.values(vijaya.centres).map((c) => ({
+          ...c, area: areaOf(c), email: null, sourcePlatform: 'Vijaya Diagnostic website', sourceUrl: c.website,
+        }));
+        await upsertPlaces(tx, 'diagnostic_centres', rows, (r) => ({ ...withPoint(r), hours: '', description: '', tests_listed: r.services }));
+        const tests = Object.values(vijaya.tests);
+        for (let i = 0; i < tests.length; i += 500) {
+          const chunk = tests.slice(i, i + 500).map((t) => ({ source_ref: t.sourceRef, provider: t.provider, name: t.name, category: t.category, price_inr: t.priceInr, centres_offering: t.centresOffering, url: t.url, checked_at: t.checkedAt, active: true }));
+          await tx`insert into public.test_prices ${tx(chunk)}
+            on conflict (source_ref) do update set name = excluded.name, price_inr = excluded.price_inr, centres_offering = excluded.centres_offering, url = excluded.url, checked_at = excluded.checked_at, active = true, updated_at = now()`;
+        }
+        console.log(`Vijaya: ${rows.length} centres, ${tests.length} test prices`);
+      }
 
       let meds = null;
       try { meds = JSON.parse(await readFile('.cache/medicines-janaushadhi.json', 'utf8')); } catch (err) { if (err.code !== 'ENOENT') throw err; }
