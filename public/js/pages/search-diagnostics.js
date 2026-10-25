@@ -1,4 +1,5 @@
-import { h } from '../h.js';
+import { h, icon } from '../h.js';
+import { rupees, dateLong } from '../format.js';
 import { shell } from '../shell.js';
 import { searchPage, withOrigin } from '../search.js';
 import { listingRow, rating, distance } from '../ui.js';
@@ -20,6 +21,21 @@ searchPage({
         trail: distance(c),
       }),
       pin: (c) => ({ ...c.location, kind: 'diagnostic', label: c.name, href: `/diagnostic/?id=${c.id}` }),
+    },
+    {
+      id: 'tests', label: 'Test prices', noun: 'test', key: 'tests', usesArea: false,
+      placeholder: 'Test name, for example thyroid or MRI',
+      endpoint: (p) => `/test-prices${p.get('q') ? `?q=${encodeURIComponent(p.get('q'))}` : ''}`,
+      aside: h('aside', { class: 'card stack-12' },
+        h('h2', { class: 't-title-3' }, 'About these prices'),
+        h('p', { class: 't-subhead muted' }, 'Each price is what the diagnostic chain publishes on its own website for Hyderabad, including taxes, on the date shown. Prices can change and offers may apply. Confirm with the centre before you go.')),
+      row: (t) => h('a', { class: 'list-row lift', href: t.url, target: '_blank', rel: 'noopener noreferrer' },
+        h('span', { class: 'obj' }, icon('flask', 22)),
+        h('span', { class: 'list-row-main' },
+          h('span', { class: 'list-row-title' }, t.name),
+          h('span', { class: 'list-row-meta' }, [t.provider, t.centresOffering ? `at ${t.centresOffering} centres` : ''].filter(Boolean).join(' · ')),
+          h('span', { class: 'list-row-meta' }, `Checked ${dateLong(t.checkedAt)}`)),
+        h('span', { class: 'list-row-trail' }, h('span', { class: 't-headline num' }, rupees(t.priceInr)), icon('external', 16))),
     },
   ],
 });
