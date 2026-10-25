@@ -59,7 +59,7 @@ Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is usin
 - Preview uses careroute-dev. Production uses careroute-prod.
 - Every `DATABASE_URL` (`.env.local`, Preview, Production) logs in as the `careroute_api` role, not `postgres` (D-49, see below).
 
-#### Database role `careroute_import` on careroute-prod (P-31, PROPOSED)
+#### Database role `careroute_import` on careroute-prod (D-60, LOCKED)
 
 Used only by `node --env-file=.env.local scripts/load-listings.js --prod`. Grants checked on 2026-10-25: `SELECT, INSERT, UPDATE` on `hospitals`, `pharmacies`, `diagnostic_centres`, `doctors`, `medicines`, `medicine_listings`, `test_prices`. No DELETE, no reviews, no patient tables, `BYPASSRLS`. Password only in `.env.local` as `PROD_IMPORT_DATABASE_URL`. To add a table to imports: `grant select, insert, update on public.<table> to careroute_import;`.
 

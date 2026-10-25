@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-25
 
+### Decided
+
+- D-60: the `careroute_import` production role (was P-31) is approved: listing tables only, select, insert and update, no delete, no patient data, password only in `.env.local`.
+
 ### Reviews acted on, more doctors, loader fixes
 
 - Security review (no critical findings): refresh limited per session and skipped with no cookie; `--drop-samples` refused with `--prod`; https check on booking and test price links; `/insights` cached on the server and not by browsers; raw SQL helpers restricted to fixed columns; robots.txt re-checked after a cross-host redirect. P-31 now lists the import role's real grants (listing tables only, no delete).

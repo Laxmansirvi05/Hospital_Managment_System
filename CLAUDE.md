@@ -65,4 +65,4 @@ Building started on 2026-10-25 (D-41). All work is on `main`.
 | Collect doctors from hospital websites into `.cache/` (slow: 3 s per request per site) | `node scripts/collect-doctors.js [care kims rainbow continental gleneagles ankura citizens lvpei]` |
 | Collect the Jan Aushadhi medicine and MRP list into `.cache/` | `node scripts/collect-medicines.js` |
 | Load `.cache/` into careroute-dev | `node --env-file=.env.local scripts/load-listings.js` |
-| Load `.cache/` into careroute-prod (P-31) | `node --env-file=.env.local scripts/load-listings.js --prod` |
+| Load `.cache/` into careroute-prod (D-60) | `node --env-file=.env.local scripts/load-listings.js --prod` |

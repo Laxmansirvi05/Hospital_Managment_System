@@ -76,6 +76,7 @@ Rule for agents and contributors: never turn an OPEN item into a PROPOSED or LOC
 | D-57 | Each doctor and facility offers the ways to book that its own source publishes: a call button and a link to its own online booking page. CareRoute still does not take bookings itself. | Owner, 2026-10-25. |
 | D-58 | Diagnostic centre search has no test filter chips; search by name or test text only. | Owner, 2026-10-25. |
 | D-59 | Listings cover greater Hyderabad (the Hyderabad, Rangareddy and Medchal-Malkajgiri districts) and include clinics, nursing homes, and dental and eye clinics, each marked with its type. | Owner, 2026-10-25 ("thousands of hospitals"). |
+| D-60 | Listings are loaded into careroute-prod by `scripts/load-listings.js` as a separate `careroute_import` role: login, bypasses RLS, `SELECT, INSERT, UPDATE` on the listing tables only (`hospitals`, `pharmacies`, `diagnostic_centres`, `doctors`, `medicines`, `medicine_listings`, `test_prices`), no patient tables, no reviews, no delete. `--drop-samples` refuses to run with `--prod`. Its password is only in the owner's `.env.local` as `PROD_IMPORT_DATABASE_URL`. Created on 2026-10-25. | Owner, 2026-10-25 (was P-31). |
 
 ## 2. Changes forced by locked decisions
 
@@ -126,7 +127,6 @@ Approved on 2026-10-17 (now LOCKED as D-19): P-01, P-02, P-06, P-13, P-14, P-15,
 | P-27 | Until `.env.local` holds the careroute-dev keys, the local dev server runs on an in-memory store seeded with sample data and says so in its log and on screen. Production refuses to start without `DATABASE_URL`. | Lets the frontend run before keys exist without pretending to be connected. |
 | P-28 | CareRoute reviews: one review per patient per listing, rating 1 to 5 and optional text up to 1,000 characters, editable and deletable by its author, shown with first name only. Reports of abuse hide a review until an admin checks it. | Implements D-43 without exposing who reviewed what. |
 | P-29 | Collection rules: prefer open data (OpenStreetMap, government lists such as Jan Aushadhi and NPPA prices) and official feeds; read each site's robots.txt and honour it; identify the collector honestly; at most one request every few seconds per site; never sign in to a site, never get around bot protection or captchas; store only listing facts and prices with source and checked date, never copy reviews text or images. | Gathers widely (D-46) while keeping legal and technical risk as low as possible. |
-| P-31 | Listings are loaded into careroute-prod by `scripts/load-listings.js` as a separate `careroute_import` role: login, bypasses RLS, `SELECT, INSERT, UPDATE` on the listing tables only (`hospitals`, `pharmacies`, `diagnostic_centres`, `doctors`, `medicines`, `medicine_listings`, `test_prices`), no patient tables, no reviews, no delete. `--drop-samples` refuses to run with `--prod`. Its password is only in the owner's `.env.local` as `PROD_IMPORT_DATABASE_URL`. Created on 2026-10-25. | The API's production password stays only in Vercel (D-49), and a hand-run import should not hold rights to patient data. |
 
 ## 4. Open questions
 

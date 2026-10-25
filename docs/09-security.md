@@ -67,7 +67,7 @@ This is the section the owner flagged. Treat it as the highest-priority rule set
 | `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` | Server only | No | Use an API key pair rather than the account auth token (PROPOSED) |
 | `TWILIO_FROM_NUMBER` | Server only | No | |
 | `TRACKING_TOKEN_PEPPER` | Server only | No | Pepper for hashing refresh tokens now, tracking tokens later |
-| `PROD_IMPORT_DATABASE_URL` | `scripts/load-listings.js --prod` only, on the owner's machine | No | Logs in as `careroute_import` (P-31): select, insert, update on listing tables only; no delete, no patient tables. Never in Vercel. Scripts that read it are outside `server/`, so this is an exception to the `server/config.js` rule (owner to confirm). |
+| `PROD_IMPORT_DATABASE_URL` | `scripts/load-listings.js --prod` only, on the owner's machine | No | Logs in as `careroute_import` (D-60): select, insert, update on listing tables only; no delete, no patient tables. Never in Vercel. Scripts that read it are outside `server/`, so this is an exception to the `server/config.js` rule (owner to confirm). |
 | `ALLOW_PRIVILEGED_SIGNUP` | Server only | No | Not a secret. `true` lets non-patient roles self-register. Never set in production (D-21). |
 | `TRUST_PROXY` | Server only | No | Not a secret. `true` only behind a proxy that overwrites `X-Forwarded-For`. Vercel sets `VERCEL=1`, which turns it on there. Otherwise the client IP is the socket address, so per-IP limits cannot be dodged with a forged header. |
 

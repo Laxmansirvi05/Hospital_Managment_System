@@ -1,7 +1,7 @@
 // Loads .cache/osm.json and .cache/doctors-*.json into a database. Rows are matched on
 // source_ref, so running it again updates rows instead of adding copies, and rows a source no
 // longer lists are hidden (active = false), not deleted, so reviews keep their target.
-// Connects with DATABASE_URL (careroute-dev), or with --prod to PROD_IMPORT_DATABASE_URL (P-31).
+// Connects with DATABASE_URL (careroute-dev), or with --prod to PROD_IMPORT_DATABASE_URL (D-60).
 // Run: node --env-file=.env.local scripts/load-listings.js [--prod] [--drop-samples]
 //   --drop-samples  deletes the synthetic sample listings (rows with no source_ref) and their reviews.
 import { readFile } from 'node:fs/promises';
@@ -35,9 +35,9 @@ async function upsertPlaces(sql, table, rows, extra) {
 async function main() {
   const prod = process.argv.includes('--prod');
   const url = prod ? process.env.PROD_IMPORT_DATABASE_URL : process.env.DATABASE_URL;
-  if (!url) throw new Error(prod ? 'Set PROD_IMPORT_DATABASE_URL in .env.local (P-31)' : 'Set DATABASE_URL in .env.local');
+  if (!url) throw new Error(prod ? 'Set PROD_IMPORT_DATABASE_URL in .env.local (D-60)' : 'Set DATABASE_URL in .env.local');
   const dropSamples = process.argv.includes('--drop-samples');
-  // Dropping samples deletes reviews; the production import role must never be asked to (P-31).
+  // Dropping samples deletes reviews; the production import role must never be asked to (D-60).
   if (prod && dropSamples) throw new Error('--drop-samples is for careroute-dev only');
   const osm = JSON.parse(await readFile('.cache/osm.json', 'utf8'));
   let care = { pages: {} };
