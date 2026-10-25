@@ -10,8 +10,11 @@ import * as kims from './sources/kims.js';
 import * as rainbow from './sources/rainbow.js';
 import * as continental from './sources/continental.js';
 import * as gleneagles from './sources/gleneagles.js';
+import * as ankura from './sources/ankura.js';
+import * as citizens from './sources/citizens.js';
+import * as lvpei from './sources/lvpei.js';
 
-export const SOURCES = [care, kims, rainbow, continental, gleneagles];
+export const SOURCES = [care, kims, rainbow, continental, gleneagles, ankura, citizens, lvpei];
 
 async function collect(src) {
   const file = `.cache/doctors-${src.id}.json`;

@@ -16,7 +16,7 @@ const TYPES = {
 };
 
 export const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data: https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data: https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com https://www.ankurahospitals.com https://www.citizenshospitals.com https://www.lvpei.org; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(), payment=()',
