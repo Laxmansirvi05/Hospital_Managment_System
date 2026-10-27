@@ -50,7 +50,10 @@ function passwordField({ id, label, autocomplete, hint }) {
     // A crossed eye while the password is readable, so the button shows what it will undo.
     toggle.replaceChildren(icon(visible ? 'eye' : 'eye-off', 18));
   });
-  wrap.append(toggle);
+  // The eye sits inside the input's own box, so a hint or error below the input cannot move it.
+  const box = h('span', { class: 'auth-password-box' });
+  input.replaceWith(box);
+  box.append(input, toggle);
   return { input, wrap };
 }
 
