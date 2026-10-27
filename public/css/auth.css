@@ -158,13 +158,14 @@
 }
 
 .auth-video-copy h1 {
-  max-width: 360px;
-  font-size: clamp(28px, 2.6vw, 40px);
+  max-width: none;
+  /* Each sentence stays on one line: the size also shrinks with the room left of the form panel. */
+  font-size: clamp(17px, min(2.6vw, calc((100vw - 640px) / 9)), 40px);
   line-height: 1.03;
   letter-spacing: -.045em;
 }
 
-.auth-video-copy h1 span { display: block; }
+.auth-video-copy h1 span { display: block; white-space: nowrap; }
 
 .auth-video-copy > p:last-child {
   max-width: 350px;
@@ -413,6 +414,20 @@
   cursor: pointer;
 }
 
+.auth-form .field .hint {
+  color: rgba(245, 252, 255, .9);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.auth-consent a {
+  color: #d6f2ff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .auth-check input,
 .auth-consent input {
   width: 16px;
@@ -498,14 +513,26 @@
   justify-content: center;
   gap: 10px;
   min-height: 50px;
-  border: 1px solid rgba(255, 255, 255, .32);
+  border: 1px solid #fff;
   border-radius: 12px;
+  background: #fff;
+  color: #1f2a37;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.auth-google-button:hover:not(:disabled) { background: #eef5ff; border-color: #eef5ff; }
+.auth-google-button:focus-visible { outline: 3px solid #bcecff; outline-offset: 2px; }
+
+.auth-google-button:disabled .google-mark { color: #8dc5ff; }
+
+.auth-google-button:disabled {
+  border-color: rgba(255, 255, 255, .32);
   background: rgba(255, 255, 255, .12);
   color: rgba(242, 251, 255, .88);
   cursor: not-allowed;
-  font-size: 14px;
-  font-weight: 650;
-  opacity: .72;
 }
 
 .google-mark {
@@ -513,7 +540,7 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  color: #8dc5ff;
+  color: #1a73e8;
   font-family: Arial, sans-serif;
   font-size: 18px;
   font-weight: 800;
@@ -585,7 +612,7 @@
   .auth-video-brand .brand-mark { width: min(132px, 34vw); }
   .auth-video-tagline { font-size: 10px; letter-spacing: .06em; white-space: normal; }
   .auth-video-copy { top: 102px; right: 20px; bottom: auto; left: 20px; width: auto; max-width: none; padding: 10px 16px 14px 0; }
-  .auth-video-copy h1 { max-width: 440px; font-size: clamp(25px, 7vw, 38px); }
+  .auth-video-copy h1 { font-size: clamp(25px, 7vw, 38px); }
   .auth-video-copy > p:last-child { max-width: 360px; margin-top: 8px; font-size: 13px; }
   .auth-panel { width: 100%; height: auto; max-height: none; min-height: 0; margin: 220px auto 0; padding: 28px 20px 32px; overflow: visible; border-radius: 26px; }
   .auth-panel-inner { width: min(100%, 520px); }
