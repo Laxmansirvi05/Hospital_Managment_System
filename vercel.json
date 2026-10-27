@@ -20,7 +20,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; img-src 'self' blob: data: https://*.supabase.co https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com https://www.ankurahospitals.com https://www.citizenshospitals.com https://www.lvpei.org; style-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+          "value": "default-src 'self'; img-src 'self' blob: data: https://jelepdfgdxbkbmocrnnx.supabase.co https://qbiltbhqtesdidjxpscf.supabase.co https://api.maptiler.com https://tile.openstreetmap.org https://server.arcgisonline.com https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com https://www.ankurahospitals.com https://www.citizenshospitals.com https://www.lvpei.org https://www.asterhospitals.in https://www.americanoncology.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self' https://api.maptiler.com https://jelepdfgdxbkbmocrnnx.supabase.co https://qbiltbhqtesdidjxpscf.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         },
         {
           "key": "X-Content-Type-Options",

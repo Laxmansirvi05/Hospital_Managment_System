@@ -12,11 +12,11 @@ import { prewarm } from '../server/auth/crypto.js';
 const ROOT = resolve('public');
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
 export const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data: https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com https://www.ankurahospitals.com https://www.citizenshospitals.com https://www.lvpei.org; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data: https://jelepdfgdxbkbmocrnnx.supabase.co https://qbiltbhqtesdidjxpscf.supabase.co https://api.maptiler.com https://tile.openstreetmap.org https://server.arcgisonline.com https://www.carehospitals.com https://assets.kimshospitals.com https://rainbowhospitalsproduction.s3.ap-south-1.amazonaws.com https://continentalhospitals.com https://gleneagles-optimized-prod.s3.ap-south-1.amazonaws.com https://www.ankurahospitals.com https://www.citizenshospitals.com https://www.lvpei.org https://www.asterhospitals.in https://www.americanoncology.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self' https://api.maptiler.com https://jelepdfgdxbkbmocrnnx.supabase.co https://qbiltbhqtesdidjxpscf.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(), payment=()',

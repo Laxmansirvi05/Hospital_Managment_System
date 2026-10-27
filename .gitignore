@@ -13,3 +13,7 @@ supabase/.branches/
 
 # Data collected from the internet before loading (scripts/collect-*.js).
 .cache/
+
+# Playwright output (tests/e2e).
+test-results/
+playwright-report/

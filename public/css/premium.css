@@ -254,9 +254,114 @@ body {
   box-shadow: 0 -1px 0 var(--border-soft), 0 -8px 24px rgba(0, 0, 0, 0.04);
 }
 
-/* Result lists become tiles: two or three columns on wide screens, so the screen is used. */
+/* Result lists become tiles: two columns on wide screens, so the screen is spacious and readable. */
 .list {
-  gap: var(--space-8);
+  gap: var(--space-12);
+}
+
+.results-card {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.results-card .list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-16);
+  min-width: 0;
+}
+
+/* Tablet: two columns when sufficient width is available */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .results-card .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+  }
+}
+
+/* Desktop: exactly TWO cards per row */
+@media (min-width: 1024px) {
+  .results-card .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+  }
+}
+
+@media (min-width: 1600px) {
+  .results-card .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-20);
+  }
+}
+
+/* Container query: adapts based on available container width */
+@container (min-width: 520px) {
+  .results-card .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-16);
+  }
+}
+
+@container (max-width: 519px) {
+  .results-card .list {
+    grid-template-columns: 1fr;
+    gap: var(--space-12);
+  }
+}
+
+/* Compare medicine prices is intentionally full-width and uses a denser, three-up card grid.
+   The data attribute is set by searchPage for this tab only; pharmacy results keep the shared
+   search layout above unchanged. */
+.search-layout[data-search-tab="medicines"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.results-card[data-search-tab="medicines"] .list {
+  grid-template-columns: 1fr;
+  gap: var(--space-16);
+}
+
+.results-card[data-search-tab="medicines"] .list > .list-row {
+  min-height: 0;
+  padding: var(--space-14, 14px) var(--space-16);
+  align-items: flex-start;
+}
+
+.results-card[data-search-tab="medicines"] .list-row-main {
+  align-self: center;
+}
+
+.results-card[data-search-tab="medicines"] .list-row-title {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.results-card[data-search-tab="medicines"] .list-row-meta {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.results-card[data-search-tab="medicines"] .obj {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-m);
+}
+
+.results-card[data-search-tab="medicines"] .list-row-trail {
+  align-self: center;
+  font-size: 15px;
+}
+
+@media (min-width: 640px) {
+  .results-card[data-search-tab="medicines"] .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .results-card[data-search-tab="medicines"] .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .list > .list-row {
@@ -269,6 +374,19 @@ body {
   transition: transform var(--dur-toggle) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter), background-color var(--dur-press) linear;
 }
 
+.list > .facility-card {
+  min-height: 84px;
+  padding: var(--space-16);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: transform var(--dur-toggle) var(--ease-enter),
+              box-shadow var(--dur-toggle) var(--ease-enter),
+              border-color var(--dur-toggle) var(--ease-enter),
+              background-color var(--dur-press) linear;
+}
+
 @media (hover: hover) {
   .list > a.list-row:hover,
   .list-row.lift:hover {
@@ -276,23 +394,19 @@ body {
     background: var(--surface);
     box-shadow: var(--shadow-tile-hover);
   }
+
+  .list > a.facility-card:hover {
+    transform: translateY(-2px);
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-tile-hover);
+  }
 }
 
-.list > a.list-row:active {
+.list > a.list-row:active,
+.list > a.facility-card:active {
   transform: translateY(0);
   box-shadow: var(--shadow-press);
-}
-
-@media (min-width: 1280px) {
-  .results-card .list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1600px) {
-  .results-card .list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 /* The domain icon becomes a small 3D object: a raised face on a darker base. */
@@ -679,6 +793,11 @@ html.text-large {
     font-size: var(--fs-headline);
   }
 
+  /* The wordmark is 190px wide on the sidebar; on a phone it shares one line with three actions. */
+  .topbar .brand-mark {
+    width: min(132px, 34vw);
+  }
+
   .topbar .btn-sm {
     padding-left: var(--space-12);
     padding-right: var(--space-12);
@@ -743,5 +862,972 @@ html.text-large {
   .page-head .t-callout {
     font-size: var(--fs-subhead);
     line-height: var(--lh-subhead);
+  }
+}
+
+/* Dashboard refinement: keep the premium system, but give the information-dense home screen
+   a calmer scale. These rules are intentionally scoped so search and detail pages retain their
+   existing proportions. */
+.dashboard-view .sidebar {
+  gap: var(--space-16);
+}
+
+.dashboard-view .nav-group {
+  gap: var(--space-4);
+}
+
+.dashboard-view .nav a {
+  min-height: 40px;
+  padding-inline: var(--space-8);
+  gap: var(--space-8);
+}
+
+.dashboard-view .sidebar-foot {
+  gap: var(--space-8);
+}
+
+.dashboard-view .sos-key-compact {
+  min-height: 48px;
+  font-size: var(--fs-subhead);
+  line-height: var(--lh-subhead);
+}
+
+.dashboard-page {
+  gap: var(--space-20);
+}
+
+.dashboard-page .greeting {
+  gap: var(--space-12);
+}
+
+.dashboard-page .avatar-l {
+  width: 64px;
+  height: 64px;
+  font-size: var(--fs-title-3);
+}
+
+.dashboard-page .t-large-title {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-page .t-title-2 {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.dashboard-page .t-title-3 {
+  font-size: 17px;
+  line-height: 22px;
+}
+
+.dashboard-page .t-headline {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.dashboard-page .t-callout,
+.dashboard-page .t-subhead {
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.dashboard-page .t-footnote {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.dashboard-page .dash-actions .btn {
+  min-height: 40px;
+  padding-inline: var(--space-16);
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.dashboard-page .card,
+.dashboard-page .stat,
+.dashboard-page .care-tile {
+  border-radius: var(--radius-l);
+  border: 1px solid var(--border-soft);
+}
+
+.dashboard-page .card {
+  padding: var(--space-20);
+}
+
+.dashboard-page .card.stack-16 {
+  gap: var(--space-12);
+}
+
+.dashboard-page .card.stack-12 {
+  gap: var(--space-8);
+}
+
+.dashboard-page .card-raised {
+  box-shadow: var(--shadow-tile);
+}
+
+.dashboard-page .care-tiles {
+  gap: var(--space-12);
+}
+
+.dashboard-page .care-tile {
+  grid-template-rows: 54px auto minmax(17px, auto);
+  min-height: 140px;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  gap: var(--space-4);
+  box-shadow: var(--shadow-tile);
+}
+
+.dashboard-page .care-tile .tile-art {
+  width: 72px;
+  height: 54px;
+  margin-bottom: 0;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
+}
+
+.dashboard-page .care-tile .t-headline {
+  font-size: 15px;
+  line-height: 19px;
+  font-weight: 600;
+}
+
+.dashboard-page .care-tile .num {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+@media (hover: hover) {
+  .dashboard-page .care-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 24, 40, 0.08);
+  }
+}
+
+.dashboard-page .stat-row {
+  gap: var(--space-12);
+}
+
+.dashboard-page .stat {
+  padding: var(--space-16);
+  border-radius: var(--radius-l);
+}
+
+.dashboard-page .stat-value {
+  font-size: 38px;
+  line-height: 42px;
+  font-weight: 600;
+}
+
+.dashboard-page .dash-grid {
+  gap: var(--space-20);
+}
+
+.dashboard-page .dash-grid > .stack-24 {
+  gap: var(--space-20);
+}
+
+.dashboard-page .dose-wrap {
+  gap: var(--space-20);
+}
+
+.dashboard-page .dose-ring {
+  width: 96px;
+  height: 96px;
+  box-shadow: 0 4px 0 var(--border-soft), 0 10px 20px rgba(16, 24, 40, 0.10);
+}
+
+.dashboard-page .dose-ring .t-title-2 {
+  font-size: 18px;
+  line-height: 23px;
+}
+
+.dashboard-page .dose {
+  padding: var(--space-8);
+}
+
+.dashboard-page .list > .list-row {
+  min-height: 60px;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-m);
+}
+
+.dashboard-page .list-row-title {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.dashboard-page .list-row-meta {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.dashboard-page .facts {
+  gap: var(--space-12);
+}
+
+.dashboard-page .sos-key {
+  min-height: 72px;
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-l);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 0 var(--danger-face-side),
+    0 12px 24px rgba(215, 0, 21, 0.20);
+}
+
+.dashboard-page .sos-key-title {
+  font-size: 20px;
+  line-height: 25px;
+}
+
+.dashboard-page .sos-key-sub {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+@media (max-width: 639px) {
+  .dashboard-page .card {
+    padding: var(--space-16);
+  }
+
+  .dashboard-page .avatar-l {
+    width: 56px;
+    height: 56px;
+  }
+
+  .dashboard-page .t-large-title {
+    font-size: 26px;
+    line-height: 31px;
+  }
+
+  .dashboard-page .care-tile {
+    min-height: 132px;
+    padding: 12px var(--space-12) var(--space-12);
+  }
+
+  .dashboard-page .care-tile .tile-art {
+    width: 64px;
+    height: 48px;
+  }
+
+  .dashboard-page .stat-value {
+    font-size: 34px;
+    line-height: 38px;
+  }
+}
+
+/* Explore map: a real tile-backed map is the primary visual, while the existing analytics cards
+   remain compact supporting context. */
+.explore-page {
+  gap: var(--space-20);
+}
+
+.explore-page .page-head .t-large-title {
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.explore-page .stat-row {
+  gap: var(--space-12);
+}
+
+.explore-page .stat {
+  min-height: 96px;
+  padding: var(--space-16);
+  border-radius: var(--radius-l);
+}
+
+.explore-page .stat-value {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 600;
+}
+
+.explore-page .card {
+  padding: var(--space-20);
+  border-radius: var(--radius-l);
+}
+
+.explore-page .explore-top > .card:first-child {
+  min-width: 0;
+}
+
+.explore-page .explore-top > .stack-16 {
+  gap: var(--space-16);
+}
+
+.explore-page .hbars-row {
+  min-height: 40px;
+  padding: var(--space-4) var(--space-8);
+}
+
+.explore-page .hbars-track {
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.explore-page .hbars-bar {
+  border-radius: var(--radius-full);
+}
+
+.geo-map {
+  position: relative;
+  display: grid;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.geo-map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+}
+
+.geo-map-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.geo-map-search-wrap > svg {
+  position: absolute;
+  left: var(--space-12);
+  z-index: 1;
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.geo-map-search {
+  min-height: 40px;
+  padding-left: var(--space-40);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-subhead);
+}
+
+.geo-map-styles {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+}
+
+.geo-map-style {
+  min-height: 34px;
+  padding: 0 var(--space-12);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.geo-map-style[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-card);
+}
+
+.geo-map-viewport {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-l);
+  background: #e9eef0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.geo-map-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.geo-map-tiles,
+.geo-map-markers,
+.geo-map-popups {
+  position: absolute;
+  inset: 0;
+}
+
+.geo-map-tiles {
+  z-index: 0;
+  overflow: hidden;
+  background: #e9eef0;
+}
+
+.geo-map-tile {
+  position: absolute;
+  display: block;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.geo-map-tile-transportation,
+.geo-map-tile-places {
+  z-index: 1;
+}
+
+.geo-map-tile.is-error {
+  visibility: hidden;
+}
+
+.geo-map-markers {
+  z-index: 4;
+  pointer-events: none;
+}
+
+.geo-marker,
+.geo-cluster {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -100%);
+  border: 2px solid var(--surface);
+  color: var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.28);
+  transition: transform var(--dur-press) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter);
+}
+
+.geo-marker {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  transform: translate(-50%, -75%) rotate(-45deg);
+}
+
+.geo-marker svg {
+  transform: rotate(45deg);
+}
+
+.geo-marker.is-selected,
+.geo-cluster.is-selected {
+  z-index: 2;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7), 0 4px 12px rgba(16, 24, 40, 0.34);
+}
+
+.geo-marker:hover,
+.geo-cluster:hover {
+  transform: translate(-50%, -78%) rotate(-45deg) scale(1.06);
+}
+
+.geo-cluster {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--primary);
+}
+
+.geo-cluster:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.geo-cluster-mixed {
+  background: #425466;
+}
+
+.geo-cluster-count {
+  font-size: var(--fs-footnote);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.geo-origin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--surface);
+  box-shadow: 0 0 0 7px rgba(0, 102, 204, 0.20), 0 2px 8px rgba(16, 24, 40, 0.30);
+  pointer-events: none;
+}
+
+.marker-blue,
+.geo-filter-blue .geo-filter-dot { background: #1467b8; }
+.marker-orange,
+.geo-filter-orange .geo-filter-dot { background: #c36a12; }
+.marker-green,
+.geo-filter-green .geo-filter-dot { background: #16845d; }
+.marker-text-blue { color: #1467b8; }
+.marker-text-orange { color: #c36a12; }
+.marker-text-green { color: #16845d; }
+
+.geo-map-controls {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-12);
+  z-index: 6;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.geo-map-controls .icon-btn,
+.geo-map-control-text {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 var(--space-8);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-s);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-1);
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.geo-map-controls .icon-btn {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.geo-map-controls button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.geo-map-message {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  padding: var(--space-8) var(--space-12);
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-s);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  box-shadow: var(--shadow-card);
+}
+
+.geo-map-data-notice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-12);
+  width: min(360px, calc(100% - 32px));
+  padding: var(--space-16);
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-m);
+  background: rgba(255, 255, 255, 0.96);
+  text-align: center;
+  box-shadow: var(--shadow-float);
+}
+
+.geo-map-data-message {
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: 17px;
+}
+
+.geo-map-attribution {
+  position: absolute;
+  left: var(--space-8);
+  bottom: var(--space-8);
+  z-index: 6;
+  padding: 2px var(--space-4);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-2);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.geo-map-popups {
+  z-index: 8;
+  pointer-events: none;
+}
+
+.geo-popup {
+  position: absolute;
+  display: grid;
+  gap: var(--space-12);
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: var(--space-16);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  pointer-events: auto;
+}
+
+.geo-popup-details {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: var(--space-4);
+}
+
+.geo-popup-description {
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: 18px;
+}
+
+.geo-popup-list {
+  display: grid;
+  gap: var(--space-4);
+  color: var(--text-1);
+  font-size: var(--fs-caption);
+}
+
+.geo-popup-positive {
+  color: var(--success, #16845d);
+}
+
+.geo-popup-loading {
+  font-size: var(--fs-caption);
+  line-height: 16px;
+}
+
+.geo-popup-close {
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 0;
+  box-shadow: none;
+}
+
+.geo-popup-category {
+  padding-right: var(--space-24);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.geo-popup-title {
+  padding-right: var(--space-24);
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.geo-popup-line {
+  font-size: var(--fs-footnote);
+  line-height: 17px;
+}
+
+.geo-popup-link {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.geo-popup-actions {
+  padding-top: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.geo-popup-unavailable {
+  align-self: center;
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+}
+
+.geo-map-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.geo-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 32px;
+  padding: 0 var(--space-8);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+
+.geo-filter[aria-pressed="false"] {
+  background: var(--surface-sunken);
+  color: var(--text-2);
+  text-decoration: line-through;
+}
+
+.geo-filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.geo-map-count {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+}
+
+.geo-map-search-results {
+  position: absolute;
+  top: calc(100% + var(--space-8));
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.geo-search-result {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-8) var(--space-12);
+  border: 0;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.geo-search-result:hover {
+  background: var(--surface-sunken);
+}
+
+.geo-search-result strong {
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+}
+
+.geo-search-result span,
+.geo-search-empty {
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+}
+
+.geo-search-empty {
+  padding: var(--space-12);
+}
+
+.geo-map:fullscreen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100vw;
+  height: 100vh;
+  padding: var(--space-20);
+  background: var(--bg);
+}
+
+.geo-map:fullscreen .geo-map-viewport {
+  min-height: 0;
+}
+
+.geo-map.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: var(--space-20);
+  background: var(--bg);
+}
+
+.geo-map.is-fullscreen .geo-map-viewport {
+  min-height: 0;
+}
+
+@media (max-width: 1023px) {
+  .geo-map-viewport {
+    min-height: 440px;
+  }
+}
+
+@media (max-width: 639px) {
+  .explore-page .page-head .t-large-title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .explore-page .card {
+    padding: var(--space-16);
+  }
+
+  .explore-page .stat {
+    min-height: 84px;
+    padding: var(--space-12);
+  }
+
+  .explore-page .stat-value {
+    font-size: 32px;
+    line-height: 36px;
+  }
+
+  .geo-map-toolbar {
+    align-items: stretch;
+  }
+
+  .geo-map-search-wrap,
+  .geo-map-styles {
+    flex-basis: 100%;
+  }
+
+  .geo-map-styles {
+    justify-content: space-between;
+  }
+
+  .geo-map-style {
+    flex: 1;
+  }
+
+  .geo-map-viewport {
+    min-height: 360px;
+  }
+
+  .geo-map-count {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .geo-popup {
+    right: 8px !important;
+    bottom: calc(var(--space-8) + var(--space-80) + env(safe-area-inset-bottom)) !important;
+    left: 8px !important;
+    top: auto !important;
+    width: auto !important;
+    max-height: min(72%, calc(100% - var(--space-80) - var(--space-24)));
+  }
+
+  .geo-map-popups {
+    z-index: 40;
+  }
+
+  .geo-map.has-popup {
+    z-index: 31;
+  }
+
+  .geo-popup-details {
+    max-height: 220px;
+  }
+
+  .geo-popup-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Medical ID: keep the sharing copy independent from the compact global switch control. */
+.medical-id-page .medical-id-sharing-row {
+  padding: var(--space-16);
+  background: var(--surface-sunken);
+  box-shadow: none;
+}
+
+.medical-id-page .medical-id-sharing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-24);
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.medical-id-page .medical-id-sharing-copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.medical-id-page .medical-id-sharing-copy .t-headline,
+.medical-id-page .medical-id-sharing-copy .t-subhead {
+  overflow-wrap: anywhere;
+}
+
+.medical-id-page .medical-id-sharing-toggle > input {
+  appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: background-color var(--dur-toggle) var(--ease-enter);
+}
+
+.medical-id-page .medical-id-sharing-toggle > input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border-strong), 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: transform var(--dur-toggle) var(--ease-enter);
+}
+
+.medical-id-page .medical-id-sharing-toggle > input:checked {
+  background: var(--primary);
+}
+
+.medical-id-page .medical-id-sharing-toggle > input:checked::after {
+  transform: translateX(20px);
+}
+
+.medical-id-page form {
+  padding-bottom: calc(var(--space-80) + var(--space-24));
+}
+
+.medical-id-page .sticky-save {
+  margin-bottom: calc(var(--space-80) + var(--space-16));
+}
+
+@media (max-width: 639px) {
+  .medical-id-page .medical-id-sharing-toggle {
+    align-items: flex-start;
+    gap: var(--space-16);
+  }
+
+  .medical-id-page .medical-id-sharing-row {
+    padding: var(--space-12);
+  }
+
+  .medical-id-page form {
+    padding-bottom: calc(var(--space-64) + var(--space-24));
+  }
+
+  .medical-id-page .sticky-save {
+    margin-bottom: calc(var(--space-64) + var(--space-16));
   }
 }

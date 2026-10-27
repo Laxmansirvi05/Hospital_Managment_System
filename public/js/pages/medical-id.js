@@ -140,8 +140,10 @@ function render(mid, contacts, photoUrl) {
         field({ id: 'docName', label: 'Primary doctor', input: docName }),
         field({ id: 'phone', label: 'Doctor’s phone', input: docPhone }))),
     section('sharing', 'Sharing in an emergency', null,
-      h('div', { class: 'card', style: 'background:var(--surface-sunken);box-shadow:none' },
-        h('label', { class: 'switch', for: 'share' }, h('span', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Share with the ambulance crew'), shareText), share))),
+      h('div', { class: 'card medical-id-sharing-row' },
+        h('label', { class: 'medical-id-sharing-toggle', for: 'share' },
+          h('span', { class: 'medical-id-sharing-copy' }, h('span', { class: 't-headline' }, 'Share with the ambulance crew'), shareText),
+          share))),
     h('div', { class: 'sticky-save' },
       h('div', { class: 'stack-4', style: 'flex:1;max-width:280px' }, meterText, h('div', { class: 'meter', 'aria-hidden': 'true' }, meter)),
       saveBtn));
@@ -184,7 +186,7 @@ function render(mid, contacts, photoUrl) {
   });
 
   const welcome = new URLSearchParams(location.search).get('welcome');
-  main.replaceChildren(h('div', { class: 'page' },
+  main.replaceChildren(h('div', { class: 'page medical-id-page' },
     pageHead({ title: welcome ? 'Welcome to CareRoute' : 'Medical ID', sub: welcome ? 'Add the details that matter in an emergency. You can fill this in over time. Everything is private unless you turn on sharing.' : 'Your personal and health details in one place. Private unless you turn on sharing.' }),
     h('nav', { class: 'section-nav', 'aria-label': 'Sections' },
       [['identity', 'About you'], ['address', 'Address'], ['health', 'Health'], ['insurance', 'Insurance and doctor'], ['sharing', 'Sharing'], ['contacts', 'Emergency contacts']].map(([id, label]) => h('a', { href: `#${id}` }, label))),

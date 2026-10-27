@@ -255,6 +255,16 @@ describe('discovery (D-36)', () => {
     expect(r.body.points.length).toBe(r.body.totals.carePlaces + r.body.totals.pharmacies + r.body.totals.diagnosticCentres);
     expect(Object.keys(r.body.points[0]).sort()).toEqual(['kind', 'lat', 'lng', 'type']);
   });
+  it('serves truthful mapped facility details without unlocated records', async () => {
+    expect((await app.api('/map-locations')).status).toBe(401);
+    const u = await app.user();
+    const r = await app.api('/map-locations', { token: u.token });
+    expect(r.status).toBe(200);
+    expect(r.body.locations.length).toBeGreaterThan(0);
+    expect(r.body.locations.every((x) => ['c', 'p', 'd'].includes(x.kind))).toBe(true);
+    expect(r.body.locations.every((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng) && x.id && x.name)).toBe(true);
+    expect(r.body.locations.some((x) => x.kind === 'p' && x.phone)).toBe(true);
+  });
   it('serves test prices to signed-in users only and validates the query', async () => {
     expect((await app.api('/test-prices?q=thyroid')).status).toBe(401);
     const u = await app.user();

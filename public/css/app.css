@@ -4,7 +4,9 @@
 
 /* Page to page: a short cross-fade so moving between pages feels continuous. */
 @view-transition {
-  navigation: auto;
+  /* Chromium can abort auto transitions when a marker action navigates while the map
+     is still settling. Keep navigation deterministic; map controls already animate locally. */
+  navigation: none;
 }
 
 ::view-transition-old(root),
@@ -135,8 +137,8 @@ dialog.sheet[open] {
 }
 
 .auth-head .brand-mark {
-  width: 56px;
-  height: 56px;
+  width: min(280px, 82vw);
+  height: auto;
 }
 
 .form-error {

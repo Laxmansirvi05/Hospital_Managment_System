@@ -1,7 +1,7 @@
 import { h } from '../h.js';
 import { shell } from '../shell.js';
 import { searchPage, chip, withOrigin } from '../search.js';
-import { listingRow, rating, distance, doctorPhoto } from '../ui.js';
+import { listingRow, rating, distance, doctorPhoto, facilityCard } from '../ui.js';
 import { inr } from '../format.js';
 
 const SPECIALITIES = ['Cardiology', 'Dermatology', 'ENT', 'Gastroenterology', 'General Medicine', 'General Surgery', 'Nephrology', 'Neonatology', 'Neurology', 'Obstetrics and Gynaecology', 'Ophthalmology', 'Orthopaedics', 'Paediatrics', 'Physiotherapy', 'Pulmonology', 'Spine Surgery', 'Urology'];
@@ -45,11 +45,9 @@ searchPage({
         chip('Emergency department', p.get('emergency') === '1', () => update({ emergency: p.get('emergency') !== '1' })),
         ...TYPES.map(([v, label]) => chip(label, p.get('type') === v, () => update({ type: p.get('type') === v ? '' : v }))),
       ],
-      row: (x) => listingRow({
-        href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name,
-        meta: [[x.area, x.specialities.slice(0, 3).join(', ')].filter(Boolean).join(' · '),
-          h('span', { class: 'row-8' }, h('span', { class: 'tag' }, TYPE_LABEL[x.facilityType] || 'Hospital'), rating(x), x.emergencyAvailable ? h('span', { class: 'tag tag-success' }, 'Emergency department') : null)],
-        trail: distance(x),
+      row: (x) => facilityCard(x, {
+        typeLabel: TYPE_LABEL[x.facilityType] || 'Hospital',
+        href: `/hospital/?id=${x.id}`,
       }),
       pin: (x) => ({ ...x.location, kind: 'hospital', label: x.name, href: `/hospital/?id=${x.id}` }),
     },

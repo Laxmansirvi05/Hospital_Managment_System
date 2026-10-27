@@ -6,7 +6,7 @@ import { initials } from './format.js';
 import { startReminderWatch } from './notify.js';
 
 const NAV = [
-  { group: 'Overview', items: [{ id: 'dashboard', href: '/', label: 'Dashboard', icon: 'home' }] },
+  { group: 'Overview', items: [{ id: 'dashboard', href: '/dashboard/', label: 'Dashboard', icon: 'home' }] },
   {
     group: 'Find care',
     items: [
@@ -44,7 +44,7 @@ try {
 }
 
 const TABS = [
-  { id: 'dashboard', href: '/', label: 'Home', icon: 'home' },
+  { id: 'dashboard', href: '/dashboard/', label: 'Home', icon: 'home' },
   { id: 'hospitals', href: '/search/hospitals/', label: 'Hospitals', icon: 'hospital' },
   { id: 'medicines', href: '/search/medicines/', label: 'Medicines', icon: 'pill' },
   { id: 'reminders', href: '/reminders/', label: 'Reminders', icon: 'clock' },
@@ -98,7 +98,7 @@ export async function shell({ nav, title }) {
 
   const isPatient = user.role === 'patient';
   document.getElementById('sidebar').replaceChildren(
-    h('a', { class: 'brand', href: '/' }, brandMark(), h('span', {}, h('span', { class: 'brand-name' }, 'CareRoute'), h('span', { class: 'brand-sub' }, 'Hyderabad'))),
+    h('a', { class: 'brand', href: '/dashboard/' }, brandMark()),
     h('nav', { class: 'nav', 'aria-label': 'Main' },
       NAV.map((g) => h('div', { class: 'nav-group' },
         h('span', { class: 'nav-label' }, g.group),
@@ -111,7 +111,7 @@ export async function shell({ nav, title }) {
   );
 
   document.getElementById('topbar').replaceChildren(
-    h('a', { class: 'brand', href: '/' }, brandMark(), h('span', { class: 'brand-name' }, 'CareRoute')),
+    h('a', { class: 'brand', href: '/dashboard/' }, brandMark()),
     h('div', { class: 'row-8' },
       isPatient ? h('a', { class: 'btn btn-danger btn-sm', href: '/sos/' }, icon('ambulance', 18), 'SOS') : null,
       h('a', { class: 'icon-btn', href: '/settings/', 'aria-label': 'Settings' }, icon('gear', 20)),

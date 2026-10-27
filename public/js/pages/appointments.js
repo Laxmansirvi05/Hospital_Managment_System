@@ -4,6 +4,8 @@ import { shell, loadError } from '../shell.js';
 import { pageHead, field, showErrors, busy, confirmDialog, empty } from '../ui.js';
 import { todayIst, monthShort, dayOfMonth, relativeDay, dateLong } from '../format.js';
 
+const STATUS = { scheduled: ['Scheduled', 'status-live'], done: ['Done', 'status-ok'], cancelled: ['Cancelled', 'status-idle'] };
+
 const { main } = await shell({ nav: 'appointments', title: 'Appointments' });
 
 let items = [];
@@ -18,8 +20,6 @@ try {
 } catch (err) {
   loadError(main, err);
 }
-
-const STATUS = { scheduled: ['Scheduled', 'status-live'], done: ['Done', 'status-ok'], cancelled: ['Cancelled', 'status-idle'] };
 
 function row(a) {
   const today = todayIst();

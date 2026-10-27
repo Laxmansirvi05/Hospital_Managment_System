@@ -58,7 +58,17 @@ const base = (x) => ({
   source: { platform: x.sourcePlatform, url: x.sourceUrl, checkedAt: x.checkedAt },
   ...(x.distanceKm !== undefined ? { distanceKm: x.distanceKm } : {}),
 });
-export const hospitalView = (x) => ({ ...base(x), facilityType: x.facilityType ?? 'hospital', description: x.description, emergencyAvailable: x.emergencyAvailable, specialities: x.specialities, departments: x.departments });
+export const hospitalView = (x) => ({
+  ...base(x),
+  facilityType: x.facilityType ?? 'hospital',
+  description: x.description,
+  emergencyAvailable: x.emergencyAvailable,
+  specialities: x.specialities,
+  departments: x.departments,
+  ...((x.logoUrl || x.logo_url) ? { logoUrl: x.logoUrl || x.logo_url } : {}),
+  ...((x.imageUrl || x.image_url) ? { imageUrl: x.imageUrl || x.image_url } : {}),
+  ...((x.facilityLogo || x.facility_logo) ? { facilityLogo: x.facilityLogo || x.facility_logo } : {}),
+});
 export const doctorView = (d) => ({
   id: d.id, name: d.name, title: d.title ?? '', specialization: d.specialization, qualifications: d.qualifications, experienceYears: d.experienceYears,
   publishedTimings: d.publishedTimings, profileUrl: d.profileUrl, rating: d.rating ?? null, ratingCount: d.ratingCount ?? null,
@@ -100,6 +110,13 @@ const ROUTES = [
       };
       // The server caches; browsers revalidate, so a deploy never meets an older response shape.
       return { body, headers: { 'Cache-Control': 'private, no-cache' } };
+    },
+  },
+  {
+    method: 'GET', path: '/map-locations', roles: SIGNED_IN,
+    async handler() {
+      const locations = await getStore().listings.mapLocations();
+      return { body: { locations }, headers: { 'Cache-Control': 'private, no-cache' } };
     },
   },
   { method: 'GET', path: '/areas', roles: SIGNED_IN, async handler() { return { body: { areas: await getStore().listings.areas() } }; } },

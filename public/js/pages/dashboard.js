@@ -7,7 +7,7 @@ import { km } from '../format.js';
 import { greeting, weekday, dateLong, relativeDay, monthShort, dayOfMonth, nowTimeIst, initials, bytes } from '../format.js';
 
 const GENDER = { female: 'Female', male: 'Male', other: 'Other', prefer_not_to_say: 'Prefers not to say' };
-const R = 46;
+const R = 40;
 const C = 2 * Math.PI * R;
 
 /**
@@ -55,6 +55,7 @@ function findCare() {
 }
 
 const { main, user } = await shell({ nav: 'dashboard', title: 'Dashboard' });
+document.body.classList.add('dashboard-view');
 
 try {
   const data = await api('/patients/me/dashboard');
@@ -66,10 +67,10 @@ try {
 }
 
 function doseRing(taken, total) {
-  const bar = s('circle', { class: 'bar', cx: 56, cy: 56, r: R, fill: 'none', 'stroke-width': 9, 'stroke-linecap': 'round', 'stroke-dasharray': C, 'stroke-dashoffset': total ? C * (1 - taken / total) : C });
+  const bar = s('circle', { class: 'bar', cx: 48, cy: 48, r: R, fill: 'none', 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-dasharray': C, 'stroke-dashoffset': total ? C * (1 - taken / total) : C });
   const label = h('span', { class: 't-title-2 num' }, `${taken}/${total}`);
   const el = h('div', { class: 'dose-ring', role: 'img', 'aria-label': `${taken} of ${total} doses taken today` },
-    s('svg', { width: 112, height: 112, viewBox: '0 0 112 112', 'aria-hidden': 'true' }, s('circle', { class: 'track', cx: 56, cy: 56, r: R, fill: 'none', 'stroke-width': 9 }), bar),
+    s('svg', { width: 96, height: 96, viewBox: '0 0 96 96', 'aria-hidden': 'true' }, s('circle', { class: 'track', cx: 48, cy: 48, r: R, fill: 'none', 'stroke-width': 8 }), bar),
     h('span', { class: 'stack-4', style: 'justify-items:center' }, label, h('span', { class: 't-caption muted' }, 'taken')));
   return {
     el,
@@ -177,7 +178,7 @@ function render(d, photoUrl) {
       h('span', { class: 't-title-3 num' }, `${p.completeness}%`)),
     h('div', { class: 'meter', role: 'progressbar', 'aria-valuenow': p.completeness, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': 'Medical ID complete' }, h('span', { style: `width:${p.completeness}%` }))) : null;
 
-  main.replaceChildren(h('div', { class: 'page' },
+  main.replaceChildren(h('div', { class: 'page dashboard-page' },
     h('header', { class: 'spread' },
       h('div', { class: 'greeting' },
         h('span', { class: 'avatar avatar-l', 'aria-hidden': 'true' }, photoUrl ? h('img', { src: photoUrl, alt: '' }) : initials(p.name || user.name)),

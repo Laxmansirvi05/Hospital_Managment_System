@@ -109,13 +109,7 @@ export function icon(name, size = 20) {
 
 /** Brand mark: a small isometric cube with a route line on its top face. */
 export function brandMark() {
-  return s('svg', { class: 'brand-mark', viewBox: '0 0 36 36', 'aria-hidden': 'true' },
-    s('path', { d: 'M18 3 32 10.5 18 18 4 10.5z', fill: 'var(--primary-face-top)' }),
-    s('path', { d: 'M4 10.5 18 18v15L4 25.5z', fill: 'var(--primary)' }),
-    s('path', { d: 'M32 10.5 18 18v15l14-7.5z', fill: 'var(--primary-face-side)' }),
-    s('path', { d: 'M11 10.5h7.5l3.5 2', fill: 'none', stroke: 'var(--on-primary)', 'stroke-width': 1.8, 'stroke-linecap': 'round' }),
-    s('path', { d: 'M8.5 21.5v3M7 23h3', fill: 'none', stroke: 'var(--on-primary)', 'stroke-width': 1.6, 'stroke-linecap': 'round' }),
-  );
+  return h('img', { class: 'brand-mark', src: '/logo.png', alt: 'CareRoute', width: 2172, height: 724, decoding: 'async' });
 }
 
 let toastTimer = 0;

@@ -8,7 +8,8 @@
   "packageManager": "pnpm@11.2.2",
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local scripts/dev.js",
-    "test": "vitest run",
+    "test": "vitest run tests/unit.test.js tests/api.test.js",
+    "test:e2e": "playwright test tests/e2e",
     "check": "node scripts/check-public.js"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "vitest": "2.1.9"
   }
 }

@@ -51,6 +51,7 @@ function append(el, children) {
 }
 
 // Custom icon set on a 24 grid, one stroke weight, round joins (D-20).
+// The vectors remain the zero-dependency fallback for every animated icon.
 const ICONS = {
   search: [['circle', { cx: 11, cy: 11, r: 7 }], ['path', { d: 'M16.5 16.5 21 21' }]],
   home: [['path', { d: 'M3 10.5 12 3l9 7.5' }], ['path', { d: 'M5 9v11h14V9' }], ['path', { d: 'M10 20v-6h4v6' }]],
@@ -100,30 +101,75 @@ const ICONS = {
   trash: [['path', { d: 'M4 7h16' }], ['path', { d: 'M9 7V4h6v3' }], ['path', { d: 'M6 7l1 13h10l1-13' }]],
   download: [['path', { d: 'M12 4v12' }], ['path', { d: 'M7 11l5 5 5-5' }], ['path', { d: 'M4 20h16' }]],
   bell: [['path', { d: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4z' }], ['path', { d: 'M10 20a2 2 0 0 0 4 0' }]],
+  'volume-off': [['path', { d: 'M5 10v4h3l4 3V7l-4 3z' }], ['path', { d: 'M16 10l4 4M20 10l-4 4' }]],
+  'volume-on': [['path', { d: 'M5 10v4h3l4 3V7l-4 3z' }], ['path', { d: 'M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10' }]],
+  home: [['path', { d: 'M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z' }]],
 };
+
+/**
+ * Semantic motion registry. Keeping this beside the vector registry means a
+ * page only asks for `icon('hospital')`; it never needs to know an asset URL,
+ * animation timing, or fallback strategy.
+ */
+export const ICON_REGISTRY = Object.freeze({
+  home: { motion: 'idle', feature: 'dashboard' }, chart: { motion: 'bars', feature: 'explore' },
+  hospital: { motion: 'cross-pulse', feature: 'hospitals' }, doctor: { motion: 'sway', feature: 'doctors' },
+  pharmacy: { motion: 'sign-pulse', feature: 'pharmacies' }, pill: { motion: 'turn', feature: 'medicines' },
+  flask: { motion: 'liquid', feature: 'diagnostics' }, calendar: { motion: 'page-flip', feature: 'appointments' },
+  clock: { motion: 'tick', feature: 'reminders' }, report: { motion: 'page-flip', feature: 'documents' },
+  idcard: { motion: 'scan', feature: 'medical-id' }, ambulance: { motion: 'beacon', feature: 'emergency' },
+  gear: { motion: 'spin', feature: 'settings' }, shield: { motion: 'shield-pulse', feature: 'privacy' },
+  search: { motion: 'search-sweep', feature: 'search' }, pin: { motion: 'pin-drop', feature: 'location' },
+  filter: { motion: 'filter-sweep', feature: 'filters' }, upload: { motion: 'upload-rise', feature: 'upload' },
+  download: { motion: 'download-drop', feature: 'download' }, share: { motion: 'share-pulse', feature: 'sharing' },
+  bell: { motion: 'bell-ring', feature: 'notifications' }, check: { motion: 'draw', feature: 'confirmation' },
+  alert: { motion: 'alert-pulse', feature: 'validation' }, info: { motion: 'info-pulse', feature: 'information' },
+  plus: { motion: 'plus-pop', feature: 'add' }, trash: { motion: 'trash-lid', feature: 'delete' },
+  edit: { motion: 'edit-sweep', feature: 'edit' }, close: { motion: 'close-pop', feature: 'close' },
+  back: { motion: 'arrow-nudge', feature: 'previous' }, chevron: { motion: 'arrow-nudge', feature: 'next' },
+  external: { motion: 'external-rise', feature: 'external-link' }, phone: { motion: 'ring', feature: 'contact' },
+  mail: { motion: 'envelope', feature: 'contact' }, globe: { motion: 'spin', feature: 'website' },
+  route: { motion: 'route-dash', feature: 'directions' }, users: { motion: 'group-pulse', feature: 'people' },
+  user: { motion: 'sway', feature: 'profile' }, list: { motion: 'stagger', feature: 'list' },
+  locate: { motion: 'target-pulse', feature: 'current-location' }, camera: { motion: 'camera-shutter', feature: 'photo' },
+  star: { motion: 'star-pop', feature: 'rating' }, send: { motion: 'send-rise', feature: 'send' },
+  heart: { motion: 'heart-beat', feature: 'saved-care' }, steering: { motion: 'steer', feature: 'navigation' },
+  eye: { motion: 'blink', feature: 'visibility' }, logout: { motion: 'arrow-nudge', feature: 'sign-out' },
+  minus: { motion: 'minus-pop', feature: 'remove' }, 'volume-off': { motion: 'close-pop', feature: 'video-sound' },
+  'volume-on': { motion: 'bell-ring', feature: 'video-sound' },
+});
 
 /**
  * @param {keyof typeof ICONS} name
  * @param {number} [size]
+ * @param {{label?: string, motion?: string, loop?: boolean, autoplay?: boolean, hover?: boolean, onClick?: Function}} [options]
  * @returns {SVGElement}
  */
-export function icon(name, size = 20) {
+export function icon(name, size = 20, options = {}) {
   const parts = ICONS[name] || ICONS.info;
+  const registry = ICON_REGISTRY[name] || ICON_REGISTRY.info;
+  const label = typeof options.label === 'string' ? options.label : '';
   return s('svg', {
     width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-    'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false',
+    class: `care-icon care-icon-${name}`,
+    'data-icon': name,
+    'data-motion': options.motion || registry.motion,
+    'data-feature': registry.feature,
+    'data-source': 'local-inline-svg',
+    'data-fallback': 'inline-svg',
+    'data-loop': options.loop === false ? 'false' : 'true',
+    'data-autoplay': options.autoplay === false ? 'false' : 'true',
+    'data-hover': options.hover === false ? 'false' : 'true',
+    'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    'aria-hidden': label ? false : 'true', 'aria-label': label || false,
+    role: label ? 'img' : false, focusable: 'false',
+    onclick: typeof options.onClick === 'function' ? options.onClick : false,
   }, parts.map(([tag, attrs]) => s(tag, attrs)));
 }
 
-/** Brand mark: a small isometric cube with a route line on its top face. */
+/** Shared CareRoute logo used by the app shell and authentication pages. */
 export function brandMark() {
-  return s('svg', { class: 'brand-mark', viewBox: '0 0 36 36', 'aria-hidden': 'true' },
-    s('path', { d: 'M18 3 32 10.5 18 18 4 10.5z', fill: 'var(--primary-face-top)' }),
-    s('path', { d: 'M4 10.5 18 18v15L4 25.5z', fill: 'var(--primary)' }),
-    s('path', { d: 'M32 10.5 18 18v15l14-7.5z', fill: 'var(--primary-face-side)' }),
-    s('path', { d: 'M11 10.5h7.5l3.5 2', fill: 'none', stroke: 'var(--on-primary)', 'stroke-width': 1.8, 'stroke-linecap': 'round' }),
-    s('path', { d: 'M8.5 21.5v3M7 23h3', fill: 'none', stroke: 'var(--on-primary)', 'stroke-width': 1.6, 'stroke-linecap': 'round' }),
-  );
+  return h('img', { class: 'brand-mark', src: '/logo.png', alt: 'CareRoute', width: 2172, height: 724, decoding: 'async' });
 }
 
 let toastTimer = 0;

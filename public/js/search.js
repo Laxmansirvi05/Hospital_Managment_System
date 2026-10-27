@@ -16,6 +16,7 @@ import { pageHead, skeletonList, empty, areaSelect, getOrigin, locateMe, osmCred
  * @property {(item: any) => any} [pin]
  * @property {(params: URLSearchParams, update: Function) => HTMLElement[]} [filters]
  * @property {boolean} [usesArea]
+ * @property {boolean} [fullWidth] removes the optional side column for this tab
  * @property {string} noun
  * @property {HTMLElement} [aside]
  */
@@ -90,12 +91,16 @@ export async function searchPage({ main, title, sub, tabs, art }) {
     if (active) [...form.querySelectorAll('button, select, input')].find((el) => keyOf(el) === active)?.focus();
   }
 
+  const layout = h('div', { class: 'grid-main-side search-layout' });
   let seq = 0;
   async function draw() {
     drawForm();
     const tab = currentTab();
     const p = params();
     const mine = ++seq;
+    layout.dataset.searchTab = tab.id;
+    results.dataset.searchTab = tab.id;
+    layout.replaceChildren(results, ...(tab.fullWidth ? [] : [side]));
     results.replaceChildren(skeletonList(4));
     side.replaceChildren(tab.aside || h('div', { class: 'skeleton skeleton-block skeleton-block-l' }));
     // Pages of PAGE results. One extra row is asked for only to know whether a next page exists.
@@ -148,7 +153,7 @@ export async function searchPage({ main, title, sub, tabs, art }) {
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ title, sub, art }),
     h('section', { class: 'card card-raised' }, form),
-    h('div', { class: 'grid-main-side' }, results, side)));
+    layout));
   draw();
 }
 

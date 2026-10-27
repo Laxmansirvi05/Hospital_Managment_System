@@ -254,10 +254,12 @@ svg {
   font-weight: 400;
 }
 
-/* The brand mark is a small 3D cube face stack drawn in SVG. */
+/* The shared CareRoute logo is a wide wordmark with its healthcare tagline. */
 .brand-mark {
-  width: 36px;
-  height: 36px;
+  display: block;
+  width: 190px;
+  height: auto;
+  object-fit: contain;
 }
 
 .nav {
@@ -313,6 +315,202 @@ svg {
   margin-top: auto;
   display: grid;
   gap: var(--space-12);
+}
+
+/*
+ * CareRoute motion icons
+ *
+ * These are deliberately CSS-driven rather than runtime Lottie instances. The
+ * inline SVG emitted by h.js is the resilient static fallback; motion only
+ * starts on hover/focus/press or for larger decorative art. That keeps small
+ * healthcare controls quiet, fast, and stable while preserving the existing
+ * icon geometry and layout.
+ */
+.care-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  overflow: visible;
+  transform-origin: center;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+@media (hover: hover) {
+  a:hover > .care-icon,
+  button:hover > .care-icon,
+  label:hover > .care-icon,
+  .care-icon-trigger:hover .care-icon,
+  a:focus-visible > .care-icon,
+  button:focus-visible > .care-icon,
+  label:focus-visible > .care-icon,
+  a:hover .care-icon,
+  button:hover .care-icon,
+  label:hover .care-icon,
+  a:focus-visible .care-icon,
+  button:focus-visible .care-icon,
+  label:focus-visible .care-icon {
+    animation: care-icon-hover 520ms cubic-bezier(.22, .8, .28, 1) both;
+  }
+}
+
+a:active > .care-icon,
+button:active > .care-icon,
+label:active > .care-icon,
+a:active .care-icon,
+button:active .care-icon,
+label:active .care-icon {
+  animation: care-icon-press 220ms ease-out both;
+}
+
+/* Large semantic art can breathe gently; dense controls stay hover-led. */
+.empty-art > .care-icon,
+.obj > .care-icon,
+.pill-obj > .care-icon,
+.indicator-icon > .care-icon,
+.hotspot-icon > .care-icon {
+  animation: care-icon-idle 4s ease-in-out infinite;
+}
+
+.care-icon-hospital,
+.care-icon-pharmacy,
+.care-icon-shield { transform-origin: 50% 60%; }
+
+.care-icon-hospital path:nth-of-type(2),
+.care-icon-pharmacy path:nth-of-type(3),
+.care-icon-shield path:nth-of-type(2) {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.care-icon-ambulance circle { transform-box: fill-box; transform-origin: center; }
+.care-icon-pill { transform-origin: 45% 55%; }
+.care-icon-gear { transform-origin: center; }
+.care-icon-clock path { transform-box: fill-box; transform-origin: 50% 50%; }
+.care-icon-bell path:first-child { transform-box: fill-box; transform-origin: 50% 25%; }
+.care-icon-search { transform-origin: 48% 48%; }
+.care-icon-pin { transform-origin: 50% 80%; }
+.care-icon-check { stroke-dasharray: 28; stroke-dashoffset: 0; }
+
+@keyframes care-icon-hover {
+  0% { transform: translateY(0) scale(1) rotate(0deg); }
+  35% { transform: translateY(-2px) scale(1.08) rotate(-2deg); }
+  68% { transform: translateY(0) scale(1.02) rotate(1deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+@keyframes care-icon-press {
+  0% { transform: scale(1); }
+  55% { transform: scale(.88); }
+  100% { transform: scale(1); }
+}
+
+@keyframes care-icon-idle {
+  0%, 100% { transform: translateY(0) rotate(0deg); filter: drop-shadow(0 1px 0 rgba(20, 65, 92, .04)); }
+  50% { transform: translateY(-2px) rotate(-1deg); filter: drop-shadow(0 4px 3px rgba(20, 65, 92, .12)); }
+}
+
+@keyframes care-icon-scan {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .72; }
+}
+
+.care-icon-hospital:hover,
+.care-icon-pharmacy:hover { animation-name: care-icon-hover, care-icon-scan; }
+
+/* Semantic interaction cues: the movement is intentionally short and quiet. */
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="spin"] { animation: care-icon-spin 620ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="turn"] { animation: care-icon-turn 520ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="tick"] { animation: care-icon-tick 620ms ease-in-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="beacon"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="alert-pulse"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="target-pulse"] { animation: care-icon-pulse 620ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="ring"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="bell-ring"] { animation: care-icon-ring 520ms ease-in-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="page-flip"] { animation: care-icon-page 520ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="upload-rise"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="send-rise"] { animation: care-icon-rise 520ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="download-drop"] { animation: care-icon-drop 520ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="draw"] { animation: care-icon-draw 520ms ease-out both; }
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="star-pop"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="plus-pop"],
+:is(a, button, label):is(:hover, :focus-visible) > .care-icon[data-motion="minus-pop"] { animation: care-icon-pop 420ms cubic-bezier(.2, .8, .3, 1) both; }
+
+@keyframes care-icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(70deg); }
+}
+
+@keyframes care-icon-turn {
+  0% { transform: rotate(0deg); }
+  45% { transform: rotate(-18deg) scale(1.06); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes care-icon-tick {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+  75% { transform: rotate(-4deg); }
+}
+
+@keyframes care-icon-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+  45% { transform: scale(1.14); filter: drop-shadow(0 0 5px rgba(29, 126, 242, .28)); }
+}
+
+@keyframes care-icon-ring {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  50% { transform: rotate(-10deg); }
+  75% { transform: rotate(6deg); }
+}
+
+@keyframes care-icon-page {
+  0% { transform: perspective(36px) rotateY(0deg); }
+  45% { transform: perspective(36px) rotateY(-18deg) translateX(-1px); }
+  100% { transform: perspective(36px) rotateY(0deg); }
+}
+
+@keyframes care-icon-rise {
+  0% { transform: translateY(2px); }
+  55% { transform: translateY(-3px) scale(1.04); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes care-icon-drop {
+  0% { transform: translateY(-2px); }
+  55% { transform: translateY(2px) scale(1.04); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes care-icon-draw {
+  0% { stroke-dashoffset: 28; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes care-icon-pop {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+/* Keep the map's intentional pin rotation intact. */
+.geo-marker .care-icon { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .care-icon,
+  .empty-art > .care-icon,
+  .obj > .care-icon,
+  .pill-obj > .care-icon,
+  .indicator-icon > .care-icon,
+  .hotspot-icon > .care-icon,
+  a:active > .care-icon,
+  button:active > .care-icon,
+  label:active > .care-icon {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

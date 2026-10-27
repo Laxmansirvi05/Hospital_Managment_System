@@ -4,14 +4,14 @@ import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
 import { pageHead, extLink } from '../ui.js';
-import { hbars, dotMap } from '../charts.js';
+import { hbars } from '../charts.js';
 import { inr } from '../format.js';
+import { createExploreMap } from '../explore-map.js';
 
 const TYPE_LABEL = { hospital: 'Hospitals', clinic: 'Clinics', eye: 'Eye care', dental: 'Dental', maternity: 'Women and children', nursing_home: 'Nursing homes', ayush: 'AYUSH' };
-// Same box the OpenStreetMap collection uses (scripts/collect-osm.js).
-const BOX = { south: 17.2, west: 78.2, north: 17.62, east: 78.7 };
 
-const { main } = await shell({ nav: 'explore', title: 'Explore Hyderabad' });
+const { main, config } = await shell({ nav: 'explore', title: 'Explore Hyderabad' });
+document.body.classList.add('explore-view');
 
 const stat = (value, label, href) => h(href ? 'a' : 'div', { class: `stat${href ? ' card-link' : ''}`, href },
   h('span', { class: 'stat-value' }, value.toLocaleString('en-IN')), h('span', { class: 't-subhead muted' }, label));
@@ -20,10 +20,19 @@ const q = (params) => `?${new URLSearchParams(params)}`;
 
 try {
   const x = await api('/insights');
+  let mapData = { locations: [] };
+  let mapError = null;
+  try {
+    mapData = await api('/map-locations');
+  } catch (err) {
+    // The analytics page remains useful if the optional map detail request is unavailable.
+    // The map component shows a local retry state instead of replacing the whole page.
+    mapError = err;
+  }
   // Sections added later may be missing from an older cached response; treat them as empty.
   for (const k of ['byType', 'byArea', 'bySpeciality', 'bySource', 'byChain', 'byMedicineGroup', 'commonTests', 'points']) x[k] ??= [];
   const t = x.totals;
-  main.replaceChildren(h('div', { class: 'page' },
+  main.replaceChildren(h('div', { class: 'page explore-page' },
     pageHead({ art: 'chart', title: 'Explore Hyderabad', sub: 'Every hospital, clinic, doctor, pharmacy and diagnostic centre CareRoute lists, at a glance. Select any bar to see those places.' }),
     h('div', { class: 'stat-row' },
       stat(t.carePlaces, 'Hospitals and clinics', '/search/hospitals/'),
@@ -31,11 +40,13 @@ try {
       stat(t.pharmacies, 'Pharmacies', '/search/medicines/?tab=pharmacies'),
       stat(t.diagnosticCentres, 'Diagnostic centres', '/search/diagnostics/')),
     h('div', { class: 'explore-top' },
-      card('Where care is', 'Each dot is one listed place. Use the buttons to show or hide each kind.',
-      dotMap({
-        points: x.points, box: BOX, title: `Map of ${x.points.length} listed places in greater Hyderabad`,
-        kinds: [{ key: 'c', label: 'Hospitals and clinics' }, { key: 'p', label: 'Pharmacies' }, { key: 'd', label: 'Diagnostic centres' }],
-      })),
+      card('Where care is', 'Real Hyderabad streets and map labels. Filter categories or select a facility for details.',
+        createExploreMap({
+          locations: mapData.locations,
+          maptilerKey: config.maptilerKey,
+          error: mapError,
+          onRetry: () => api('/map-locations'),
+        })),
       h('div', { class: 'stack-16' },
         card('Kinds of care place', `${t.emergency.toLocaleString('en-IN')} list an emergency department.`,
         hbars({ title: 'Care places by kind', items: x.byType.map((r) => ({ label: TYPE_LABEL[r.key] || r.key, value: r.count, href: `/search/hospitals/${q({ type: r.key })}` })) })),

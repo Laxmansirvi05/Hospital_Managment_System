@@ -100,6 +100,9 @@
 
 .btn-block {
   width: 100%;
+  /* Long labels such as a hospital's booking site name wrap instead of widening a phone screen. */
+  white-space: normal;
+  text-align: center;
 }
 
 .btn-sm {
@@ -433,12 +436,15 @@ a.list-row {
   font-size: var(--fs-headline);
   line-height: var(--lh-headline);
   font-weight: 600;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .list-row-meta {
   font-size: var(--fs-subhead);
   line-height: var(--lh-subhead);
   color: var(--text-2);
+  overflow-wrap: break-word;
 }
 
 .list-row-trail {
@@ -447,6 +453,160 @@ a.list-row {
   gap: var(--space-8);
   color: var(--text-2);
   flex-shrink: 0;
+}
+
+/* Facility Card: horizontal, spacious healthcare directory card */
+.facility-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-16);
+  padding: var(--space-16);
+  min-height: 84px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  color: var(--text-1);
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: transform var(--dur-toggle) var(--ease-enter),
+              box-shadow var(--dur-toggle) var(--ease-enter),
+              border-color var(--dur-toggle) var(--ease-enter),
+              background-color var(--dur-press) linear;
+  min-width: 0;
+}
+
+@media (hover: hover) {
+  .facility-card:hover {
+    text-decoration: none;
+    transform: translateY(-2px);
+    border-color: var(--border);
+    box-shadow: var(--shadow-tile-hover);
+  }
+}
+
+.facility-card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-press);
+}
+
+.facility-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.facility-card.is-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), var(--shadow-tile);
+}
+
+/* Facility Card - Left: Logo or fallback container */
+.facility-card-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  color: var(--primary);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+.facility-card-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: var(--space-4);
+  background: var(--surface);
+}
+
+/* Facility Card - Centre: Facility information */
+.facility-card-center {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  flex: 1;
+}
+
+.facility-card-name {
+  font-size: var(--fs-headline);
+  font-weight: 600;
+  line-height: var(--lh-headline);
+  color: var(--text-1);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.facility-card-locality {
+  font-size: 0.84375rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+  color: var(--text-2);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.facility-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+/* Facility category and status badges */
+.facility-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-s);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.facility-badge-emergency {
+  background: var(--success-tint);
+  border-color: rgba(30, 123, 52, 0.25);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.facility-spec {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1rem;
+  color: var(--text-2);
+}
+
+/* Facility Card - Right: Distance and chevron */
+.facility-card-trail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  padding-top: 2px;
+}
+
+.facility-card-trail .num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* A small raised object that holds a domain icon. Not a coloured tile: neutral surface with depth. */

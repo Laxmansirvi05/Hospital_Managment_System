@@ -1,16 +1,10 @@
-import { h, icon } from '../h.js';
+import { h } from '../h.js';
 import { shell } from '../shell.js';
 import { searchPage, chip, withOrigin } from '../search.js';
 import { listingRow, rating, distance } from '../ui.js';
 import { rupees } from '../format.js';
 
 const { main } = await shell({ nav: 'medicines', title: 'Medicines and pharmacies' });
-
-const howPrices = h('aside', { class: 'card stack-12' },
-  h('span', { class: 'empty-art' }, icon('pill', 30)),
-  h('h2', { class: 't-title-3' }, 'How prices are shown'),
-  h('p', { class: 't-subhead muted' }, 'Prices come from the government’s Jan Aushadhi product list: the MRP of each generic medicine at Jan Aushadhi Kendras. Each price shows the date it was checked. CareRoute does not sell medicines.'),
-  h('p', { class: 't-subhead muted' }, 'Prescription medicines need a valid prescription on every platform. CareRoute compares prices only and does not suggest which medicine to take.'));
 
 searchPage({
   main,
@@ -20,9 +14,9 @@ searchPage({
   tabs: [
     {
       id: 'medicines', label: 'Compare medicine prices', noun: 'medicine', key: 'medicines', usesArea: false,
+      fullWidth: true,
       placeholder: 'Medicine name, for example paracetamol',
       endpoint: (p) => `/medicines${p.get('q') ? `?q=${encodeURIComponent(p.get('q'))}` : ''}`,
-      aside: howPrices,
       row: (m) => {
         const low = m.listings[0];
         const high = m.listings[m.listings.length - 1];

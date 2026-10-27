@@ -203,6 +203,20 @@ export function createMemoryStore() {
           points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...PHARMACIES.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...DIAGNOSTICS.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
         };
       },
+      async mapLocations() {
+        const base = (x, kind, type = null) => ({
+          id: x.id, kind, type, name: x.name, area: x.area, address: x.address,
+          phone: x.phone ?? null, email: x.email ?? null, website: x.website ?? null,
+          rating: x.rating ?? null, ratingCount: x.ratingCount ?? null,
+          sourcePlatform: x.sourcePlatform ?? null, sourceUrl: x.sourceUrl ?? null,
+          lat: x.lat, lng: x.lng,
+        });
+        return [
+          ...hospitals.map((x) => base(x, 'c', x.facilityType ?? 'hospital')),
+          ...PHARMACIES.map((x) => base(x, 'p')),
+          ...DIAGNOSTICS.map((x) => base(x, 'd')),
+        ].filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng));
+      },
       async testPrices() { return []; },
       async areas() { return [...AREAS]; },
       async hospitals(p) {

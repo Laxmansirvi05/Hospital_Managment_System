@@ -64,6 +64,84 @@ export function doctorPhoto(d, size = '') {
   return wrap;
 }
 
+/** Fallback icon name based on healthcare facility type (D-59). */
+export function facilityFallbackIcon(facilityType) {
+  switch (facilityType) {
+    case 'nursing_home':
+      return 'home'; // Nursing homes and residential care
+    case 'clinic':
+    case 'dental':
+    case 'ayush':
+      return 'doctor'; // Clinics, doctors, outpatient practices
+    case 'eye':
+      return 'eye'; // Eye care
+    case 'diagnostic':
+      return 'flask'; // Diagnostic facilities
+    case 'hospital':
+    case 'maternity':
+    default:
+      return 'hospital'; // Hospitals and hospital facilities
+  }
+}
+
+/**
+ * Hospital/facility logo from database fields or healthcare fallback icon.
+ * Preserves aspect ratio with object-fit: contain inside a neutral container.
+ */
+export function facilityLogo(x, size = '') {
+  const wrap = h('span', { class: `facility-card-media ${size}`.trim(), 'aria-hidden': 'true' });
+  const iconName = facilityFallbackIcon(x?.facilityType);
+  const fallback = () => wrap.replaceChildren(icon(iconName, 22));
+  const logo = x ? (x.logoUrl || x.logo_url || x.imageUrl || x.image_url || x.facilityLogo || x.facility_logo || x.logo) : null;
+  if (logo && /^https?:\/\//i.test(String(logo))) {
+    const img = h('img', {
+      class: 'facility-card-logo',
+      src: logo,
+      alt: '',
+      loading: 'lazy',
+      decoding: 'async',
+      referrerpolicy: 'no-referrer',
+    });
+    img.onerror = fallback;
+    wrap.append(img);
+  } else {
+    fallback();
+  }
+  return wrap;
+}
+
+/**
+ * Redesigned facility card with clean horizontal layout:
+ * Left: logo / fallback visual.
+ * Centre: facility name, locality, category badge, optional specialities, rating, emergency status.
+ * Right: distance from origin and clickable chevron.
+ */
+export function facilityCard(x, { typeLabel = 'Hospital', href } = {}) {
+  const targetHref = href || `/hospital/?id=${x.id}`;
+  const locality = x.area || (x.address ? x.address.split(',')[0].trim() : '');
+  const specialitiesText = Array.isArray(x.specialities) && x.specialities.length > 0
+    ? x.specialities.slice(0, 2).join(', ')
+    : null;
+
+  return h('a', { class: 'facility-card list-row lift', href: targetHref, 'data-id': x.id },
+    facilityLogo(x),
+    h('div', { class: 'facility-card-center' },
+      h('div', { class: 'facility-card-name' }, x.name),
+      locality ? h('div', { class: 'facility-card-locality' }, locality) : null,
+      h('div', { class: 'facility-card-meta' },
+        h('span', { class: 'facility-badge' }, typeLabel),
+        specialitiesText ? h('span', { class: 'facility-spec', title: x.specialities.join(', ') }, specialitiesText) : null,
+        rating(x),
+        x.emergencyAvailable ? h('span', { class: 'facility-badge facility-badge-emergency' }, 'Emergency') : null,
+      ),
+    ),
+    h('div', { class: 'facility-card-trail' },
+      distance(x),
+      icon('chevron', 16),
+    ),
+  );
+}
+
 export function listingRow({ href, kind, title, meta, trail, media }) {
   const iconName = { hospital: 'hospital', doctor: 'doctor', pharmacy: 'pharmacy', diagnostic: 'flask', medicine: 'pill' }[kind];
   return h('a', { class: 'list-row lift', href },

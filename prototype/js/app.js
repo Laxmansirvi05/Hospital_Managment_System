@@ -92,7 +92,6 @@ function renderSidebar(role, navId) {
   sidebar.replaceChildren(...[
     h('a', { class: 'brand', href: ROLE_HOME[role === 'family' ? 'patient' : role] },
       brandMark(),
-      h('span', {}, h('span', { class: 'brand-name' }, 'CareRoute'), h('span', { class: 'brand-sub' }, 'Hyderabad')),
     ),
     roleSwitcher(role === 'family' ? 'patient' : role),
     items.length ? h('nav', { class: 'nav', 'aria-label': `${ROLE_LABEL[role]} sections` },
@@ -126,7 +125,7 @@ function renderTopbar(role) {
   );
   select.addEventListener('change', () => { location.hash = ROLE_HOME[select.value]; });
   topbar.replaceChildren(
-    h('a', { class: 'brand', href: ROLE_HOME[role === 'family' ? 'patient' : role] }, brandMark(), h('span', { class: 'brand-name' }, 'CareRoute')),
+    h('a', { class: 'brand', href: ROLE_HOME[role === 'family' ? 'patient' : role] }, brandMark()),
     select,
   );
 }

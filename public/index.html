@@ -3,34 +3,146 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light">
-  <title>Dashboard · CareRoute</title>
-  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#0f314b">
+  <meta name="description" content="CareRoute connects you with hospitals, doctors, medicines and diagnostic services.">
+  <title>CareRoute - Healthcare, closer to you.</title>
+  <link rel="icon" href="/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/components.css">
-  <link rel="stylesheet" href="/css/app.css">
-  <link rel="stylesheet" href="/css/premium.css">
-  <script type="module" src="/js/pages/dashboard.js"></script>
+  <link rel="stylesheet" href="/css/hero.css">
+  <script type="module" src="/js/pages/home.js"></script>
 </head>
-<body>
+<body class="home-body">
   <a class="visually-hidden" href="#main">Skip to content</a>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar" aria-label="Main"></aside>
-    <div>
-      <div class="mode-banner" id="mode-banner" role="note" hidden></div>
-      <div class="offline notice notice-warning notice-flat" role="status">You are offline. Changes will not save until you reconnect.</div>
-      <header class="topbar" id="topbar"></header>
-      <main class="main" id="main" tabindex="-1">
-        <div class="page" aria-busy="true">
-          <div class="skeleton skeleton-hero"></div>
-          <div class="skeleton skeleton-block"></div>
-          <div class="skeleton skeleton-block skeleton-block-l"></div>
-        </div>
-      </main>
+
+  <main class="care-route-hero" id="main">
+    <picture class="hero-media" aria-hidden="true">
+      <source type="image/avif" srcset="/assets/hospital-city-1280.avif 1280w, /assets/hospital-city-1920.avif 1920w, /assets/hospital-city-2560.avif 2560w, /assets/hospital-city-3840.avif 3840w" sizes="100vw">
+      <source type="image/webp" srcset="/assets/hospital-city-1280.webp 1280w, /assets/hospital-city-1920.webp 1920w, /assets/hospital-city-2560.webp 2560w, /assets/hospital-city-3840.webp 3840w" sizes="100vw">
+      <img class="hero-image" src="/assets/hospital-city-3840.webp" srcset="/assets/hospital-city-1280.webp 1280w, /assets/hospital-city-1920.webp 1920w, /assets/hospital-city-2560.webp 2560w, /assets/hospital-city-3840.webp 3840w" sizes="100vw" alt="CareRoute healthcare city at golden hour" width="15360" height="9438" fetchpriority="high" decoding="async">
+    </picture>
+
+    <div class="hero-hotspots" role="group" aria-label="Healthcare locations">
+      <div class="hero-hotspot hero-hotspot-pharmacy" data-hotspot="pharmacy" data-x="0.237" data-y="0.522" data-route="/search/medicines/">
+        <span class="hotspot-connector" aria-hidden="true"></span>
+        <button class="hotspot-trigger liquid-glass" type="button" aria-label="Open Pharmacy details" aria-expanded="false" aria-controls="pharmacy-hotspot-panel">
+          <span class="hotspot-icon hotspot-icon-pharmacy" aria-hidden="true">
+            <svg class="care-icon care-icon-pharmacy" data-icon="pharmacy" data-motion="sign-pulse" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M4 10v10h16V10M3 4h18v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4Z"/><path d="M12 12.5v5M9.5 15h5"/></svg>
+          </span>
+          <span class="hotspot-label">Pharmacy</span>
+          <span class="hotspot-pulse" aria-hidden="true"></span>
+        </button>
+        <section class="hotspot-panel liquid-glass" id="pharmacy-hotspot-panel" aria-labelledby="pharmacy-hotspot-title">
+          <p class="hotspot-eyebrow">Healthcare discovery</p>
+          <h2 id="pharmacy-hotspot-title">Pharmacy</h2>
+          <p>Find medicines and compare prices.</p>
+          <ul>
+            <li>Medicine price comparison</li>
+            <li>Jan Aushadhi price information</li>
+            <li>Nearby pharmacy discovery</li>
+          </ul>
+          <a class="hotspot-link" href="/search/medicines/">Explore Pharmacy <span aria-hidden="true">↗</span></a>
+        </section>
+      </div>
+
+      <div class="hero-hotspot hero-hotspot-diagnostics" data-hotspot="diagnostics" data-x="0.507" data-y="0.553" data-route="/search/diagnostics/">
+        <span class="hotspot-connector" aria-hidden="true"></span>
+        <button class="hotspot-trigger liquid-glass" type="button" aria-label="Open Diagnostics details" aria-expanded="false" aria-controls="diagnostics-hotspot-panel">
+          <span class="hotspot-icon hotspot-icon-diagnostics" aria-hidden="true">
+            <svg class="care-icon care-icon-flask" data-icon="flask" data-motion="liquid" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 14h9"/></svg>
+          </span>
+          <span class="hotspot-label">Diagnostics</span>
+          <span class="hotspot-pulse" aria-hidden="true"></span>
+        </button>
+        <section class="hotspot-panel liquid-glass" id="diagnostics-hotspot-panel" aria-labelledby="diagnostics-hotspot-title">
+          <p class="hotspot-eyebrow">Healthcare discovery</p>
+          <h2 id="diagnostics-hotspot-title">Diagnostic Centres</h2>
+          <p>Find tests and nearby laboratories.</p>
+          <ul>
+            <li>Diagnostic centre discovery</li>
+            <li>Available test information</li>
+            <li>Published test prices</li>
+          </ul>
+          <a class="hotspot-link" href="/search/diagnostics/">Explore Diagnostics <span aria-hidden="true">↗</span></a>
+        </section>
+      </div>
+
+      <div class="hero-hotspot hero-hotspot-hospitals" data-hotspot="hospitals" data-x="0.866" data-y="0.503" data-route="/search/hospitals/">
+        <span class="hotspot-connector" aria-hidden="true"></span>
+        <button class="hotspot-trigger liquid-glass" type="button" aria-label="Open Hospitals details" aria-expanded="false" aria-controls="hospitals-hotspot-panel">
+          <span class="hotspot-icon hotspot-icon-hospitals" aria-hidden="true">
+            <svg class="care-icon care-icon-hospital" data-icon="hospital" data-motion="cross-pulse" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M4 21V5h16v16M2 21h20"/><path d="M12 8v6M9 11h6M10 21v-3h4v3"/></svg>
+          </span>
+          <span class="hotspot-label">Hospitals</span>
+          <span class="hotspot-pulse" aria-hidden="true"></span>
+        </button>
+        <section class="hotspot-panel liquid-glass" id="hospitals-hotspot-panel" aria-labelledby="hospitals-hotspot-title">
+          <p class="hotspot-eyebrow">Healthcare discovery</p>
+          <h2 id="hospitals-hotspot-title">Hospitals &amp; Doctors</h2>
+          <p>Find the right healthcare provider.</p>
+          <ul>
+            <li>Discover hospitals and clinics</li>
+            <li>Find doctors</li>
+            <li>Explore specialities</li>
+          </ul>
+          <a class="hotspot-link" href="/search/hospitals/">Explore Hospitals <span aria-hidden="true">↗</span></a>
+        </section>
+      </div>
     </div>
-  </div>
-  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+
+    <nav class="hero-nav liquid-glass" aria-label="Primary navigation">
+      <a class="hero-brand" href="/" aria-label="CareRoute home">
+        <img src="/logo.png" alt="CareRoute" width="2172" height="724" decoding="async">
+      </a>
+
+      <div class="hero-nav-links" id="hero-nav-links">
+        <a href="/" aria-current="page">Home</a>
+        <a href="/search/medicines/">Pharmacy</a>
+        <a href="/search/diagnostics/">Diagnostics</a>
+        <a href="/search/hospitals/">Hospitals</a>
+        <a href="#features">Features</a>
+        <a class="hero-mobile-auth" href="/signin/">Log In</a>
+        <a class="hero-mobile-auth hero-mobile-auth-primary" href="/signup/">Sign Up <span aria-hidden="true">↗</span></a>
+      </div>
+
+      <div class="hero-nav-actions">
+        <a class="hero-nav-login" href="/signin/">Log In</a>
+        <a class="hero-nav-signup" href="/signup/">Sign Up <span aria-hidden="true">↗</span></a>
+        <button class="hero-menu-toggle" type="button" aria-controls="hero-nav-links" aria-expanded="false">
+          <span class="visually-hidden">Toggle menu</span>
+          <span></span><span></span>
+        </button>
+      </div>
+    </nav>
+
+    <section class="hero-copy" aria-labelledby="hero-title">
+      <p class="hero-kicker"><span class="hero-kicker-dot" aria-hidden="true"></span> Healthcare, closer to you.</p>
+      <h1 id="hero-title">
+        <span class="hero-heading-line">Your healthcare journey,</span>
+        <span class="hero-heading-line">all in one place.</span>
+      </h1>
+      <p class="hero-description">Discover hospitals, doctors, medicines and diagnostic services. Everything you need for your healthcare journey, in one place.</p>
+      <div class="hero-actions">
+        <a class="hero-button hero-button-primary" href="/signup/">Get Started <span aria-hidden="true">↗</span></a>
+        <a class="hero-button hero-button-ghost" href="/explore/">Explore Now <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <nav class="care-indicator liquid-glass" id="features" aria-label="Your care network">
+      <span class="care-indicator-label">Your care network</span>
+      <span class="care-indicator-items">
+        <a href="/search/medicines/"><span class="indicator-icon indicator-pharmacy" aria-hidden="true"><svg class="care-icon care-icon-pharmacy" data-icon="pharmacy" data-motion="sign-pulse" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M4 10v10h16V10M3 4h18v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4Z"/><path d="M12 12.5v5M9.5 15h5"/></svg></span> Pharmacy</a>
+        <a href="/search/diagnostics/"><span class="indicator-icon indicator-lab" aria-hidden="true"><svg class="care-icon care-icon-flask" data-icon="flask" data-motion="liquid" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 14h9"/></svg></span> Diagnostics</a>
+        <a href="/search/hospitals/"><span class="indicator-icon indicator-hospital" aria-hidden="true"><svg class="care-icon care-icon-hospital" data-icon="hospital" data-motion="cross-pulse" data-source="local-inline-svg" data-fallback="inline-svg" viewBox="0 0 24 24" fill="none"><path d="M4 21V5h16v16M2 21h20"/><path d="M12 8v6M9 11h6M10 21v-3h4v3"/></svg></span> Hospitals</a>
+      </span>
+    </nav>
+
+    <span class="hero-location" aria-hidden="true"><span></span> Hyderabad, India</span>
+  </main>
+
   <div aria-live="polite" class="visually-hidden" id="live"></div>
 </body>
 </html>

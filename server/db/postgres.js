@@ -311,6 +311,32 @@ export function createPostgresStore(url) {
           points: points.map((p) => ({ kind: p.k, type: p.t, lat: p.lat, lng: p.lng })),
         };
       },
+      async mapLocations() {
+        const rows = await sql`
+          select id, 'c' as kind, facility_type as type, name, area, address, phone, email, website,
+            rating, rating_count, source_platform, source_url,
+            extensions.st_y(location::extensions.geometry)::float8 as lat,
+            extensions.st_x(location::extensions.geometry)::float8 as lng
+          from public.hospitals where active
+          union all
+          select id, 'p', null, name, area, address, phone, email, website,
+            rating, rating_count, source_platform, source_url,
+            extensions.st_y(location::extensions.geometry)::float8,
+            extensions.st_x(location::extensions.geometry)::float8
+          from public.pharmacies where active
+          union all
+          select id, 'd', null, name, area, address, phone, email, website,
+            rating, rating_count, source_platform, source_url,
+            extensions.st_y(location::extensions.geometry)::float8,
+            extensions.st_x(location::extensions.geometry)::float8
+          from public.diagnostic_centres where active
+          order by name`;
+        return rows.filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng)).map((x) => ({
+          id: x.id, kind: x.kind, type: x.type, name: x.name, area: x.area, address: x.address,
+          phone: x.phone, email: x.email, website: x.website, rating: num(x.rating), ratingCount: x.rating_count,
+          sourcePlatform: x.source_platform, sourceUrl: x.source_url, lat: x.lat, lng: x.lng,
+        }));
+      },
       async testPrices(p) {
         const rows = await sql`select *, count(*) over()::int as total_count from public.test_prices where active
           and (${p.q ?? null}::text is null or name ilike ${like(p.q ?? '')})
