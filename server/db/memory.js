@@ -52,13 +52,24 @@ export function createMemoryStore() {
     async close() {},
 
     users: {
-      async create({ name, email, phone, passwordHash, role }) {
-        for (const u of users.values()) if (u.email === email) return null;
-        const user = { id: randomUUID(), name, email, phone, passwordHash, role, createdAt: now(), disabledAt: null };
+      async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
+        for (const u of users.values()) if (u.email === email || (googleSub && u.googleSub === googleSub)) return null;
+        const user = { id: randomUUID(), name, email, phone, passwordHash, googleSub, role, createdAt: now(), disabledAt: null };
         users.set(user.id, user);
         return clone(user);
       },
       async byEmail(email) { for (const u of users.values()) if (u.email === email) return clone(u); return null; },
+      async byGoogleSub(sub) { for (const u of users.values()) if (u.googleSub === sub) return clone(u); return null; },
+      async linkGoogle(id, sub) {
+        const u = users.get(id);
+        if (!u || u.googleSub) return null;
+        for (const o of users.values()) if (o.googleSub === sub) return null;
+        // As in Postgres: the unproven password and every session go when Google proves the email.
+        u.googleSub = sub;
+        u.passwordHash = null;
+        for (const s of sessions.values()) if (s.userId === id && !s.revokedAt) Object.assign(s, { revokedAt: now(), revokedReason: 'google_link' });
+        return clone(u);
+      },
       async byId(id) { return users.has(id) ? clone(users.get(id)) : null; },
       async list() { return [...users.values()].map(clone).sort((a, b) => a.createdAt - b.createdAt); },
       async setPassword(id, passwordHash) { const u = users.get(id); if (u) u.passwordHash = passwordHash; },

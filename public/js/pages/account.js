@@ -5,23 +5,28 @@ import { pageHead, field, showErrors, busy, confirmDialog } from '../ui.js';
 
 const { main, user } = await shell({ nav: 'account', title: 'Account and privacy' });
 
+// A Google account without a password proves itself with a recent Google sign-in instead (D-63).
+const viaGoogleOnly = user.google && !user.hasPassword;
+
 function passwordCard() {
   const current = h('input', { class: 'input', type: 'password', autocomplete: 'current-password' });
   const next = h('input', { class: 'input', type: 'password', autocomplete: 'new-password', minlength: 8 });
   const message = h('p', { class: 'form-error', role: 'alert', hidden: true });
-  const save = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Change password');
+  const save = h('button', { class: 'btn btn-primary', type: 'submit' }, viaGoogleOnly ? 'Set password' : 'Change password');
   const form = h('form', { class: 'card form-section', novalidate: true },
-    h('div', { class: 'stack-4' }, h('h2', { class: 't-title-2' }, 'Password'), h('p', { class: 't-subhead muted' }, 'Changing it signs you out on every other device.')),
+    h('div', { class: 'stack-4' }, h('h2', { class: 't-title-2' }, 'Password'), h('p', { class: 't-subhead muted' }, viaGoogleOnly
+      ? 'You sign in with Google. Set a password to also sign in with your email. For your safety this works within 15 minutes of signing in with Google.'
+      : 'Changing it signs you out on every other device.')),
     message,
     h('div', { class: 'form-grid' },
-      field({ id: 'currentPassword', label: 'Current password', input: current }),
+      viaGoogleOnly ? null : field({ id: 'currentPassword', label: 'Current password', input: current }),
       field({ id: 'newPassword', label: 'New password', input: next, hint: 'At least 8 characters.' })),
     h('div', { class: 'row' }, save));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const restore = busy(save);
     try {
-      await api('/auth/password', { body: { currentPassword: current.value, newPassword: next.value } });
+      await api('/auth/password', { body: viaGoogleOnly ? { newPassword: next.value } : { currentPassword: current.value, newPassword: next.value } });
       form.reset();
       message.hidden = true;
       toast('Password changed. Other devices are signed out.');
@@ -59,10 +64,11 @@ function deleteCard() {
   const form = h('form', { class: 'card form-section danger-zone', novalidate: true },
     h('div', { class: 'stack-4' },
       h('h2', { class: 't-title-2' }, 'Delete account'),
-      h('p', { class: 't-subhead muted' }, 'This permanently deletes your account and everything in it: medical ID, photo, contacts, reminders, appointments, documents and reviews. It cannot be undone.')),
+      h('p', { class: 't-subhead muted' }, 'This permanently deletes your account and everything in it: medical ID, photo, contacts, reminders, appointments, documents and reviews. It cannot be undone.'),
+      viaGoogleOnly ? h('p', { class: 't-subhead muted' }, 'You sign in with Google, so this works within 15 minutes of signing in with Google.') : null),
     message,
     h('div', { class: 'form-grid' },
-      field({ id: 'password', label: 'Your password', input: password }),
+      viaGoogleOnly ? null : field({ id: 'password', label: 'Your password', input: password }),
       field({ id: 'confirm', label: 'Type DELETE to confirm', input: confirmText })),
     h('div', { class: 'row' }, go));
   form.addEventListener('submit', async (e) => {
@@ -70,7 +76,7 @@ function deleteCard() {
     if (!(await confirmDialog({ title: 'Delete your account for good?', text: 'All your data will be removed now. You can create a new account later, but nothing will come back.', confirm: 'Delete everything' }))) return;
     const restore = busy(go, 'Deleting');
     try {
-      await api('/patients/me/delete-account', { body: { password: password.value, confirm: confirmText.value.trim() } });
+      await api('/patients/me/delete-account', { body: viaGoogleOnly ? { confirm: confirmText.value.trim() } : { password: password.value, confirm: confirmText.value.trim() } });
       location.replace('/signin/');
     } catch (err) {
       restore();

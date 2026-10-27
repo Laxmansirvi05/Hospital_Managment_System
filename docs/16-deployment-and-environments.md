@@ -19,7 +19,7 @@ The authoritative list and browser exposure rules are in `09-security.md` sectio
 | Scope | Variables |
 | --- | --- |
 | Browser (public by design, returned only by `/api/v1/config`) | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_MAPTILER_KEY` |
-| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
+| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (D-63, both or neither; redirect URI `<site>/api/v1/auth/google/callback`), `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
 
 Rules:
 

@@ -22,9 +22,11 @@ Roles: `patient`, `driver`, `admin` (D-29).
 
 | Method and path | Auth | Request body | Success |
 | --- | --- | --- | --- |
-| POST `/auth/register` | none | `name`, `email`, `phone`, `password`, `role` | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. |
+| POST `/auth/register` | none | `name`, `email`, `password`, `role`, optional `phone` (D-63) | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. |
 | POST `/auth/login` | none | `email`, `password` | 200 `{ token, ... }` |
-| GET `/auth/me` | any role | none | 200 `{ id, name, email, phone, role, createdAt }`, role at the top level as the collection reads it |
+| GET `/auth/me` | any role | none | 200 `{ id, name, email, phone, role, createdAt, hasPassword, google }`, role at the top level as the collection reads it. `phone` may be null (D-63) |
+| GET `/auth/google/start?next=` | none | Browser navigation | 302 to Google with PKCE, `state` and `nonce`; sets the `cr_google` cookie (10 minutes, path `/api/v1/auth/google`). `next` must be a same-site path. 302 to `/signin/?google=unavailable` when not configured. New (D-63). |
+| GET `/auth/google/callback` | none | Google's redirect | On success, session cookies and 302 to `next`, `/dashboard/`, or `/medical-id/?welcome=1` for a new account. On failure, 302 to `/signin/?google=` one of `cancelled`, `expired`, `failed`, `not_patient`, `linked_elsewhere`, `disabled`, `unavailable`, `try_again`. New (D-63). |
 | POST `/auth/refresh` | refresh cookie | none | 200 `{ token, user }` and new cookies. Rotates the refresh token. 401 if unknown, expired, revoked or reused. New (D-22). |
 | POST `/auth/logout` | any role | none | 204, session revoked, cookies cleared. New (D-22). |
 

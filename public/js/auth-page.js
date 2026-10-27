@@ -16,8 +16,10 @@ function safeNext() {
   const next = new URLSearchParams(location.search).get('next') || '/dashboard/';
   try {
     const url = new URL(next, location.origin);
-    if (url.origin !== location.origin || url.pathname === '/') return '/dashboard/';
-    return `${url.pathname}${url.search}${url.hash}`;
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    // Checked after parsing: "/.//evil.example" becomes "//evil.example", another host to a browser.
+    if (url.origin !== location.origin || url.pathname === '/' || /^\/[\/\\]/.test(path)) return '/dashboard/';
+    return path;
   } catch {
     return '/dashboard/';
   }
@@ -39,12 +41,14 @@ function passwordField({ id, label, autocomplete, hint }) {
   const input = h('input', { class: 'input auth-password-input', type: 'password', autocomplete, required: true });
   const wrap = field({ id, label, input, hint });
   wrap.classList.add('auth-password-field');
-  const toggle = h('button', { class: 'auth-password-toggle', type: 'button', 'aria-label': `Show ${label.toLowerCase()}` }, icon('eye', 18));
+  const toggle = h('button', { class: 'auth-password-toggle', type: 'button', 'aria-label': `Show ${label.toLowerCase()}`, 'aria-pressed': 'false', title: 'Show or hide password' }, icon('eye', 18));
   toggle.addEventListener('click', () => {
     const visible = input.type === 'text';
     input.type = visible ? 'password' : 'text';
     toggle.setAttribute('aria-label', `${visible ? 'Show' : 'Hide'} ${label.toLowerCase()}`);
-    toggle.replaceChildren(icon('eye', 18));
+    toggle.setAttribute('aria-pressed', String(!visible));
+    // A crossed eye while the password is readable, so the button shows what it will undo.
+    toggle.replaceChildren(icon(visible ? 'eye' : 'eye-off', 18));
   });
   wrap.append(toggle);
   return { input, wrap };
@@ -208,7 +212,22 @@ function primaryButton(label) {
   return h('button', { class: 'auth-liquid-button', type: 'submit' }, h('span', { class: 'auth-liquid-button-content' }, label));
 }
 
+// Whether this deployment has Google sign-in (D-63); asked once per page.
+const googleEnabled = api('/config').then((c) => c.googleSignIn === true, () => false);
+
+const GOOGLE_REASONS = {
+  cancelled: 'Google sign-in was cancelled.',
+  expired: 'That Google sign-in took too long or was opened in another tab. Try again.',
+  failed: 'Google could not confirm your account just now. Try again.',
+  not_patient: 'This email belongs to a staff account. Sign in with its password.',
+  linked_elsewhere: 'This email is already linked to a different Google account.',
+  disabled: 'This account is disabled.',
+  unavailable: 'Google sign-in is not set up for this site yet.',
+  try_again: 'Something went wrong. Try again.',
+};
+
 function googleAuthBlock() {
+  const status = h('p', { class: 'auth-provider-status', id: 'google-auth-status' }, 'Google sign-in is unavailable until an OAuth provider is configured for this deployment.');
   const button = h('button', {
     class: 'auth-google-button',
     type: 'button',
@@ -216,10 +235,22 @@ function googleAuthBlock() {
     'aria-describedby': 'google-auth-status',
     title: 'Google sign-in is not configured',
   }, h('span', { class: 'google-mark', 'aria-hidden': 'true' }, 'G'), 'Continue with Google');
+  googleEnabled.then((on) => {
+    if (!on) return;
+    button.disabled = false;
+    button.removeAttribute('title');
+    button.removeAttribute('aria-describedby');
+    status.hidden = true;
+  });
+  // A full-page visit: the server sends the browser on to Google and back again.
+  button.addEventListener('click', () => {
+    const next = new URLSearchParams(location.search).get('next');
+    location.assign(`/api/v1/auth/google/start${next ? `?next=${encodeURIComponent(safeNext())}` : ''}`);
+  });
   return h('div', { class: 'auth-google-block' },
     h('div', { class: 'auth-divider', 'aria-hidden': 'true' }, h('span', {}, 'OR')),
     button,
-    h('p', { class: 'auth-provider-status', id: 'google-auth-status' }, 'Google sign-in is unavailable until an OAuth provider is configured for this deployment.'));
+    status);
 }
 
 function setMessage(messageEl, message, kind = 'error') {
@@ -261,6 +292,8 @@ function signInForm() {
     submit,
     googleAuthBlock());
 
+  const reason = GOOGLE_REASONS[new URLSearchParams(location.search).get('google')];
+  if (reason) setMessage(message, reason);
   forgot.addEventListener('click', () => setMessage(message, 'Password reset is not configured for this deployment. After signing in, you can change your password from Account and privacy.', 'info'));
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -282,7 +315,6 @@ function signInForm() {
 function signUpForm() {
   const name = h('input', { class: 'input', autocomplete: 'name', required: true, maxlength: 100 });
   const email = h('input', { class: 'input', type: 'email', autocomplete: 'email', required: true, inputmode: 'email' });
-  const phone = h('input', { class: 'input', type: 'tel', autocomplete: 'tel', required: true, inputmode: 'tel', maxlength: 16 });
   const password = passwordField({ id: 'password', label: 'Password', autocomplete: 'new-password', hint: 'At least 8 characters.' });
   const terms = termsField();
   const message = formMessage();
@@ -291,7 +323,6 @@ function signUpForm() {
     message,
     field({ id: 'name', label: 'Full name', input: name }),
     field({ id: 'email', label: 'Email address', input: email }),
-    field({ id: 'phone', label: 'Mobile number', input: phone, hint: '10-digit Indian mobile number.' }),
     password.wrap,
     terms.wrap,
     submit,
@@ -303,13 +334,12 @@ function signUpForm() {
     let invalid = false;
     invalid = localError(form, 'name', name.value.trim() ? '' : 'Enter your full name.') || invalid;
     invalid = validateEmail(form, 'email') || invalid;
-    invalid = localError(form, 'phone', /^(\+91)?[6-9]\d{9}$/.test(phone.value.replace(/[\s-]/g, '')) ? '' : 'Enter a 10-digit mobile number starting with 6, 7, 8 or 9.') || invalid;
     invalid = localError(form, 'password', password.input.value.length >= 8 ? '' : 'Use at least 8 characters.') || invalid;
     invalid = localError(form, 'terms', terms.checkbox.checked ? '' : 'Agree to the Terms and Privacy Policy to continue.') || invalid;
     if (invalid) return;
     const restore = busy(submit, 'Creating account');
     try {
-      await api('/auth/register', { body: { name: name.value.trim(), email: email.value.trim(), phone: phone.value.trim(), password: password.input.value } });
+      await api('/auth/register', { body: { name: name.value.trim(), email: email.value.trim(), password: password.input.value } });
       location.replace('/medical-id/?welcome=1');
     } catch (err) {
       restore();

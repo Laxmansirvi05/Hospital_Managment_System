@@ -18,7 +18,8 @@ const password = z.string().min(8, 'Use at least 8 characters').max(128, 'Use at
 const registerSchema = z.object({
   name: z.string().trim().min(1, 'Enter your name').max(100),
   email,
-  phone: phoneSchema,
+  // The sign-up form asks for name, email and password; a phone can be added later (owner, 2026-10-27).
+  phone: phoneSchema.optional(),
   password,
   role: z.enum(ROLES).default('patient'),
 }).strict();
@@ -37,7 +38,7 @@ export const routes = [
         throw forbidden('role_not_allowed', 'Only patients can sign up. Driver and admin accounts are created by the CareRoute team.');
       }
       const user = await getStore().users.create({
-        name: body.name, email: body.email, phone: body.phone, role: body.role, passwordHash: await hashPassword(body.password),
+        name: body.name, email: body.email, phone: body.phone ?? null, role: body.role, passwordHash: await hashPassword(body.password),
       });
       if (!user) throw conflict('email_taken', 'An account with this email already exists. Sign in instead.');
       const { token, cookies } = await startSession(req, user);
@@ -51,7 +52,8 @@ export const routes = [
       const body = parse(loginSchema, await readJson(req));
       await limit('login-account', body.email, 10, 900);
       const user = await getStore().users.byEmail(body.email);
-      const ok = user ? await verifyPassword(body.password, user.passwordHash) : await dummyVerify(body.password);
+      // A Google-only account has no password: it gets the same answer, after the same work, as an unknown email.
+      const ok = user?.passwordHash ? await verifyPassword(body.password, user.passwordHash) : await dummyVerify(body.password);
       if (!user || !ok) throw unauthorized('invalid_credentials', 'The email or password is not right.');
       if (user.disabledAt) throw forbidden('account_disabled', 'This account is disabled.');
       const { token, cookies } = await startSession(req, user);
@@ -61,7 +63,7 @@ export const routes = [
   {
     method: 'GET', path: '/auth/me', roles: ROLES,
     async handler({ user }) {
-      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt } };
+      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt, hasPassword: Boolean(user.passwordHash), google: Boolean(user.googleSub) } };
     },
   },
   {

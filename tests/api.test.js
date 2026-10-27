@@ -3,6 +3,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startApp, cookieHeader } from './helpers.js';
 import { TABLE } from '../server/router.js';
+import { createHash } from 'node:crypto';
+import { setGoogleForTests, checkClaims } from '../server/adapters/google.js';
+import { safeNext } from '../server/routes/google.js';
 
 let app;
 beforeAll(async () => { app = await startApp(); });
@@ -451,5 +454,160 @@ describe('reviews (D-43)', () => {
     }
     const list = await app.api('/reviews?kind=doctor&id=1c8d2e3f-0000-4000-8000-000000000001', { token: author.token });
     expect(list.body.reviews.some((x) => x.id === r.body.id)).toBe(false);
+  });
+});
+
+describe('sign-up without a phone, and sign in with Google (D-63, fake Google token exchange)', () => {
+  const cookieOf = (r, name) => r.headers.getSetCookie().find((c) => c.startsWith(`${name}=`));
+
+  it('registers without a phone number and returns phone null', async () => {
+    const r = await app.api('/auth/register', { body: { name: 'No Phone', email: 'nophone@test.example', password: 'long enough' } });
+    expect(r.status).toBe(201);
+    const me = await app.api('/auth/me', { token: r.body.token });
+    expect(me.body).toMatchObject({ phone: null, hasPassword: true, google: false });
+  });
+
+  it('sends people back to sign in when Google is not configured, and says so in /config', async () => {
+    const r = await app.api('/auth/google/start', { redirect: 'manual' });
+    expect(r.status).toBe(302);
+    expect(r.headers.get('location')).toBe('/signin/?google=unavailable');
+    expect((await app.api('/config')).body.googleSignIn).toBeUndefined();
+  });
+
+  describe('with Google configured', () => {
+    let g;
+    let seen;
+    beforeAll(async () => {
+      g = await startApp({ google: true });
+    });
+    afterAll(async () => { await g.close(); setGoogleForTests(null); app.activate(); });
+
+    async function begin(next) {
+      g.activate();
+      const r = await g.api(`/auth/google/start${next ? `?next=${encodeURIComponent(next)}` : ''}`, { redirect: 'manual', headers: { 'x-forwarded-for': '10.9.0.1' } });
+      expect(r.status).toBe(302);
+      const to = new URL(r.headers.get('location'));
+      return { to, flow: cookieOf(r, 'cr_google') };
+    }
+    async function finish(flow, state, identity) {
+      setGoogleForTests({ async identity(args) { seen = args; return identity; } });
+      return g.api(`/auth/google/callback?code=abc&state=${encodeURIComponent(state)}`, { redirect: 'manual', cookie: flow.split(';')[0] });
+    }
+
+    it('starts the flow with PKCE, a state and a short-lived httpOnly cookie', async () => {
+      expect((await g.api('/config')).body.googleSignIn).toBe(true);
+      const { to, flow } = await begin();
+      expect(to.origin + to.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
+      expect(to.searchParams.get('client_id')).toBe('test-client.apps.googleusercontent.com');
+      expect(to.searchParams.get('redirect_uri')).toBe(`${g.base}/api/v1/auth/google/callback`);
+      expect(to.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(to.searchParams.get('scope')).toBe('openid email profile');
+      expect(to.searchParams.get('state')).toMatch(/^[\w-]{40,}$/);
+      expect(flow).toMatch(/HttpOnly/);
+      expect(flow).toMatch(/SameSite=Lax/);
+      expect(flow).toMatch(/Path=\/api\/v1\/auth\/google/);
+      expect(flow).toMatch(/Max-Age=600/);
+    });
+
+    it('refuses a return whose state does not match, without signing anyone in', async () => {
+      const { flow } = await begin();
+      const r = await finish(flow, 'not-the-state', { sub: '1', email: 'x@test.example', name: 'X' });
+      expect(r.headers.get('location')).toBe('/signin/?google=expired');
+      expect(cookieOf(r, 'cr_access')).toBeUndefined();
+      const noCookie = await g.api('/auth/google/callback?code=abc&state=abc', { redirect: 'manual' });
+      expect(noCookie.headers.get('location')).toBe('/signin/?google=expired');
+    });
+
+    it('creates a patient for a new Google account and signs them in', async () => {
+      const { to, flow } = await begin('/reminders/');
+      const r = await finish(flow, to.searchParams.get('state'), { sub: '1001', email: 'new.person@gmail.com', name: 'New Person' });
+      expect(r.status).toBe(302);
+      expect(r.headers.get('location')).toBe('/medical-id/?welcome=1');
+      // The fake saw the verifier whose hash Google was given, and the nonce Google was given.
+      expect(createHash('sha256').update(seen.verifier).digest('base64url')).toBe(to.searchParams.get('code_challenge'));
+      expect(seen.nonce).toBe(to.searchParams.get('nonce'));
+      const access = cookieOf(r, 'cr_access');
+      expect(access).toMatch(/HttpOnly/);
+      expect(cookieOf(r, 'cr_google')).toMatch(/Max-Age=0/);
+      const me = await g.api('/auth/me', { cookie: access.split(';')[0] });
+      expect(me.body).toMatchObject({ email: 'new.person@gmail.com', name: 'New Person', role: 'patient', phone: null, hasPassword: false, google: true });
+      // No password: the password sign-in gives the same answer as for an unknown email.
+      const pw = await g.api('/auth/login', { body: { email: 'new.person@gmail.com', password: 'anything at all' } });
+      const unknown = await g.api('/auth/login', { body: { email: 'nobody.here@test.example', password: 'anything at all' } });
+      expect([pw.status, pw.body.error]).toEqual([401, unknown.body.error]);
+    });
+
+    it('links an existing patient by verified email, ending the unproven password and its sessions', async () => {
+      // Someone may have registered this address without owning it; Google has now proved who does.
+      const reg = await g.api('/auth/register', { body: { name: 'Linked', email: 'linked@test.example', password: 'long enough' } });
+      expect(reg.status).toBe(201);
+      const earlier = reg.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+      const { to, flow } = await begin('/reminders/');
+      const r = await finish(flow, to.searchParams.get('state'), { sub: '2002', email: 'linked@test.example', name: 'Linked' });
+      expect(r.headers.get('location')).toBe('/reminders/');
+      const me = await g.api('/auth/me', { cookie: cookieOf(r, 'cr_access').split(';')[0] });
+      expect(me.body).toMatchObject({ id: reg.body.user.id, hasPassword: false, google: true });
+      expect((await g.api('/auth/login', { body: { email: 'linked@test.example', password: 'long enough' } })).status).toBe(401);
+      expect((await g.api('/auth/refresh', { method: 'POST', cookie: earlier, headers: { 'x-careroute-csrf': '1' } })).status).toBe(401);
+      // A second Google account with the same email cannot take the account over.
+      const again = await begin();
+      const other = await finish(again.flow, again.to.searchParams.get('state'), { sub: '3003', email: 'linked@test.example', name: 'Someone' });
+      expect(other.headers.get('location')).toBe('/signin/?google=linked_elsewhere');
+    });
+
+    it('does not link Google to a disabled patient', async () => {
+      g.activate();
+      const reg = await g.api('/auth/register', { body: { name: 'Off', email: 'off@test.example', password: 'long enough' } });
+      await g.store.users.setDisabled(reg.body.user.id, true);
+      const { to, flow } = await begin();
+      const r = await finish(flow, to.searchParams.get('state'), { sub: '6006', email: 'off@test.example', name: 'Off' });
+      expect(r.headers.get('location')).toBe('/signin/?google=disabled');
+      expect((await g.store.users.byId(reg.body.user.id)).googleSub ?? null).toBeNull();
+    });
+
+    it('does not sign in a driver or admin with Google', async () => {
+      g.activate();
+      await g.api('/auth/register', { body: { name: 'Driver', email: 'driver.g@test.example', password: 'long enough', role: 'driver' } });
+      const { to, flow } = await begin();
+      const r = await finish(flow, to.searchParams.get('state'), { sub: '4004', email: 'driver.g@test.example', name: 'Driver' });
+      expect(r.headers.get('location')).toBe('/signin/?google=not_patient');
+      expect(cookieOf(r, 'cr_access')).toBeUndefined();
+    });
+
+    it('lets a Google-only patient set a password and delete the account just after signing in', async () => {
+      const { to, flow } = await begin();
+      const r = await finish(flow, to.searchParams.get('state'), { sub: '5005', email: 'gonly@gmail.com', name: 'G Only' });
+      const cookie = r.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+      const csrf = { 'x-careroute-csrf': '1' };
+      expect((await g.api('/auth/password', { body: { newPassword: 'a new password' }, cookie, headers: csrf })).status).toBe(204);
+      expect((await g.api('/auth/login', { body: { email: 'gonly@gmail.com', password: 'a new password' } })).status).toBe(200);
+      // Now it has a password, so deleting needs it.
+      expect((await g.api('/patients/me/delete-account', { body: { confirm: 'DELETE' }, cookie, headers: csrf })).status).toBe(401);
+      expect((await g.api('/patients/me/delete-account', { body: { password: 'a new password', confirm: 'DELETE' }, cookie, headers: csrf })).status).toBe(204);
+    });
+
+    it('sends a failed token exchange back to sign in with a reason code only', async () => {
+      const { to, flow } = await begin();
+      setGoogleForTests({ async identity() { throw new Error('email not verified'); } });
+      const r = await g.api(`/auth/google/callback?code=abc&state=${to.searchParams.get('state')}`, { redirect: 'manual', cookie: flow.split(';')[0] });
+      expect(r.headers.get('location')).toBe('/signin/?google=failed');
+      const cancelled = await g.api('/auth/google/callback?error=access_denied', { redirect: 'manual' });
+      expect(cancelled.headers.get('location')).toBe('/signin/?google=cancelled');
+    });
+  });
+
+  it('checks the ID token claims Google returns', () => {
+    const good = { iss: 'https://accounts.google.com', aud: 'cid', exp: Date.now() / 1000 + 60, nonce: 'n', sub: '123', email: 'A@Gmail.com', email_verified: true, name: 'A' };
+    expect(checkClaims(good, { clientId: 'cid', nonce: 'n' })).toEqual({ sub: '123', email: 'a@gmail.com', name: 'A' });
+    expect(() => checkClaims({ ...good, aud: 'other' }, { clientId: 'cid', nonce: 'n' })).toThrow('wrong audience');
+    expect(() => checkClaims({ ...good, iss: 'https://evil.example' }, { clientId: 'cid', nonce: 'n' })).toThrow('wrong issuer');
+    expect(() => checkClaims({ ...good, email_verified: false }, { clientId: 'cid', nonce: 'n' })).toThrow('email not verified');
+    expect(() => checkClaims({ ...good, nonce: 'x' }, { clientId: 'cid', nonce: 'n' })).toThrow('nonce mismatch');
+    expect(() => checkClaims({ ...good, exp: 1 }, { clientId: 'cid', nonce: 'n' })).toThrow('expired');
+  });
+
+  it('only returns to same-site paths after Google', () => {
+    expect(safeNext('/reminders/?x=1')).toBe('/reminders/?x=1');
+    for (const bad of ['//evil.example/', 'https://evil.example/', '/\\evil.example', '/.//evil.example', '/a/..//evil.example', '/a/..\\/evil.example', 'reminders', '/', null]) expect(safeNext(bad)).toBeNull();
   });
 });

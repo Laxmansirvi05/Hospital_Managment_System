@@ -6,6 +6,7 @@ import { HttpError, send, sendError, unauthorized, forbidden } from './http.js';
 import { log } from './log.js';
 import { routes as health } from './routes/health.js';
 import { routes as auth } from './routes/auth.js';
+import { routes as google } from './routes/google.js';
 import { routes as patients } from './routes/patients.js';
 import { routes as files } from './routes/files.js';
 import { routes as discovery } from './routes/discovery.js';
@@ -40,7 +41,7 @@ export function buildTable(list) {
   return table.sort((a, b) => b.statics - a.statics || b.parts.length - a.parts.length);
 }
 
-const TABLE = buildTable([...health, ...auth, ...account, ...patients, ...files, ...discovery, ...reviews]);
+const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews]);
 
 function match(table, method, pathname) {
   const parts = pathname.split('/').filter(Boolean);

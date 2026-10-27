@@ -6,7 +6,6 @@ async function createAccount(page) {
   await page.goto(`${baseURL}/signup/`);
   await page.locator('input[autocomplete="name"]').fill('Explore Browser Test');
   await page.locator('input[autocomplete="email"]').fill(`explore-${Date.now()}@example.test`);
-  await page.locator('input[autocomplete="tel"]').fill('9876500013');
   await page.locator('input[autocomplete="new-password"]').fill('long enough');
   await page.getByRole('checkbox', { name: /agree to the terms/i }).check();
   await page.getByRole('button', { name: 'Create account' }).click();

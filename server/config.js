@@ -21,6 +21,9 @@ const schema = z.object({
   PUBLIC_SUPABASE_URL: optionalReal(z.string().url()),
   PUBLIC_SUPABASE_ANON_KEY: optionalReal(z.string().min(20)),
   PUBLIC_MAPTILER_KEY: optionalReal(z.string().min(8)),
+  // Sign in with Google (D-63): an OAuth web client from Google Cloud. Both or neither.
+  GOOGLE_CLIENT_ID: optionalReal(z.string().regex(/^[\w-]+\.apps\.googleusercontent\.com$/, 'must be a Google OAuth web client id')),
+  GOOGLE_CLIENT_SECRET: optionalReal(real(z.string().min(10))),
 });
 
 /**
@@ -34,7 +37,8 @@ const schema = z.object({
  * @property {boolean} allowPrivilegedSignup
  * @property {boolean} trustProxy
  * @property {{ url: string, serviceKey: string } | null} storage
- * @property {Record<string, string>} publicValues
+ * @property {{ clientId: string, clientSecret: string } | null} google
+ * @property {Record<string, string|boolean>} publicValues
  * @property {string[]} warnings
  */
 
@@ -85,11 +89,19 @@ export function loadConfig(env = process.env) {
   const storage = v.SUPABASE_URL && v.SUPABASE_SERVICE_ROLE_KEY ? { url: v.SUPABASE_URL, serviceKey: v.SUPABASE_SERVICE_ROLE_KEY } : null;
   if (!storage) warnings.push('Supabase Storage keys are not set. Uploaded files are kept in memory only.');
 
+  if (Boolean(v.GOOGLE_CLIENT_ID) !== Boolean(v.GOOGLE_CLIENT_SECRET)) {
+    throw new Error('Set both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, or neither');
+  }
+  const google = v.GOOGLE_CLIENT_ID ? { clientId: v.GOOGLE_CLIENT_ID, clientSecret: v.GOOGLE_CLIENT_SECRET } : null;
+  if (!google) warnings.push('Google sign-in is off: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set.');
+
   // Allow-list for GET /api/v1/config (docs/09-security.md section 3.1). Nothing else is ever returned.
   const publicValues = {};
   if (v.PUBLIC_SUPABASE_URL) publicValues.supabaseUrl = v.PUBLIC_SUPABASE_URL;
   if (v.PUBLIC_SUPABASE_ANON_KEY) publicValues.supabaseAnonKey = v.PUBLIC_SUPABASE_ANON_KEY;
   if (v.PUBLIC_MAPTILER_KEY) publicValues.maptilerKey = v.PUBLIC_MAPTILER_KEY;
+  // Only whether the button works; the client id stays on the server, which builds the redirect.
+  if (google) publicValues.googleSignIn = true;
 
   return Object.freeze({
     env: v.NODE_ENV,
@@ -102,6 +114,7 @@ export function loadConfig(env = process.env) {
     // Only behind a proxy that overwrites X-Forwarded-For (Vercel) is that header a real client address.
     trustProxy: v.TRUST_PROXY === 'true' || v.VERCEL === '1',
     storage,
+    google,
     publicValues: Object.freeze(publicValues),
     warnings,
   });

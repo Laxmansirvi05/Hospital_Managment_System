@@ -95,6 +95,7 @@ const ICONS = {
   steering: [['circle', { cx: 12, cy: 12, r: 9 }], ['circle', { cx: 12, cy: 12, r: 2 }], ['path', { d: 'M3.5 10.5 10 12M20.5 10.5 14 12M12 14v7' }]],
   filter: [['path', { d: 'M3 5h18M6 12h12M10 19h4' }]],
   eye: [['path', { d: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z' }], ['circle', { cx: 12, cy: 12, r: 3 }]],
+  'eye-off': [['path', { d: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z' }], ['circle', { cx: 12, cy: 12, r: 3 }], ['path', { d: 'M4 4l16 16' }]],
   calendar: [['rect', { x: 3, y: 5, width: 18, height: 16, rx: 2 }], ['path', { d: 'M3 10h18' }], ['path', { d: 'M8 3v4M16 3v4' }]],
   logout: [['path', { d: 'M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4' }], ['path', { d: 'M10 17l5-5-5-5' }], ['path', { d: 'M15 12H4' }]],
   camera: [['path', { d: 'M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z' }], ['circle', { cx: 12, cy: 13.5, r: 3.5 }]],
@@ -134,7 +135,7 @@ export const ICON_REGISTRY = Object.freeze({
   locate: { motion: 'target-pulse', feature: 'current-location' }, camera: { motion: 'camera-shutter', feature: 'photo' },
   star: { motion: 'star-pop', feature: 'rating' }, send: { motion: 'send-rise', feature: 'send' },
   heart: { motion: 'heart-beat', feature: 'saved-care' }, steering: { motion: 'steer', feature: 'navigation' },
-  eye: { motion: 'blink', feature: 'visibility' }, logout: { motion: 'arrow-nudge', feature: 'sign-out' },
+  eye: { motion: 'blink', feature: 'visibility' }, 'eye-off': { motion: 'blink', feature: 'visibility' }, logout: { motion: 'arrow-nudge', feature: 'sign-out' },
   minus: { motion: 'minus-pop', feature: 'remove' }, 'volume-off': { motion: 'close-pop', feature: 'video-sound' },
   'volume-on': { motion: 'bell-ring', feature: 'video-sound' },
 });

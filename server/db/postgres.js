@@ -6,8 +6,8 @@ import { dosesFor } from './geo.js';
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
-const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
-const sessionRow = (r) => r && { id: r.id, userId: r.user_id, refreshHash: r.refresh_hash, previousRefreshHash: r.previous_refresh_hash, expiresAt: r.expires_at, revokedAt: r.revoked_at };
+const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, googleSub: r.google_sub, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
+const sessionRow = (r) => r && { id: r.id, userId: r.user_id, createdAt: r.created_at, refreshHash: r.refresh_hash, previousRefreshHash: r.previous_refresh_hash, expiresAt: r.expires_at, revokedAt: r.revoked_at };
 const profileRow = (r) => r && {
   userId: r.user_id, fullName: r.full_name, dateOfBirth: day(r.date_of_birth), gender: r.gender, preferredLanguage: r.preferred_language,
   address: r.address, bloodGroup: r.blood_group, heightCm: r.height_cm, weightKg: num(r.weight_kg), allergies: r.allergies, conditions: r.conditions,
@@ -116,12 +116,25 @@ export function createPostgresStore(url) {
     async close() { await sql.end({ timeout: 5 }); },
 
     users: {
-      async create({ name, email, phone, passwordHash, role }) {
-        const rows = await sql`insert into public.users (name, email, phone, password_hash, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${role})
+      async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
+        const rows = await sql`insert into public.users (name, email, phone, password_hash, google_sub, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${googleSub}, ${role})
           on conflict (email) do nothing returning *`;
         return userRow(rows[0]) || null;
       },
       async byEmail(email) { return userRow((await sql`select * from public.users where email = ${email}`)[0]) || null; },
+      async byGoogleSub(sub) { return userRow((await sql`select * from public.users where google_sub = ${sub}`)[0]) || null; },
+      /**
+       * Links Google to an existing account once; never moves a link from another Google account.
+       * Google has proved who owns the email and CareRoute never did, so the password and every
+       * session go: someone who registered the address first cannot keep a way in.
+       */
+      async linkGoogle(id, sub) {
+        return sql.begin(async (tx) => {
+          const row = (await tx`update public.users set google_sub = ${sub}, password_hash = null, updated_at = now() where id = ${id} and google_sub is null returning *`)[0];
+          if (row) await tx`update public.sessions set revoked_at = now(), revoked_reason = 'google_link' where user_id = ${id} and revoked_at is null`;
+          return userRow(row) || null;
+        });
+      },
       async byId(id) { return userRow((await sql`select * from public.users where id = ${id}`)[0]) || null; },
       async list() { return (await sql`select * from public.users order by created_at`).map(userRow); },
       async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, updated_at = now() where id = ${id}`; },

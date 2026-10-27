@@ -23,6 +23,8 @@ export async function hashPassword(password, params = { N, r: R, p: P }) {
  * @param {string} stored
  */
 export async function verifyPassword(password, stored) {
+  // An account made with Google has no password until the patient sets one.
+  if (typeof stored !== 'string') return false;
   const parts = stored.split('$');
   if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
   const [, n, r, p, salt, expected] = parts;

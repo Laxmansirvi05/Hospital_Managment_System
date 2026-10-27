@@ -4,10 +4,20 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-10-27
 
+### Sign in with Google, sign-up without a phone (D-63)
+
+- Decided D-63 at the owner's request. The sign-up form stays as designed (name, email, password); `/auth/register` accepts a missing phone and `users.phone` may be empty. The Postman collection still sends a phone, which is accepted.
+- New `GET /auth/google/start` and `/auth/google/callback`: Google's code flow with PKCE, state and nonce, run by the server with `fetch` and `crypto` only. Accounts are found by Google id, linked by Google-verified email, or created as patients; drivers, admins and disabled accounts are refused. Linking clears the account's password and ends its sessions, so someone who registered another person's email first loses access (security review finding). After Google, only same-site paths are followed, checked after the URL is normalised; the sign-in page's own `next` check got the same fix. Failures log fixed reason codes only. `/auth/me` adds `hasPassword` and `google`; `/config` adds `googleSignIn`.
+- Migration `20261027000100_google_sign_in`: `phone` and `password_hash` may be empty, new unique `google_sub`, and a check that every account has a password or a Google id; `20261027000200` adds the `google_link` session revoke reason. Both applied to careroute-dev and checked there (Google account, link clears password and ends sessions, second link refused, account with neither refused). Not yet on careroute-prod: applying it there needs the owner's approval, and the sign-up form must not ship before it, or production sign-up fails on the old phone rule.
+- Google-only accounts: password sign-in answers as for an unknown email; setting a password or deleting the account needs a Google sign-in within 15 minutes. The account page hides the password fields for them.
+- The "Continue with Google" button turns on only when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set; until then it stays disabled with its existing note. Tests: 10 API tests against a fake Google token exchange (no call to Google was made).
+- Removed 20 leftover test accounts (`@example.test`, none with files) from careroute-dev.
+- Sign-in screen: the show-password button now switches to a crossed eye and reports its state to screen readers.
+
 ### End-to-end check of the owner's UI edits
 
 - Committed the owner's landing page, sign-in and sign-up screen, Explore map and style edits. The dashboard lives at `/dashboard/`; in-app Dashboard links, the logo and signed-in redirects now go there instead of the landing page at `/`.
-- Sign-up was broken: the new form had no phone field and the API requires one. The field is back.
+- Sign-up was broken: the new form had no phone field and the API required one. First fixed by adding the field back; the owner then asked to keep the form as designed, so the phone became optional instead (D-63, above).
 - Photo and document uploads failed in the browser because the CSP blocked Supabase Storage. `connect-src` and `img-src` now name careroute-dev and careroute-prod. Checked against careroute-dev: photo upload and display, document upload, download and delete. Not checked end to end on production (writing test data there was not allowed from this session); production serves the corrected header.
 - Phone layout: no page is wider than 375 px (logo width in the top bar, long booking button labels wrap). Privacy and Terms header is solid, not frosted. The "Remember me" checkbox, which did nothing, is removed.
 

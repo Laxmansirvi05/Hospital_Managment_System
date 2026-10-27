@@ -54,6 +54,7 @@
     "heart": { "label": "Care", "feature": "Saved care actions", "motion": "heart-beat", "source_query": "https://www.flaticon.com/search?word=heart%20animated%20icon" },
     "steering": { "label": "Navigation", "feature": "Map navigation", "motion": "steer", "source_query": "https://www.flaticon.com/search?word=navigation%20animated%20icon" },
     "eye": { "label": "Visibility", "feature": "Visibility controls", "motion": "blink", "source_query": "https://www.flaticon.com/search?word=eye%20animated%20icon" },
+    "eye-off": { "label": "Hide", "feature": "Visibility controls", "motion": "blink", "source_query": "https://www.flaticon.com/search?word=eye%20off%20animated%20icon" },
     "logout": { "label": "Sign out", "feature": "Account actions", "motion": "arrow-nudge", "source_query": "https://www.flaticon.com/search?word=logout%20animated%20icon" },
     "minus": { "label": "Remove", "feature": "Remove and zoom controls", "motion": "minus-pop", "source_query": "https://www.flaticon.com/search?word=minus%20animated%20icon" },
     "volume-off": { "label": "Sound off", "feature": "Authentication video sound", "motion": "close-pop", "source_query": "https://www.flaticon.com/search?word=volume%20off%20animated%20icon" },
