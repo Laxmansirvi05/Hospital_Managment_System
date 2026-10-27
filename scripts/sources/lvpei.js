@@ -12,7 +12,12 @@ const DOCTOR = /ophthalmolog|surgeon|consultant|cornea|retina|glaucoma|cataract|
 export function toRecord(html, url, checkedAt) {
   const ls = lines(html);
   const after = (label) => { const i = ls.indexOf(label); const v = i !== -1 ? ls[i + 1] : null; return v && v !== '-' ? v : null; };
-  const name = ls.find((l, i) => i > 20 && ls[i + 1] === 'Designation');
+  // The heading holds the name. The line before "Designation" became a "Book appointment"
+  // button in October 2026, so it is only a fallback and never an action label.
+  const heading = (html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const fallback = ls.find((l, i) => i > 20 && ls[i + 1] === 'Designation');
+  const name = [heading, (meta(html, 'og:title') || '').replace(/\s*-\s*LVPEI\s*$/i, ''), fallback]
+    .find((n) => n && !/book|appointment|designation/i.test(n) && n.length <= 80);
   const location = after('Location') || '';
   const spec = after('Specialisation');
   const designation = [after('Designation'), after('Other Designations')].filter(Boolean).join(', ');

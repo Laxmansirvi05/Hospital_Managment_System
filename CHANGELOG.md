@@ -2,6 +2,21 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-10-27
+
+### End-to-end check of the owner's UI edits
+
+- Committed the owner's landing page, sign-in and sign-up screen, Explore map and style edits. The dashboard lives at `/dashboard/`; in-app Dashboard links, the logo and signed-in redirects now go there instead of the landing page at `/`.
+- Sign-up was broken: the new form had no phone field and the API requires one. The field is back.
+- Photo and document uploads failed in the browser because the CSP blocked Supabase Storage. `connect-src` and `img-src` now name careroute-dev and careroute-prod. Checked against careroute-dev: photo upload and display, document upload, download and delete. Not checked end to end on production (writing test data there was not allowed from this session); production serves the corrected header.
+- Phone layout: no page is wider than 375 px (logo width in the top bar, long booking button labels wrap). Privacy and Terms header is solid, not frosted. The "Remember me" checkbox, which did nothing, is removed.
+
+### Data quality and new doctor sources
+
+- 67 L V Prasad doctors had the name "Dr Book appointment" after the site added a button above "Designation". The collector reads the page heading, and the loader refuses page labels as names. Reloaded into careroute-dev and careroute-prod.
+- After each load the loader hides duplicate places, keeping the fuller row and never one with doctors: 36 hospitals mapped twice in OpenStreetMap, 6 shops tagged as hospitals, 2 pharmacies, 6 OpenStreetMap Vijaya centres also listed from Vijaya's website.
+- New sources (D-56): Aster Prime Hospital, Ameerpet (53 doctors) and American Oncology Institute, Hyderabad (19). Production now lists 1,558 doctors, 1,608 care places, 242 pharmacies, 145 diagnostic centres, 2,096 medicines. Sites checked and not used are in `19-setup-checklist.md`.
+
 ## 2026-10-26
 
 ### Premium redesign (D-61)

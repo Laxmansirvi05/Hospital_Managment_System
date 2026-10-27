@@ -13,8 +13,10 @@ import * as gleneagles from './sources/gleneagles.js';
 import * as ankura from './sources/ankura.js';
 import * as citizens from './sources/citizens.js';
 import * as lvpei from './sources/lvpei.js';
+import * as aster from './sources/aster.js';
+import * as aoi from './sources/aoi.js';
 
-export const SOURCES = [care, kims, rainbow, continental, gleneagles, ankura, citizens, lvpei];
+export const SOURCES = [care, kims, rainbow, continental, gleneagles, ankura, citizens, lvpei, aster, aoi];
 
 async function collect(src) {
   const file = `.cache/doctors-${src.id}.json`;

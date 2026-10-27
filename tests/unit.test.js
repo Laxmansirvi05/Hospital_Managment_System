@@ -15,6 +15,11 @@ import { robotsRules, splitQualifications } from '../scripts/lib/web.js';
 import { SOURCES } from '../scripts/collect-doctors.js';
 import { readFileSync } from 'node:fs';
 import { toMedicines, formOf } from '../scripts/collect-medicines.js';
+import { hospitalView } from '../server/routes/discovery.js';
+import { facilityFallbackIcon } from '../public/js/ui.js';
+import { isDoctorName } from '../scripts/load-listings.js';
+import { toRecord as lvpeiRecord } from '../scripts/sources/lvpei.js';
+import { toRecord as asterRecord } from '../scripts/sources/aster.js';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -294,5 +299,67 @@ describe('Jan Aushadhi medicines (D-53)', () => {
     expect(m).toEqual([{ sourceRef: 'janaushadhi:1', name: 'Paracetamol Tablets IP 500 mg', form: 'Tablet', pack: "10's", category: 'Analgesic', priceInr: 9.5, drugCode: 1, checkedAt: '2026-10-25' }]);
     expect(formOf('Ceftriaxone Injection IP 1 g')).toBe('Injection');
     expect(formOf('Amoxycillin Oral Suspension IP')).toBe('Syrup');
+  });
+});
+
+describe('facility directory cards and views', () => {
+  it('maps facility types to distinct healthcare fallback icons', () => {
+    expect(facilityFallbackIcon('nursing_home')).toBe('home');
+    expect(facilityFallbackIcon('clinic')).toBe('doctor');
+    expect(facilityFallbackIcon('dental')).toBe('doctor');
+    expect(facilityFallbackIcon('ayush')).toBe('doctor');
+    expect(facilityFallbackIcon('eye')).toBe('eye');
+    expect(facilityFallbackIcon('diagnostic')).toBe('flask');
+    expect(facilityFallbackIcon('hospital')).toBe('hospital');
+    expect(facilityFallbackIcon('maternity')).toBe('hospital');
+    expect(facilityFallbackIcon(undefined)).toBe('hospital');
+  });
+
+  it('preserves genuine facility logo fields in hospitalView', () => {
+    const raw = {
+      id: 'h-1', name: 'Test Hospital', area: 'Begumpet', address: '123 Test St',
+      lat: 17.44, lng: 78.45, phone: '+91 40 1234', email: null, website: null,
+      rating: 4.5, ratingCount: 10, sourcePlatform: 'OSM', sourceUrl: null, checkedAt: '2026-10-25',
+      facilityType: 'hospital', description: 'Desc', emergencyAvailable: true, specialities: ['Cardiology'], departments: [],
+      logoUrl: 'https://example.com/logo.png',
+    };
+    const view = hospitalView(raw);
+    expect(view.logoUrl).toBe('https://example.com/logo.png');
+    expect(view.facilityType).toBe('hospital');
+  });
+});
+
+describe('doctor names from hospital pages (2026-10-27)', () => {
+  it('refuses page labels as names and keeps real names', () => {
+    expect(isDoctorName('Dr Book appointment')).toBe(false);
+    expect(isDoctorName('Dr. View Profile')).toBe(false);
+    expect(isDoctorName('Dr')).toBe(false);
+    expect(isDoctorName('Dr Rohit C Khanna')).toBe(true);
+    expect(isDoctorName('Prof. Dr. Javed Ali')).toBe(true);
+  });
+
+  it('reads an LVPEI name from the heading, not the booking button before Designation', () => {
+    const filler = Array.from({ length: 22 }, (_, i) => `<p>menu ${i}</p>`).join('');
+    const html = `<html><head><meta property="og:title" content="Dr Rohit C Khanna - LVPEI"></head><body>${filler}
+      <a>Book appointment</a><h1>Dr Rohit C Khanna</h1><a>Book appointment</a>
+      <p>Designation</p><p>Consultant Ophthalmologist</p><p>Specialisation</p><p>Cataract</p>
+      <p>Location</p><p>Kallam Anji Reddy Campus, Hyderabad</p></body></html>`;
+    const r = lvpeiRecord(html, 'https://www.lvpei.org/team-members/dr-rohit-c-khanna/', '2026-10-27');
+    expect(r.name).toBe('Dr Rohit C Khanna');
+    expect(r.specialization).toBe('Cataract');
+  });
+
+  it('reads an Aster Prime Hyderabad profile and skips other branches', () => {
+    const page = (hospital) => `<h1 class="title"><span>Dr. A Test Doctor </span></h1>
+      <p>Dr. A Test Doctor</p><h2>Sr Consultant - Cardiology</h2><p>MD, DM (Cardiology)</p>
+      <p>Speciality</p><p>Cardiology</p><p>Hospital</p><p>${hospital}</p><p>Languages</p><p>English, Hindi &amp; Telugu</p>
+      <p>Call us</p><p>Overview</p><p>Dr. A Test Doctor has an overall experience of 21 years.</p>
+      <p>Area of expertise</p><p>Coronary Interventions,</p><p>Awards</p>
+      <img src="/sites/default/files/2024-08/test.jpg" alt="x">`;
+    const url = 'https://www.asterhospitals.in/doctors/aster-prime-hyderabad/dr-a-test-doctor';
+    const r = asterRecord(page('Aster Prime Hyderabad'), url, '2026-10-27');
+    expect(r).toMatchObject({ name: 'Dr. A Test Doctor', specialization: 'Cardiology', experienceYears: 21, languages: ['English', 'Hindi', 'Telugu'], expertise: ['Coronary Interventions'], qualifications: ['MD', 'DM (Cardiology)'] });
+    expect(r.photoUrl).toBe('https://www.asterhospitals.in/sites/default/files/2024-08/test.jpg');
+    expect(asterRecord(page('Aster Medcity Kochi'), url, '2026-10-27')).toBeNull();
   });
 });

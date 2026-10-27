@@ -179,14 +179,22 @@ Run by hand until Q-28 decides where a scheduled job runs. Commands are in `CLAU
 | CARE Hospitals website | Hyderabad doctor pages from CARE's own `doctors-sitemap.xml` | robots.txt checked before fetching; English pages only (language copies are disallowed); one request every 3 seconds; only the D-54 fields kept. | 331 pages allowed; 329 had doctor details; 297 doctors loaded at four CARE branches (Banjara Hills 144, HITEC City 83, Nampally 50, Musheerabad 20). Doctors at CARE Malakpet (32) are not shown: OpenStreetMap has no CARE Malakpet hospital to attach them to, and guessing by distance put them at the wrong branch. |
 | KIMS Hospitals | Doctors, Hyderabad branches | Its own JSON API (`/api/doctors`, `/api/branches`, `/api/specialities`); robots.txt is `Allow: /*`. | Kompally branch not placed (no OSM building). |
 | Rainbow, Continental, Gleneagles, Ankura, Citizens, L V Prasad | Doctors | Each site's own sitemap; robots.txt checked per request; 3 s between requests to a host. | L V Prasad: Hyderabad campus doctors only, no emails. |
+| Aster Hospitals website | Doctors at Aster Prime Hospital, Ameerpet | `/doctors/aster-prime-hyderabad/` pages from Aster's sitemap. robots.txt (checked 2026-10-27) blocks only the filtered doctor lists. 3 s between requests. The page's JSON-LD describes another doctor, so the labelled lines are read instead. | Added 2026-10-27. |
+| American Oncology Institute website | Doctors at AOI Hyderabad, placed on the OpenStreetMap AOI at Lingampally | One request for `/our-doctors/hyderabad`, which the server draws with every doctor. robots.txt (checked 2026-10-27) blocks only query-string pages. The biography is not used: it names past employers, so the title is the line the list shows. | Added 2026-10-27. |
 | Jan Aushadhi (PMBJP) | Generic medicines and MRP | The public Product and MRP list, fetched the way the page fetches it (guest token, one request). | 2,096 priced products. |
 | Vijaya Diagnostic | Centres and Hyderabad test prices | Centre pages' embedded centre list and test pages' schema.org Offer. Google review text in the pages is not kept. | |
 | Apollo Hospitals, Medicover | Not used | 403 to automated clients (checked 2026-10-25). | |
+| AIG Hospitals, Star Hospitals | Not used | robots.txt disallows everything for all agents (checked 2026-10-27). | |
+| Kamineni, Pace Hospitals | Not used | 403 to automated clients (checked 2026-10-27). | |
+| Omni Hospitals | Not yet | robots.txt allows it, but the doctor list is drawn by JavaScript and the sitemap has no doctor pages (checked 2026-10-27). | |
 | Yashoda Hospitals | Not used | robots.txt disallows `/doctors/` (checked 2026-10-25). | |
 | Apollo Hospitals | Not used | Returns 403 to automated clients, even for robots.txt (checked 2026-10-25). P-29 forbids getting around that. | |
 | NPPA | Not yet | Did not answer from here; also on data.gov.in, which needs the owner's free API key (D-53). | |
 
 Known data quality limits, all from the source:
+
+- On 2026-10-27 the L V Prasad pages gained a "Book appointment" button above "Designation", and 67 doctors were loaded with that label as their name. The collector now reads the page heading, and the loader refuses any doctor name that is a page label.
+- OpenStreetMap maps some places twice (a point and a building outline), and some Vijaya branches appear both in OpenStreetMap and on Vijaya's website. After each load the loader hides the copy with fewer details (same name within 300 m for hospitals, 30 m for pharmacies; any OpenStreetMap Vijaya within 150 m of a Vijaya website branch). Rows with doctors are never hidden. Shops tagged as hospitals (MedPlus, Apollo Pharmacy, "Medical Store") are hidden too.
 
 - OpenStreetMap tags some dental clinics, labs and eye clinics as hospitals. They appear in hospital search.
 - Whether a hospital has an emergency department is usually not tagged. CareRoute shows "Emergency department not listed", never "No emergency department", unless the source says no.

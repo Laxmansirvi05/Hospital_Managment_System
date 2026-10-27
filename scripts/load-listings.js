@@ -32,6 +32,45 @@ async function upsertPlaces(sql, table, rows, extra) {
   return hidden.count;
 }
 
+// Words that appear on buttons and links next to a name on hospital pages, never in a name.
+const NOT_A_NAME = /\b(book|appointment|consult now|view profile|know more|read more|enquire|call now)\b/i;
+
+/** True when a scraped doctor name looks like a person's name, not a page label. */
+export function isDoctorName(name) {
+  const bare = String(name || '').replace(/^(prof\.?\s*)?(dr\.?\s*)/i, '').trim();
+  return bare.length >= 3 && /[a-z]/i.test(bare) && !NOT_A_NAME.test(bare);
+}
+
+/**
+ * Hides listings that describe the same place twice, after every source has loaded.
+ * OpenStreetMap sometimes maps one hospital as both a point and a building outline, and a chain's
+ * own website lists branches OpenStreetMap also has. The fuller row stays; nothing is deleted.
+ */
+async function hideDuplicates(tx) {
+  const key = (col) => tx.unsafe(`lower(regexp_replace(${col}, '[^a-zA-Z0-9]', '', 'g'))`);
+  const detail = (t) => tx.unsafe(`((${t}.phone is not null)::int + (${t}.website is not null)::int + (coalesce(${t}.address, '') <> '')::int)`);
+  // Shops that OpenStreetMap contributors tagged as hospitals.
+  const shops = await tx`update public.hospitals set active = false, updated_at = now()
+    where active and source_platform = 'OpenStreetMap' and name ~* '^(med ?plus|apollo pharmacy|pharmacy|medical store)$'`;
+  const hospitals = await tx`update public.hospitals h set active = false, updated_at = now()
+    where h.active and not exists (select 1 from public.doctors d where d.hospital_id = h.id and d.active)
+      and exists (select 1 from public.hospitals o where o.id <> h.id and o.active
+        and ${key('o.name')} = ${key('h.name')}
+        and extensions.st_dwithin(o.location, h.location, 300)
+        and (exists (select 1 from public.doctors d where d.hospital_id = o.id and d.active)
+          or ${detail('o')} > ${detail('h')} or (${detail('o')} = ${detail('h')} and o.id < h.id)))`;
+  const pharmacies = await tx`update public.pharmacies p set active = false, updated_at = now()
+    where p.active and exists (select 1 from public.pharmacies o where o.id <> p.id and o.active
+      and ${key('o.name')} = ${key('p.name')} and extensions.st_dwithin(o.location, p.location, 30)
+      and (${detail('o')} > ${detail('p')} or (${detail('o')} = ${detail('p')} and o.id < p.id)))`;
+  // A Vijaya branch from Vijaya's own website carries test lists and hours, so it replaces the map copy.
+  const diagnostics = await tx`update public.diagnostic_centres c set active = false, updated_at = now()
+    where c.active and c.source_platform = 'OpenStreetMap' and c.name ~* 'vijaya'
+      and exists (select 1 from public.diagnostic_centres o where o.active and o.source_platform = 'Vijaya Diagnostic website'
+        and extensions.st_dwithin(o.location, c.location, 150))`;
+  console.log(`duplicates hidden: ${hospitals.count} hospitals, ${shops.count} shops listed as hospitals, ${pharmacies.count} pharmacies, ${diagnostics.count} diagnostic centres`);
+}
+
 async function main() {
   const prod = process.argv.includes('--prod');
   const url = prod ? process.env.PROD_IMPORT_DATABASE_URL : process.env.DATABASE_URL;
@@ -113,7 +152,9 @@ async function main() {
         try { cache = JSON.parse(await readFile(`.cache/doctors-${src.id}.json`, 'utf8')); } catch (err) { if (err.code === 'ENOENT') continue; throw err; }
         const refs = [];
         const unplaced = {};
+        let unnamed = 0;
         for (const d of Object.values(cache.records)) {
+          if (!isDoctorName(d.name)) { unnamed += 1; continue; }
           // Records collected before a branch was mapped still name it in their branch text.
           const named = Object.keys(src.branches).find((k) => (d.branchText || '').toLowerCase().includes(k.toLowerCase()));
           const hospitalId = ids.get(src.branches[d.branch ?? src.fallbackBranch?.(d) ?? named]);
@@ -134,9 +175,10 @@ async function main() {
         }
         await tx`update public.doctors set active = false, updated_at = now()
           where source_platform = ${src.sourcePlatform} and active and not (source_ref = any(${refs}))`;
-        console.log(`${src.hospital}: ${refs.length} doctors loaded`);
+        console.log(`${src.hospital}: ${refs.length} doctors loaded${unnamed ? `, ${unnamed} skipped without a real name` : ''}`);
         for (const [loc, n] of Object.entries(unplaced)) console.log(`  not placed (${n}): ${loc}`);
       }
+      await hideDuplicates(tx);
     });
   } finally {
     await sql.end({ timeout: 5 });
