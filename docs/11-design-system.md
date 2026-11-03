@@ -284,7 +284,7 @@ The security-style rule for design: these are not allowed in code, copy or visua
 | 10 | Lucide icons everywhere | Text first, custom domain icons, one other open set copied as SVG files, sparingly | `lucide` in any file name, import or markup |
 | 11 | Untouched shadcn components | Restyle every primitive with tokens, remove default look | Any component library's default look. None is used. |
 | 12 | Sections that fade in on scroll | Static content | `IntersectionObserver` used for reveals, `animation-timeline: view()`, scroll animation libraries, `@keyframes` fade or slide tied to scroll |
-| 13 | Effects that follow the cursor | None | `mousemove` listeners driving visuals |
+| 13 | Effects that follow the cursor | None. One exception: the assistant robot's head (D-64), off under reduced motion | `mousemove` listeners driving visuals |
 | 14 | Buttons that fade on hover | Token swap | `opacity` inside `:hover` or `:active` rules, `transition: opacity` on buttons |
 | 15 | Inconsistent spacing | Only the spacing steps in 5.1 | Any `px`, `rem` or `gap` value in CSS that is not a spacing token |
 | 16 | Em dashes in copy, docs or comments | Commas, periods, colons, or a new sentence. Ranges use "to". | The em dash character anywhere |

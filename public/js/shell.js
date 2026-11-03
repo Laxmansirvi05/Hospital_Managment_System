@@ -126,6 +126,14 @@ export async function shell({ nav, title }) {
   window.addEventListener('online', () => document.body.classList.remove('is-offline'));
 
   if (isPatient) startReminderWatch();
+  // The assistant robot (D-64) floats over every patient page; its own files load after the page.
+  // Not on the emergency page, where nothing should compete with calling for help.
+  if (isPatient && nav !== 'sos') {
+    if (!document.querySelector('link[href="/css/assistant.css"]')) document.head.append(h('link', { rel: 'stylesheet', href: '/css/assistant.css' }));
+    import('./assistant/robot.js')
+      .then((m) => m.mountRobot())
+      .catch((err) => console.error('The assistant robot could not start.', err));
+  }
 
   const main = document.getElementById('main');
   main.replaceChildren();

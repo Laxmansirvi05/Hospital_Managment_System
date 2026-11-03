@@ -2,6 +2,20 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-11-03
+
+### Assistant robot, design only (D-64)
+
+- Decided D-64 at the owner's request: a floating 3D medical robot on every signed-in patient page opens the AI assistant. What the assistant does is still OPEN.
+- The owner's model (Tripo FBX, one mesh, no skeleton) is converted by `scripts/convert-robot.mjs` into `public/assistant/robot.glb` (394 KB, JPEG texture, shared vertices). The script splits the mesh at the neck, the narrowest height, so the head can turn on its own.
+- Three.js 0.170.0 and its GLTF loader are vendored by `scripts/vendor-three.js` into `public/vendor/three` and load only after the page is idle or when the robot is touched. A round badge stands in until then and for good without WebGL.
+- The robot can be dragged anywhere (or moved with the arrow keys) and stays there in this browser. A double tap or double click, or Enter, Space or A, opens the assistant panel; Escape closes it. Its head follows the cursor (an exception to banned pattern 13 for this robot only) and it floats gently; with reduced motion it stays still.
+- The panel says plainly that the assistant cannot answer yet, links to search, and shows the 112 line. The message box is disabled.
+- `connect-src` now allows `blob:`, which the GLTF loader uses for the embedded texture.
+- Fixed while testing: a tap in the first 400 ms after the page loaded counted as the second tap of a double tap.
+- Design review fixes: a single screen-reader activation (VoiceOver, TalkBack) opens it; the smaller robot is used whenever the tab bar shows (below 1024 px) so it never covers a tab; no icon tile in the panel; token shadows and spacing; the app's standard focus ring; name "CareRoute assistant" with the instructions as its description; the disabled box says "Not available yet"; allowed icon sizes only; a reduced-motion change while the page is open is followed; robot and panel sit below toasts; not shown on the emergency page. The idle float is part of D-64 at the owner's request for a 3D animated robot.
+- Tests: new `tests/e2e/assistant-robot.spec.js` (model loads with no errors, double click and Escape, drag position survives a reload, two taps and Enter on a 375 px phone, robot above the tab bar, no sideways scroll). Playwright 9 passed and unit and API 105 passed, on the dev server with sample data; the model was drawn by SwiftShader in headless Chromium, not a real GPU.
+
 ## 2026-10-27
 
 ### Sign in with Google, sign-up without a phone (D-63)

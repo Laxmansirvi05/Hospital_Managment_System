@@ -18,6 +18,7 @@ HTML, CSS and JavaScript are the foundation (D-03). UI frameworks and TypeScript
 | Realtime | Supabase Realtime | LOCKED (D-11) |
 | Scheduled work | pg_cron inside the database | LOCKED (D-12) |
 | Map rendering | MapLibre GL JS with MapTiler tiles | LOCKED (D-08) |
+| 3D assistant robot | Three.js 0.170.0 with its GLTF loader, vendored in `public/vendor/three` | LOCKED (D-64): only to draw the assistant robot |
 | Routing and ETA | Mapbox Directions and Matrix, server side only | LOCKED (D-09) |
 | Triage model | Gemini, then Groq, then OpenRouter | LOCKED (D-07). Same chain for report explanation and the discovery assistant is PROPOSED (P-21, P-23). |
 | Discovery search | Postgres full-text search, the `pg_trgm` extension for name matching, PostGIS for distance | PROPOSED (P-19) |

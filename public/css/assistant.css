@@ -1,0 +1,157 @@
+/* The floating assistant robot and its panel (D-64). Solid surfaces only: the panel is a card, not glass. */
+
+.ast-robot {
+  --ast-size: 132px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Above the page and tab bar, below toasts (60) and dialogs. */
+  z-index: 50;
+  width: var(--ast-size);
+  height: var(--ast-size);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--radius-xl);
+}
+
+.ast-robot.is-dragging { cursor: grabbing; }
+
+.ast-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Until the model is drawn, and without WebGL: a round badge with the assistant mark. */
+.ast-badge {
+  display: grid;
+  place-items: center;
+  width: 64%;
+  height: 64%;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-raised);
+}
+
+.ast-robot.has-model .ast-badge { display: none; }
+
+.ast-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* A soft contact shadow so the robot reads as standing above the page. */
+.ast-shadow {
+  position: absolute;
+  bottom: 2%;
+  left: 30%;
+  width: 40%;
+  height: 7%;
+  border-radius: 50%;
+  background: var(--border-soft);
+  box-shadow: var(--shadow-float);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.ast-robot.is-dragging .ast-shadow {
+  transform: scale(0.7);
+  opacity: 0.6;
+}
+
+.ast-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--space-24));
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-raised), 0 0 0 1px var(--border-soft);
+}
+
+.ast-panel[hidden] { display: none; }
+
+.ast-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-16) var(--space-16) var(--space-12) var(--space-20);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ast-panel-heading { flex: 1; min-width: 0; }
+
+.ast-panel-title {
+  font-size: var(--fs-headline);
+  line-height: var(--lh-headline);
+  font-weight: 600;
+}
+
+.ast-panel-sub {
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+}
+
+.ast-panel-body {
+  display: grid;
+  gap: var(--space-16);
+  padding: var(--space-16) var(--space-20);
+  overflow-y: auto;
+}
+
+.ast-bubble {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-l) var(--radius-l) var(--radius-l) var(--radius-xs);
+  background: var(--surface-sunken);
+  box-shadow: 0 0 0 1px var(--border-soft);
+}
+
+.ast-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.ast-emergency {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+}
+
+.ast-emergency a { color: var(--primary); font-weight: 600; }
+
+.ast-panel-foot {
+  display: flex;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-16);
+  border-top: 1px solid var(--border-soft);
+}
+
+.ast-panel-foot .input { flex: 1; min-width: 0; }
+
+.ast-send {
+  min-width: 44px;
+  padding-left: var(--space-12);
+  padding-right: var(--space-12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ast-shadow { transition: none; }
+}
