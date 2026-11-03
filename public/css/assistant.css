@@ -93,7 +93,6 @@
   z-index: 51;
   display: flex;
   flex-direction: column;
-  height: min(640px, calc(100dvh - var(--space-24)));
   overflow: hidden;
   border-radius: var(--radius-xl);
   background: var(--surface);
@@ -102,6 +101,38 @@
 }
 
 .ast-panel[hidden] { display: none; }
+.ast-panel.is-moving { user-select: none; }
+
+.ast-drag-handle { cursor: grab; touch-action: none; }
+.ast-panel.is-moving .ast-drag-handle { cursor: grabbing; }
+
+/* The resize corner: two short strokes in the bottom-right, with a 44 px target. */
+.ast-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: 0 0 var(--radius-xl) 0;
+  background: transparent;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.ast-grip::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--border-strong);
+  border-bottom: 2px solid var(--border-strong);
+  border-bottom-right-radius: 3px;
+}
+
+.ast-grip:focus-visible { outline: 2px solid var(--primary); outline-offset: -4px; }
 
 .ast-panel-head {
   display: flex;
@@ -335,6 +366,8 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-8);
+  /* Clears the resize grip in the panel's bottom-right corner. */
+  padding-right: var(--space-32);
 }
 
 .ast-log {
@@ -366,4 +399,93 @@
   .ast-shadow,
   .ast-stage { transition: none; }
   .ast-ring { display: none; }
+}
+
+/* The AI assistant page: saved conversations beside the same chat, at full size. */
+.astp-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--space-24);
+  align-items: start;
+}
+
+.astp-side {
+  display: grid;
+  gap: var(--space-12);
+  position: sticky;
+  top: var(--space-24);
+  max-height: calc(100dvh - var(--space-48));
+  overflow-y: auto;
+}
+
+.astp-list {
+  display: grid;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.astp-row { display: flex; align-items: center; gap: var(--space-4); }
+
+.astp-item {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-h);
+  padding: var(--space-8) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.astp-item[aria-current='true'] { background: var(--primary-tint); color: var(--primary); }
+
+@media (hover: hover) {
+  .astp-item:hover { background: var(--surface-sunken); }
+}
+
+.astp-item-title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astp-item-when {
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+}
+
+.ast-panel.ast-panel-page {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: auto;
+  height: calc(100dvh - 220px);
+  min-height: 520px;
+  transform: none;
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--border-soft);
+}
+
+.ast-panel-page .ast-compose-actions { padding-right: 0; }
+
+/* Files dragged over the chat. */
+.ast-panel.is-dropping { box-shadow: var(--shadow-raised), 0 0 0 2px var(--primary); }
+
+.ast-device { justify-self: start; }
+
+.ast-upload-note {
+  width: 100%;
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+}
+
+@media (max-width: 899px) {
+  .astp-layout { grid-template-columns: minmax(0, 1fr); }
+  .astp-side { position: static; max-height: none; order: 2; }
+  .ast-panel.ast-panel-page { height: calc(100dvh - 260px); min-height: 460px; }
 }

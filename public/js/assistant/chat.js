@@ -2,7 +2,8 @@
 // AI service, then a saved conversation. Answers show urgency, the emergency action when needed,
 // and real listings from CareRoute. Every piece of text is set with textContent through h().
 import { h, icon } from '../h.js';
-import { api } from '../api.js';
+import { api, uploadTo } from '../api.js';
+import { DOC_TYPES, DOC_ACCEPT, DOC_MAX_BYTES } from '../doc-types.js';
 import { confirmDialog } from '../ui.js';
 
 const MAX_DOCS = 3;
@@ -16,14 +17,20 @@ function providersText(list) {
   return list.length === 1 ? list[0] : `${list[0]}, or ${list.slice(1).join(' or ')} when ${list[0]} is busy`;
 }
 
-/** Builds the panel. `setMood` tells the robot what to show: 'open' or 'thinking'. */
-export function createChat({ onClose, setMood }) {
+/**
+ * Builds the assistant. `mode` is 'panel' (the robot's floating window) or 'page' (the AI assistant
+ * page, whose own list shows the saved conversations). `setMood` tells the robot what to show;
+ * `onConversations` runs whenever the saved list may have changed.
+ */
+export function createChat({ onClose = () => {}, setMood = () => {}, mode = 'panel', onConversations = () => {} } = {}) {
+  const page = mode === 'page';
+  const uid = page ? 'astp' : 'ast';
   let info = null;
   let conversationId = null;
   let attached = [];
   let busy = false;
 
-  const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close assistant' }, icon('close', 20));
+  const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close assistant', hidden: page }, icon('close', 20));
   const historyBtn = h('button', { class: 'btn btn-text btn-sm ast-head-btn', type: 'button', 'aria-label': 'Saved conversations', hidden: true }, icon('list', 20), 'Saved');
   const newBtn = h('button', { class: 'btn btn-text btn-sm ast-head-btn', type: 'button', 'aria-label': 'New conversation', hidden: true }, icon('plus', 20), 'New');
   const sub = h('p', { class: 'ast-panel-sub' }, 'Guidance, not a diagnosis');
@@ -31,16 +38,19 @@ export function createChat({ onClose, setMood }) {
   const body = h('div', { class: 'ast-panel-body' });
   let log = null;
   const chips = h('div', { class: 'ast-attached', hidden: true });
-  const input = h('textarea', { class: 'input ast-input', id: 'ast-input', rows: 1, maxlength: 2000, placeholder: 'For example: fever and sore throat since yesterday' });
-  const attach = h('button', { class: 'btn btn-secondary ast-attach', type: 'button', 'aria-label': 'Attach reports from your Documents' }, icon('report', 20), 'Attach');
+  const input = h('textarea', { class: 'input ast-input', id: `${uid}-input`, rows: 1, maxlength: 2000, placeholder: 'For example: fever and sore throat since yesterday' });
+  const attach = h('button', { class: 'btn btn-secondary ast-attach', type: 'button', 'aria-label': 'Attach files from this device or your Documents' }, icon('upload', 20), 'Attach');
+  const fileInput = h('input', { type: 'file', multiple: true, accept: DOC_ACCEPT, class: 'visually-hidden', tabindex: '-1', 'aria-hidden': 'true' });
   const send = h('button', { class: 'btn btn-primary ast-send', type: 'submit' }, icon('send', 20), 'Send');
   const form = h('form', { class: 'ast-panel-foot', hidden: true },
-    h('label', { class: 'ast-label', for: 'ast-input' }, 'Message the assistant'),
+    h('label', { class: 'ast-label', for: `${uid}-input` }, 'Message the assistant'),
     h('div', { class: 'ast-compose' }, input),
-    h('div', { class: 'ast-compose-actions' }, attach, send));
-  const panel = h('section', { class: 'ast-panel', role: 'dialog', 'aria-modal': 'false', 'aria-labelledby': 'ast-title', hidden: true },
+    h('div', { class: 'ast-compose-actions' }, attach, send), fileInput);
+  const panel = h('section', page
+    ? { class: 'ast-panel ast-panel-page', 'aria-labelledby': `${uid}-title` }
+    : { class: 'ast-panel', role: 'dialog', 'aria-modal': 'false', 'aria-labelledby': `${uid}-title`, hidden: true },
     h('header', { class: 'ast-panel-head' },
-      h('div', { class: 'ast-panel-heading' }, h('h2', { class: 'ast-panel-title', id: 'ast-title' }, 'CareRoute assistant'), sub),
+      h('div', { class: 'ast-panel-heading' }, h('h2', { class: 'ast-panel-title', id: `${uid}-title` }, 'CareRoute assistant'), sub),
       historyBtn, newBtn, close),
     body,
     h('div', { class: 'ast-panel-bottom' }, chips, form));
@@ -60,8 +70,9 @@ export function createChat({ onClose, setMood }) {
   const scrollEnd = () => { body.scrollTop = body.scrollHeight; };
   function chatMode(on) {
     form.hidden = !on;
-    historyBtn.hidden = !on;
-    newBtn.hidden = !on;
+    // On the page the saved conversations are always listed beside the chat.
+    historyBtn.hidden = !on || page;
+    newBtn.hidden = !on || page;
   }
 
   // ---- notice ------------------------------------------------------------------------------------
@@ -130,7 +141,7 @@ export function createChat({ onClose, setMood }) {
 
   function welcome() {
     return h('div', { class: 'ast-msg ast-msg-assistant' },
-      h('p', { class: 'ast-text' }, 'Hello. Tell me how you feel, ask me to find a doctor, hospital, pharmacy or test, or attach a report from your Documents and I will explain it.'),
+      h('p', { class: 'ast-text' }, 'Hello. Tell me how you feel, ask me to find a doctor, hospital, pharmacy or test, or attach a report, prescription or scan (PDF, Word or picture) and I will explain it.'),
       h('div', { class: 'ast-suggest' }, SUGGESTIONS.map((s) => {
         const b = h('button', { class: 'chip', type: 'button' }, s);
         b.addEventListener('click', () => (/report/i.test(s) ? pickDocuments() : submit(s)));
@@ -167,6 +178,7 @@ export function createChat({ onClose, setMood }) {
         ? await api(`/assistant/conversations/${conversationId}/messages`, { body: { text: value, documentIds: docs } })
         : await api('/assistant/conversations', { body: { text: value, documentIds: docs } });
       if (res.conversation) conversationId = res.conversation.id;
+      onConversations(conversationId);
       thinking.replaceWith(messageEl(res.messages[1], { live: true }));
     } catch (err) {
       if (err.status === 409) {
@@ -208,6 +220,68 @@ export function createChat({ onClose, setMood }) {
     }));
   }
 
+  /**
+   * Saves files from the device to Documents (so they stay with the patient's records and history)
+   * and attaches them to the next message. Used by the file chooser, dropping files and pasting.
+   */
+  async function uploadFiles(list) {
+    const files = [...list];
+    if (!files.length) return;
+    const room = MAX_DOCS - attached.length;
+    const note = h('p', { class: 'ast-upload-note', role: 'status' });
+    chips.hidden = false;
+    chips.append(note);
+    const done = [];
+    const problems = [];
+    for (const f of files.slice(0, Math.max(0, room))) {
+      if (!DOC_TYPES.includes(f.type)) { problems.push(`${f.name}: use a PDF, Word (.docx), JPEG, PNG or WebP file.`); continue; }
+      if (f.size > DOC_MAX_BYTES) { problems.push(`${f.name}: files can be up to 10 MB.`); continue; }
+      note.textContent = `Uploading ${f.name}`;
+      try {
+        const title = (f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Pasted picture').slice(0, 120);
+        const start = await api('/patients/me/reports', { body: { title, kind: 'other', fileName: f.name.slice(0, 200), contentType: f.type, sizeBytes: f.size } });
+        await uploadTo(start.uploadUrl, f);
+        await api(`/patients/me/reports/${start.id}/complete`, { method: 'POST' });
+        done.push({ id: start.id, title });
+      } catch (err) {
+        problems.push(`${f.name}: ${err.message}`);
+      }
+    }
+    if (files.length > room) problems.push(`You can attach up to ${MAX_DOCS} at a time.`);
+    note.remove();
+    setAttached([...attached, ...done]);
+    if (problems.length) {
+      chips.hidden = false;
+      chips.append(h('p', { class: 'form-error ast-upload-note', role: 'alert' }, problems.join(' ')));
+    }
+    if (done.length) input.focus();
+  }
+  fileInput.addEventListener('change', () => {
+    uploadFiles(fileInput.files);
+    fileInput.value = '';
+  });
+  // A picture pasted into the message box, such as a screenshot of a report, is uploaded too.
+  input.addEventListener('paste', (e) => {
+    const pics = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith('image/'));
+    if (!pics.length) return;
+    e.preventDefault();
+    uploadFiles(pics.map((f) => new File([f], `Pasted picture ${new Date().toLocaleTimeString('en-IN')}.${f.type.split('/')[1]}`, { type: f.type })));
+  });
+  panel.addEventListener('dragover', (e) => {
+    if (form.hidden || !e.dataTransfer?.types?.includes('Files')) return;
+    e.preventDefault();
+    panel.classList.add('is-dropping');
+  });
+  panel.addEventListener('dragleave', (e) => {
+    if (!panel.contains(e.relatedTarget)) panel.classList.remove('is-dropping');
+  });
+  panel.addEventListener('drop', (e) => {
+    panel.classList.remove('is-dropping');
+    if (form.hidden || !e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    uploadFiles(e.dataTransfer.files);
+  });
+
   async function pickDocuments() {
     const back = Array.from(body.childNodes);
     const backLog = log;
@@ -224,6 +298,7 @@ export function createChat({ onClose, setMood }) {
     const limitNote = h('p', { class: 't-footnote', role: 'status' });
     const done = h('button', { class: 'btn btn-primary', type: 'button' }, 'Attach');
     const cancel = h('button', { class: 'btn btn-secondary', type: 'button' }, 'Cancel');
+    const device = h('button', { class: 'btn btn-secondary ast-device', type: 'button' }, icon('upload', 20), 'Upload from this device');
     const restore = () => {
       chatMode(true);
       body.replaceChildren(...back);
@@ -231,6 +306,10 @@ export function createChat({ onClose, setMood }) {
       scrollEnd();
       input.focus();
     };
+    device.addEventListener('click', () => {
+      restore();
+      fileInput.click();
+    });
     done.addEventListener('click', () => {
       setAttached(docs.filter((d) => chosen.has(d.id)).map((d) => ({ id: d.id, title: d.title })));
       restore();
@@ -250,13 +329,15 @@ export function createChat({ onClose, setMood }) {
         });
         return h('li', {}, h('label', { class: 'ast-pick-row' }, box, h('span', {}, h('span', { class: 'ast-result-name' }, d.title), h('span', { class: 'ast-result-meta' }, new Date(d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })))));
       }))
-      : h('p', { class: 'ast-text' }, 'You have no documents yet. Add a report on the Documents page, then attach it here.');
+      : h('p', { class: 'ast-text' }, 'You have no documents yet.');
     show(h('div', { class: 'ast-notice' },
-      heading('Attach reports'),
-      h('p', { class: 't-footnote' }, `Choose up to ${MAX_DOCS}. Each is sent in full to the AI service with your message.`),
+      heading('Attach files'),
+      h('p', { class: 't-footnote' }, `Up to ${MAX_DOCS}: PDF, Word (.docx), JPEG, PNG or WebP. Each is sent in full to the AI service with your message, and files from this device are also saved to your Documents.`),
+      device,
+      h('p', { class: 't-subhead' }, 'Or choose from your Documents'),
       list,
       limitNote,
-      h('div', { class: 'ast-notice-actions' }, docs.length ? done : h('a', { class: 'btn btn-primary', href: '/documents/' }, 'Go to Documents'), cancel)));
+      h('div', { class: 'ast-notice-actions' }, docs.length ? done : null, cancel)));
     focusHeading();
   }
   attach.addEventListener('click', pickDocuments);
@@ -285,6 +366,7 @@ export function createChat({ onClose, setMood }) {
       try {
         await api('/assistant/conversations', { method: 'DELETE' });
         conversationId = null;
+        onConversations(null);
         historyView();
       } catch (err) {
         fail(err);
@@ -299,6 +381,7 @@ export function createChat({ onClose, setMood }) {
         try {
           await api(`/assistant/conversations/${c.id}`, { method: 'DELETE' });
           if (conversationId === c.id) conversationId = null;
+          onConversations(conversationId);
           historyView();
         } catch (err) {
           fail(err);
@@ -333,6 +416,15 @@ export function createChat({ onClose, setMood }) {
 
   return {
     panel,
+    /** Shows a saved conversation (the page's list uses this). */
+    openConversation,
+    /** Starts an empty conversation. */
+    newConversation() {
+      conversationId = null;
+      setAttached([]);
+      if (info?.consent.agreedAt) startChat();
+    },
+    get conversationId() { return conversationId; },
     /** Called each time the panel opens. Loads the notice state once. */
     async opened() {
       if (info) {

@@ -6,7 +6,7 @@ import { initials } from './format.js';
 import { startReminderWatch } from './notify.js';
 
 const NAV = [
-  { group: 'Overview', items: [{ id: 'dashboard', href: '/dashboard/', label: 'Dashboard', icon: 'home' }] },
+  { group: 'Overview', items: [{ id: 'dashboard', href: '/dashboard/', label: 'Dashboard', icon: 'home' }, { id: 'assistant', href: '/assistant/', label: 'AI assistant', icon: 'assistant' }] },
   {
     group: 'Find care',
     items: [
@@ -128,7 +128,8 @@ export async function shell({ nav, title }) {
   if (isPatient) startReminderWatch();
   // The assistant robot (D-64) floats over every patient page; its own files load after the page.
   // Not on the emergency page, where nothing should compete with calling for help.
-  if (isPatient && nav !== 'sos') {
+  // Not on the assistant page itself, which is the same assistant at full size.
+  if (isPatient && nav !== 'sos' && nav !== 'assistant') {
     if (!document.querySelector('link[href="/css/assistant.css"]')) document.head.append(h('link', { rel: 'stylesheet', href: '/css/assistant.css' }));
     import('./assistant/robot.js')
       .then((m) => m.mountRobot())

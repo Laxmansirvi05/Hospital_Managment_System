@@ -4,6 +4,15 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-03
 
+### Assistant page, floating panel, uploads from the device (D-69)
+
+- New AI assistant page (`/assistant/`, in the sidebar under Overview): saved conversations on the left with New conversation, open, delete and Delete all; the same chat on the right. On phones the chat comes first. The robot is hidden on this page.
+- The robot's panel is a floating window (`public/js/assistant/floating.js`, after the student system's): drag it by its header anywhere on screen, resize it from the bottom-right grip (arrow keys work on the grip; double-click resets), size kept in this browser, always kept on screen.
+- Attach from the device: choose files, drop them on the chat, or paste a picture. Each is saved to Documents and attached. Documents accept Word (.docx) and WebP as well (migration `20261103000200_more_document_types`, applied to careroute-dev; WebP and .docx are checked by their first bytes). `server/assistant/docx.js` reads a .docx's text with Node's zlib, no new library; Word text goes to any provider, pictures and PDFs to OpenRouter. Document titles and ids no longer reach the AI layer at all. Pharmacies open 24 hours can be asked for.
+- Security review fixes: a 317-byte crafted Word file could hold the server for seconds through two slow text patterns; the cleanup is now linear, the document body is capped at 2 MB, an out-of-range character code no longer throws, and Word text reaches the model between clear begin and end markers. New fixture tests/fixtures/pathological.docx and a unit test that it is read in under 500 ms.
+- Checked on careroute-dev with the real services: a synthetic Word discharge summary and a synthetic CBC picture uploaded from the device were explained together; two conversations listed and reopened with their files. The panel opened at 400 by 600, moved, resized to 600 by 700, kept that size after a reload and reset on double-click.
+- Tests: unit and API 137 passed (new: Word reading and refusal, WebP and Word signatures, Word upload and text-only sending, a fake Word file refused); Playwright 13 passed (new: move and resize with the size kept; the page uploading a Word file, keeping two conversations, and the file appearing in Documents). Test files touched: tests/unit.test.js, tests/api.test.js, tests/e2e/assistant-robot.spec.js; new fixture tests/fixtures/synthetic-discharge.docx (synthetic content).
+
 ### AI assistant: triage, find care, report explanation, saved conversations (D-65 to D-68)
 
 - Decided with the owner: all three jobs now (D-65); Groq first, then OpenRouter free models (D-66, replacing D-07's order while there is no Gemini key in `.env.local`); the model may receive the message, health facts from the medical ID and attached documents in full, never identity, after the patient agrees once (D-67, answers Q-25 and changes the CLAUDE.md prompt rule); conversations are saved to the account (D-68).

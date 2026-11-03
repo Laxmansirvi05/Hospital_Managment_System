@@ -749,6 +749,31 @@ describe('AI assistant (D-65 to D-68, fake model provider)', () => {
     expect((await a.api('/patients/me/assistant', { token: other.token })).body.conversations).toHaveLength(0);
   });
 
+  it('accepts Word files in Documents and sends their text, not the file, to any provider', async () => {
+    reset();
+    const u = await patient();
+    await consent(u);
+    next = () => ({ reply: 'This is a discharge summary.', urgency: 'routine', suggestedSpecialty: '', search: { kind: 'none' } });
+    const { readFileSync } = await import('node:fs');
+    const bytes = readFileSync('tests/fixtures/synthetic-discharge.docx');
+    const type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const start = await a.api('/patients/me/reports', { token: u.token, body: { title: 'Discharge', kind: 'discharge', fileName: 'discharge.docx', contentType: type, sizeBytes: bytes.length } });
+    expect(start.status).toBe(201);
+    await a.api(start.body.uploadUrl, { method: 'PUT', raw: bytes, headers: { 'content-type': type } });
+    expect((await a.api(`/patients/me/reports/${start.body.id}/complete`, { method: 'POST', token: u.token })).status).toBe(200);
+    const r = await a.api('/assistant/conversations', { token: u.token, body: { text: 'Explain this', documentIds: [start.body.id] } });
+    expect(r.status).toBe(201);
+    const [file] = calls[0].messages.at(-1).files;
+    expect(file.kind).toBe('text');
+    expect(file.text).toContain('Viral fever');
+    expect(JSON.stringify(calls[0])).not.toContain('Discharge"');
+    // A file that only claims to be Word is refused when it is checked.
+    const fake = Buffer.from('not a word file at all');
+    const s2 = await a.api('/patients/me/reports', { token: u.token, body: { title: 'Fake', kind: 'other', fileName: 'fake.docx', contentType: type, sizeBytes: fake.length } });
+    await a.api(s2.body.uploadUrl, { method: 'PUT', raw: fake, headers: { 'content-type': type } });
+    expect((await a.api(`/patients/me/reports/${s2.body.id}/complete`, { method: 'POST', token: u.token })).status).toBe(422);
+  });
+
   it('saves conversations to the owner only, and deletes them', async () => {
     reset();
     next = () => ({ reply: 'Okay.', urgency: 'routine', suggestedSpecialty: '', search: { kind: 'none' } });

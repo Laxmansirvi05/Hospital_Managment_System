@@ -1,12 +1,13 @@
 import { h, icon, toast } from '../h.js';
 import { api, uploadTo } from '../api.js';
+import { DOC_TYPES, DOC_ACCEPT, DOC_HINT } from '../doc-types.js';
 import { shell, loadError } from '../shell.js';
 import { pageHead, field, showErrors, busy, confirmDialog, empty } from '../ui.js';
 import { dateLong, bytes } from '../format.js';
 
 const KINDS = [['lab', 'Lab report'], ['prescription', 'Prescription'], ['scan', 'Scan or X-ray'], ['discharge', 'Discharge summary'], ['insurance', 'Insurance'], ['other', 'Other']];
 const KIND_LABEL = Object.fromEntries(KINDS);
-const TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const TYPES = DOC_TYPES;
 const MAX = 10 * 1024 * 1024;
 
 const { main } = await shell({ nav: 'documents', title: 'Documents' });
@@ -56,8 +57,8 @@ function draw() {
 }
 
 function uploadCard() {
-  const file = h('input', { type: 'file', accept: '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png', class: 'visually-hidden', id: 'doc-file' });
-  const chosen = h('span', { class: 't-subhead muted' }, 'PDF, JPEG or PNG, up to 10 MB.');
+  const file = h('input', { type: 'file', accept: DOC_ACCEPT, class: 'visually-hidden', id: 'doc-file' });
+  const chosen = h('span', { class: 't-subhead muted' }, DOC_HINT);
   const title = h('input', { class: 'input', maxlength: 120, placeholder: 'For example Blood test, October' });
   const kind = h('select', { class: 'select' }, KINDS.map(([v, l]) => h('option', { value: v }, l)));
   const message = h('p', { class: 'form-error', role: 'alert', hidden: true });
@@ -87,7 +88,7 @@ function uploadCard() {
     e.preventDefault();
     const f = file.files?.[0];
     if (!f) { showErrors(form, { message: 'Choose a file to upload.' }, message); return; }
-    if (!TYPES.includes(f.type)) { showErrors(form, { message: 'Use a PDF, JPEG or PNG file.' }, message); return; }
+    if (!TYPES.includes(f.type)) { showErrors(form, { message: 'Use a PDF, Word (.docx), JPEG, PNG or WebP file.' }, message); return; }
     if (f.size > MAX) { showErrors(form, { message: 'Files can be up to 10 MB.' }, message); return; }
     const restore = busy(submit, 'Uploading');
     try {
@@ -97,7 +98,7 @@ function uploadCard() {
       docs = [saved, ...docs];
       draw();
       form.reset();
-      chosen.textContent = 'PDF, JPEG or PNG, up to 10 MB.';
+      chosen.textContent = DOC_HINT;
       message.hidden = true;
       toast('Document uploaded');
     } catch (err) {

@@ -8,15 +8,21 @@ import { HttpError } from '../http.js';
 const SIGNED_SECONDS = 300;
 
 /** File types we accept, checked against the first bytes, not only the declared type. */
+export const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+// The first bytes of each accepted type; null matches any byte (the size field inside RIFF).
 export const SIGNATURES = {
   'application/pdf': [0x25, 0x50, 0x44, 0x46],
   'image/jpeg': [0xff, 0xd8, 0xff],
   'image/png': [0x89, 0x50, 0x4e, 0x47],
+  'image/webp': [0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50],
+  // A .docx is a zip; the assistant checks for word/document.xml when it reads one.
+  [DOCX]: [0x50, 0x4b, 0x03, 0x04],
 };
 
 export function sniffOk(contentType, bytes) {
   const sig = SIGNATURES[contentType];
-  return Boolean(sig) && bytes.length >= sig.length && sig.every((b, i) => bytes[i] === b);
+  return Boolean(sig) && bytes.length >= sig.length && sig.every((b, i) => b === null || bytes[i] === b);
 }
 
 function memoryStorage() {
@@ -39,7 +45,7 @@ function memoryStorage() {
     },
     async head(bucket, path) {
       const o = objects.get(`${bucket}/${path}`);
-      return o ? { size: o.bytes.length, contentType: o.contentType, firstBytes: o.bytes.subarray(0, 8) } : null;
+      return o ? { size: o.bytes.length, contentType: o.contentType, firstBytes: o.bytes.subarray(0, 12) } : null;
     },
     async signedDownload(bucket, path) {
       const token = randomToken(24);
@@ -84,7 +90,7 @@ function supabaseStorage({ url, serviceKey }) {
       return { uploadUrl: `${base}${out.url}`, method: 'PUT' };
     },
     async head(bucket, path) {
-      const res = await fetch(`${base}/object/authenticated/${bucket}/${path}`, { headers: { ...headers, Range: 'bytes=0-7' }, signal: AbortSignal.timeout(8000) });
+      const res = await fetch(`${base}/object/authenticated/${bucket}/${path}`, { headers: { ...headers, Range: 'bytes=0-11' }, signal: AbortSignal.timeout(8000) });
       if (!res.ok) return null;
       const firstBytes = new Uint8Array(await res.arrayBuffer());
       const range = res.headers.get('content-range');

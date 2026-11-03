@@ -107,4 +107,55 @@ test.describe('Assistant robot', () => {
     await dialog.getByRole('button', { name: 'Saved conversations' }).click();
     await expect(dialog.getByText(/my father has severe chest pain/)).toBeVisible();
   });
+
+  test('the panel can be moved by its header and resized from its corner, and keeps its size', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signUp(page);
+    await page.getByRole('button', { name: /CareRoute assistant/ }).focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'CareRoute assistant' });
+    await dialog.getByRole('button', { name: 'Agree and continue' }).click();
+    const head = await dialog.locator('.ast-panel-head').boundingBox();
+    await page.mouse.move(head.x + 60, head.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(300, 120, { steps: 8 });
+    await page.mouse.up();
+    const moved = await dialog.boundingBox();
+    expect(Math.round(moved.x)).toBe(240);
+    const grip = await dialog.getByRole('button', { name: /Resize the assistant/ }).boundingBox();
+    await page.mouse.move(grip.x + 20, grip.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(grip.x + 220, grip.y + 120, { steps: 8 });
+    await page.mouse.up();
+    const resized = await dialog.boundingBox();
+    expect(Math.round(resized.width)).toBe(Math.round(moved.width) + 200);
+    await page.reload();
+    await page.getByRole('button', { name: /CareRoute assistant/ }).focus();
+    await page.keyboard.press('Enter');
+    expect(Math.round((await dialog.boundingBox()).width)).toBe(Math.round(resized.width));
+  });
+
+  test('the AI assistant page uploads files from the device and keeps every conversation', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signUp(page);
+    await page.getByRole('link', { name: 'AI assistant' }).first().click();
+    await expect(page).toHaveURL(/\/assistant\/$/);
+    await expect(page.locator('.ast-robot')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Agree and continue' }).click();
+    await page.locator('.ast-panel-page input[type=file]').setInputFiles('tests/fixtures/synthetic-discharge.docx');
+    await expect(page.locator('.ast-attached .ast-doc-chip')).toContainText('synthetic discharge');
+    const box = page.getByRole('textbox', { name: 'Message the assistant' });
+    await box.fill('Please explain this');
+    await box.press('Enter');
+    await expect(page.locator('.ast-thinking')).toHaveCount(0, { timeout: 20000 });
+    await expect(page.locator('.ast-msg-user .ast-doc-chip')).toContainText('synthetic discharge');
+    await expect(page.locator('.astp-item-title')).toHaveText(['Please explain this']);
+    await page.getByRole('button', { name: 'New conversation' }).click();
+    await box.fill('I have a cough');
+    await box.press('Enter');
+    await expect(page.locator('.astp-item-title')).toHaveCount(2, { timeout: 20000 });
+    // The file is in Documents too.
+    await page.goto(page.url().replace('/assistant/', '/documents/'));
+    await expect(page.getByText('synthetic discharge')).toBeVisible();
+  });
 });

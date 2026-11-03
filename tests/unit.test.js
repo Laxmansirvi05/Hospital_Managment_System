@@ -24,6 +24,8 @@ import { checkRedFlags, RULE_IDS } from '../server/assistant/rules.js';
 import { breaksLimits } from '../server/assistant/safety.js';
 import { healthFacts } from '../server/routes/assistant.js';
 import { firstJson } from '../server/adapters/ai.js';
+import { docxText } from '../server/assistant/docx.js';
+import { sniffOk, DOCX } from '../server/adapters/storage.js';
 
 describe('passwords (scrypt, D-24)', () => {
   it('verifies the right password and rejects a wrong one', async () => {
@@ -427,5 +429,28 @@ describe('what the assistant may send (D-67)', () => {
   it('reads JSON out of a model reply wrapped in prose or a code fence', () => {
     expect(firstJson('Sure! ```json\n{"reply":"Hi","urgency":"routine"}\n```')).toEqual({ reply: 'Hi', urgency: 'routine' });
     expect(() => firstJson('no json here')).toThrow();
+  });
+});
+
+describe('documents the assistant can read (2026-11-03)', () => {
+  it('reads the text of a Word file and refuses anything else', () => {
+    const text = docxText(readFileSync('tests/fixtures/synthetic-discharge.docx'));
+    expect(text).toContain('Diagnosis on discharge: Viral fever & dehydration');
+    expect(text).toContain('Advice:\tReview in OPD after 5 days');
+    expect(docxText(Buffer.from('%PDF-1.4 not a zip'))).toBeNull();
+    expect(docxText(Buffer.from([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]))).toBeNull();
+  });
+  it('handles a crafted Word file quickly and without throwing (security review)', () => {
+    const started = Date.now();
+    const text = docxText(readFileSync('tests/fixtures/pathological.docx'));
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(text).toBe('<'.repeat(80000).slice(0, 60000));
+  });
+  it('checks the first bytes of WebP and Word files', () => {
+    const webp = Buffer.from([0x52, 0x49, 0x46, 0x46, 9, 9, 9, 9, 0x57, 0x45, 0x42, 0x50]);
+    expect(sniffOk('image/webp', webp)).toBe(true);
+    expect(sniffOk('image/webp', Buffer.from([0x52, 0x49, 0x46, 0x46, 9, 9, 9, 9, 0x57, 0x41, 0x56, 0x45]))).toBe(false);
+    expect(sniffOk(DOCX, readFileSync('tests/fixtures/synthetic-discharge.docx').subarray(0, 12))).toBe(true);
+    expect(sniffOk(DOCX, Buffer.from('%PDF-1.4'))).toBe(false);
   });
 });

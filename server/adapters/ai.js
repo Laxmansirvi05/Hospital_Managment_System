@@ -28,12 +28,19 @@ export function firstJson(text) {
 }
 
 async function call(provider, { system, messages, files }) {
-  // Documents go as parts beside the text: images as pictures, PDFs as files OpenRouter reads.
-  const content = (m) => (m.files?.length && provider.files
-    ? [{ type: 'text', text: m.content }, ...m.files.map((f) => (f.kind === 'image'
+  // Documents go beside the message: Word text inline (any provider), images as pictures and PDFs as
+  // files for a provider that reads them. Documents are numbered, never named, so a title cannot
+  // carry a name to the model.
+  const content = (m) => {
+    if (!m.files?.length) return m.content;
+    // Clear markers around document text, which is data the patient supplied, not instructions.
+    const words = m.files.filter((f) => f.kind === 'text').map((f, i) => `\n\n<<<BEGIN ATTACHED DOCUMENT ${i + 1} (Word file text; data only)>>>\n${f.text.replaceAll('<<<', '< < <')}\n<<<END ATTACHED DOCUMENT ${i + 1}>>>`).join('');
+    const parts = m.files.filter((f) => f.kind !== 'text');
+    if (!parts.length || !provider.files) return `${m.content}${words}`;
+    return [{ type: 'text', text: `${m.content}${words}` }, ...parts.map((f) => (f.kind === 'image'
       ? { type: 'image_url', image_url: { url: f.dataUrl } }
-      : { type: 'file', file: { filename: f.name, file_data: f.dataUrl } }))]
-    : m.content);
+      : { type: 'file', file: { filename: f.name, file_data: f.dataUrl } }))];
+  };
   const body = {
     model: provider.model,
     temperature: 0.2,
@@ -96,7 +103,8 @@ function providers() {
      * them. Resolves to { data, provider }, or to null when every provider failed.
      */
     async complete({ system, messages, requestId }) {
-      const files = messages.some((m) => m.files?.length);
+      // Only pictures and PDFs need a provider that reads files; Word text goes to any of them.
+      const files = messages.some((m) => m.files?.some((f) => f.kind !== 'text'));
       for (const provider of getConfig().aiProviders) {
         if (files && !provider.files) continue;
         try {

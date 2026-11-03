@@ -153,7 +153,7 @@ Implemented on `main` (2026-11-03). Not in the Postman collection. Discovery (P-
 | DELETE `/assistant/conversations/{id}` | patient | 204. 404 for another patient's conversation. |
 | DELETE `/assistant/conversations` | patient | 204. Deletes every saved conversation of the patient. |
 
-An assistant message is `{ id, role: "assistant", text, urgency, sosRecommended, suggestedSpecialty, results: [{ kind, id, name, detail, area, href }], disclaimer, createdAt }`. `results` come only from CareRoute's own listings. A user message is `{ id, role: "user", text, documents?: [{ id, title }], createdAt }`. Each account may send 40 assistant messages an hour (shared with `/assistant/triage`).
+An assistant message is `{ id, role: "assistant", text, urgency, sosRecommended, suggestedSpecialty, results: [{ kind, id, name, detail, area, href }], disclaimer, createdAt }`. `results` come only from CareRoute's own listings. A user message is `{ id, role: "user", text, documents?: [{ id, title }], createdAt }`. Each account may send 40 assistant messages an hour (shared with `/assistant/triage`), and the site 300 model calls a day (`ASSISTANT_DAILY_LIMIT`). Attached documents may be PDF, JPEG, PNG, WebP or Word (.docx); Word files are sent to the model as text (D-69). 422 `document_unreadable` for a Word file that cannot be read.
 
 `/assistant/triage` keeps the collection's shape, adds `advice`, and calls a model only when the patient has agreed; otherwise it answers from the red-flag rules.
 

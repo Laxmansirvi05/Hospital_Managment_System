@@ -3,6 +3,7 @@
 // Enter or A on the keyboard, opens the assistant panel (chat.js).
 import { h, icon } from '../h.js';
 import { createChat } from './chat.js';
+import { makeFloating } from './floating.js';
 
 const STORAGE_KEY = 'careroute.robot.position';
 const EDGE = 12;
@@ -104,20 +105,11 @@ export function mountRobot() {
   });
   const { panel } = chat;
 
-  // The panel opens on whichever side of the robot has room, and never off screen.
+  // A floating window: drag its header, resize its corner (floating.js). It opens beside the robot
+  // until the patient moves it, and then stays where they put it.
+  const floating = makeFloating(panel, panel.querySelector('.ast-panel-head'), { storageKey: 'careroute.assistant.size', defaultSize: { width: 400, height: 600 } });
   function placePanel() {
-    if (!open) return;
-    const pw = Math.min(400, window.innerWidth - EDGE * 2);
-    // The width changes how the text wraps, so it is set before the height is measured.
-    panel.style.width = `${pw}px`;
-    const ph = panel.offsetHeight || 420;
-    const leftSide = position.x + size / 2 > window.innerWidth / 2;
-    let x = leftSide ? position.x - pw - 12 : position.x + size + 12;
-    if (x < EDGE || x + pw > window.innerWidth - EDGE) x = Math.min(Math.max(position.x + size / 2 - pw / 2, EDGE), window.innerWidth - pw - EDGE);
-    let y = position.y + size - ph;
-    if (COMPACT.matches) y = position.y - ph - 12;
-    y = Math.min(Math.max(y, EDGE), window.innerHeight - ph - EDGE);
-    panel.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    if (open) floating.placeNear({ x: position.x, y: position.y, size }, { compact: COMPACT.matches });
   }
 
   function setOpen(next) {

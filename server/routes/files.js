@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { getStore } from '../db/index.js';
-import { getStorage, sniffOk } from '../adapters/storage.js';
+import { getStorage, sniffOk, DOCX } from '../adapters/storage.js';
 import { HttpError, parse, readJson, readRaw, notFound, invalid } from '../http.js';
 import { fileView } from './patients.js';
 import { limit, LIMITS as RATE } from '../limits.js';
@@ -12,7 +12,7 @@ const PATIENT = ['patient'];
 const BUCKETS = { document: 'patient-documents', photo: 'patient-photos' };
 // Limits are PROPOSED until Q-11 is answered (P-26 for photos).
 const LIMITS = {
-  document: { types: ['application/pdf', 'image/jpeg', 'image/png'], maxBytes: 10 * 1024 * 1024 },
+  document: { types: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', DOCX], maxBytes: 10 * 1024 * 1024 },
   photo: { types: ['image/jpeg', 'image/png'], maxBytes: 2 * 1024 * 1024 },
 };
 
@@ -20,7 +20,7 @@ const docSchema = z.object({
   title: z.string().trim().min(1, 'Enter a title').max(120),
   kind: z.enum(['lab', 'prescription', 'scan', 'discharge', 'insurance', 'other']),
   fileName: z.string().trim().min(1).max(200),
-  contentType: z.enum(LIMITS.document.types, { message: 'Use a PDF, JPEG or PNG file' }),
+  contentType: z.enum(LIMITS.document.types, { message: 'Use a PDF, Word (.docx), JPEG, PNG or WebP file' }),
   sizeBytes: z.number().int().min(1).max(LIMITS.document.maxBytes, 'Files can be up to 10 MB'),
 }).strict();
 
@@ -177,7 +177,7 @@ export const routes = [
       const type = LIMITS.document.types.includes(obj.contentType) ? obj.contentType : 'application/octet-stream';
       res.writeHead(200, {
         'Content-Type': type,
-        'Content-Disposition': type === 'application/pdf' ? 'attachment' : 'inline',
+        'Content-Disposition': type === 'application/pdf' || type === DOCX ? 'attachment' : 'inline',
         'Content-Security-Policy': "default-src 'none'; sandbox",
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'private, no-store',
