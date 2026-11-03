@@ -1,7 +1,7 @@
 /* The floating assistant robot and its panel (D-64). Solid surfaces only: the panel is a card, not glass. */
 
 .ast-robot {
-  --ast-size: 132px;
+  --ast-size: 152px;
   position: fixed;
   top: 0;
   left: 0;

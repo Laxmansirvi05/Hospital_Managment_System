@@ -39,10 +39,12 @@ test.describe('Assistant robot', () => {
     await page.mouse.move(400, 300, { steps: 8 });
     await page.mouse.up();
     const moved = await robot.boundingBox();
-    expect(Math.round(moved.x)).toBe(334);
+    // Dropped where the cursor let go: its centre is under the cursor.
+    const expectedX = Math.round(400 - box.width / 2);
+    expect(Math.round(moved.x)).toBe(expectedX);
     await page.reload();
     await expect(robot).toBeVisible();
-    expect(Math.round((await robot.boundingBox()).x)).toBe(334);
+    expect(Math.round((await robot.boundingBox()).x)).toBe(expectedX);
     expect(errors).toEqual([]);
   });
 

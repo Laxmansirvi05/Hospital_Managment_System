@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-03
 
+### Assistant robot 15 percent larger
+
+- At the owner's request the robot is 152 px on desktop (was 132) and 97 px where the tab bar shows (was 84). The drag test now works out the expected spot from the robot's size instead of a fixed number (tests/e2e/assistant-robot.spec.js touched). Playwright 10 passed, unit and API 105 passed.
+
 ### Assistant robot: neck, white body, face expressions (D-64)
 
 - The owner saw the neck open when the head turned. The robot is now one piece: it leans towards the cursor as a whole, as the student system's robot does, so nothing can open at the neck. `scripts/convert-robot.mjs` no longer splits the mesh and keeps the model's own smooth normals.

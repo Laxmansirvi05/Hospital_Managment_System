@@ -7,9 +7,9 @@ const STORAGE_KEY = 'careroute.robot.position';
 const EDGE = 12;
 const DRAG_THRESHOLD_PX = 6;
 const DOUBLE_TAP_MS = 400;
-const SIZE = 132;
+const SIZE = 152;
 // On a phone the robot sits over content and the tab bar, so it is smaller there.
-const SIZE_COMPACT = 84;
+const SIZE_COMPACT = 97;
 // Below 1024 px the tab bar is on screen, so the smaller robot sits above it.
 const COMPACT = window.matchMedia('(max-width: 1023px)');
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
