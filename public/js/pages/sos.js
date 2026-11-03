@@ -3,7 +3,8 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell } from '../shell.js';
-import { pageHead, listingRow, distance, getOrigin } from '../ui.js';
+import { pageHead, listingRow, distance } from '../ui.js';
+import { getOrigin, onOriginChange, locationBar } from '../location.js';
 
 const { main } = await shell({ nav: 'sos', title: 'Emergency' });
 
@@ -17,12 +18,18 @@ main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
     h('div', { class: 'stack-4' },
       h('h2', { class: 't-title-2' }, 'Hospitals with an emergency department near you'),
       h('p', { class: 't-subhead muted' }, 'Call ahead if you can. Tap a hospital for its phone number.')),
+    locationBar(),
     nearList),
   h('a', { class: 'card card-link stack-8', href: '/medical-id/' },
     h('span', { class: 't-headline row-8' }, icon('idcard', 18), 'Keep your medical ID ready'),
     h('span', { class: 't-subhead muted' }, 'Blood group, allergies and medicines help the people treating you.'))));
 
-const o = getOrigin();
-api(`/hospitals?emergencyOnly=true&lat=${o.lat}&lng=${o.lng}&limit=5`)
-  .then(({ hospitals }) => nearList.replaceChildren(...hospitals.map((x) => listingRow({ href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name, meta: [`${x.area} · ${x.phone}`], trail: distance(x) }))))
-  .catch((err) => nearList.replaceChildren(h('p', { class: 't-subhead muted' }, `${err.message} Call 112.`)));
+function loadNearest() {
+  const o = getOrigin();
+  api(`/hospitals?emergencyOnly=true&lat=${o.lat}&lng=${o.lng}&limit=5`)
+    .then(({ hospitals }) => nearList.replaceChildren(...hospitals.map((x) => listingRow({ href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name, meta: [[x.area, x.phone].filter(Boolean).join(' · ')], trail: distance(x) }))))
+    .catch((err) => nearList.replaceChildren(h('p', { class: 't-subhead muted' }, `${err.message} Call 112.`)));
+}
+loadNearest();
+// With live location on, the list follows the patient as they move.
+onOriginChange(loadNearest);

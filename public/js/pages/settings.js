@@ -2,7 +2,8 @@
 // browser, not on the server. Account security stays on the Account and privacy page.
 import { h, icon, toast } from '../h.js';
 import { shell, TEXT_LARGE_KEY } from '../shell.js';
-import { pageHead, getOrigin, locateMe, DEFAULT_ORIGIN, confirmDialog } from '../ui.js';
+import { pageHead, confirmDialog } from '../ui.js';
+import { DEFAULT_ORIGIN, resetOrigin, locationBar } from '../location.js';
 import { api } from '../api.js';
 import { notificationState, askForNotifications } from '../notify.js';
 
@@ -37,29 +38,12 @@ function textSizeSwitch() {
 }
 
 function locationControls() {
-  const label = h('span', { class: 't-footnote muted' });
-  const draw = () => { label.textContent = `Distances are measured from ${getOrigin().label || 'your location'}.`; };
-  draw();
-  const use = h('button', { class: 'btn btn-secondary', type: 'button' }, icon('locate', 16), 'Use my location');
-  use.addEventListener('click', async () => {
-    try {
-      await locateMe();
-      draw();
-      toast('Distances now start from your location.');
-    } catch (err) {
-      toast(err.message);
-    }
-  });
   const reset = h('button', { class: 'btn btn-text', type: 'button' }, `Reset to ${DEFAULT_ORIGIN.label}`);
   reset.addEventListener('click', () => {
-    try {
-      sessionStorage.removeItem('careroute.origin');
-    } catch {
-      toast('This browser blocks saved settings.');
-    }
-    draw();
+    resetOrigin();
+    toast(`Distances now start from ${DEFAULT_ORIGIN.label}.`);
   });
-  return { label, control: h('div', { class: 'row-8' }, use, reset) };
+  return { bar: locationBar(), reset };
 }
 
 function notificationControl() {
@@ -124,8 +108,8 @@ main.replaceChildren(h('div', { class: 'page' },
   h('div', { class: 'settings-grid' },
     section('Display', 'Saved in this browser.',
       row('Larger text', 'Makes text about 12 percent bigger on every signed-in page.', textSizeSwitch(), 'larger-text')),
-    section('Location', 'Used only to sort results by distance. It is not stored on our servers.',
-      h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Starting point'), loc.label), loc.control)),
+    section('Location', 'Used only to sort results by distance and show you on maps. It stays in this browser tab and is sent only with a search; it is never stored on our servers or sent to other services.',
+      h('div', { class: 'stack-8' }, loc.bar, h('div', { class: 'row-8' }, loc.reset))),
     assistantSection(),
     section('Medicine reminders', null,
       h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Browser notifications'), note.hint), note.btn)),

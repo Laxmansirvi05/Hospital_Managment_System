@@ -7,6 +7,7 @@ import { pageHead, extLink } from '../ui.js';
 import { hbars } from '../charts.js';
 import { inr } from '../format.js';
 import { createExploreMap } from '../explore-map.js';
+import { locationBar } from '../location.js';
 
 const TYPE_LABEL = { hospital: 'Hospitals', clinic: 'Clinics', eye: 'Eye care', dental: 'Dental', maternity: 'Women and children', nursing_home: 'Nursing homes', ayush: 'AYUSH' };
 
@@ -39,6 +40,7 @@ try {
       stat(t.doctors, 'Doctors with profiles', '/search/hospitals/?tab=doctors'),
       stat(t.pharmacies, 'Pharmacies', '/search/medicines/?tab=pharmacies'),
       stat(t.diagnosticCentres, 'Diagnostic centres', '/search/diagnostics/')),
+    locationBar(),
     h('div', { class: 'explore-top' },
       card('Where care is', 'Real Hyderabad streets and map labels. Filter categories or select a facility for details.',
         createExploreMap({

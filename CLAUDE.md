@@ -59,6 +59,7 @@ Building started on 2026-10-25 (D-41). All work is on `main`.
 | --- | --- |
 | Run the app on http://127.0.0.1:4000 | `pnpm dev` (reads `.env.local`; without `DATABASE_URL` it runs on sample data, P-27) |
 | Unit and API tests | `NODE_ENV=test pnpm test` |
+| Browser tests (start the server first with `NODE_ENV=development TRUST_PROXY=true node scripts/dev.js`, so each test signs up from its own address) | `CAREROUTE_BASE_URL=http://127.0.0.1:4000 pnpm test:e2e` |
 | Scan `public/` for secrets and unsafe HTML | `pnpm check` |
 | Regenerate `supabase/seed.sql` | `node scripts/gen-seed.js` |
 | Collect OpenStreetMap listings into `.cache/` | `node scripts/collect-osm.js` |

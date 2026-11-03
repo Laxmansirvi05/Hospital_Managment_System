@@ -29,6 +29,8 @@ const messageSchema = z.object({
   text: z.string().trim().min(1, 'Write a message').max(2000),
   // Documents from the patient's own Documents page to read with this message (D-67).
   documentIds: z.array(z.string().uuid()).max(3, 'Choose up to 3 documents').default([]),
+  // The patient's live or chosen location, used only to sort the places found. Never sent to a model.
+  near: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).strict().optional(),
 }).strict();
 // Free providers accept a few megabytes per request; larger files are refused with a clear message.
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
@@ -143,18 +145,19 @@ const CARD = {
 };
 
 /** Runs the search the model asked for, on CareRoute's own listings only. */
-async function findCare(search) {
+async function findCare(search, near = null) {
   if (!search || search.kind === 'none' || !CARD[search.kind]) return [];
   const listings = getStore().listings;
   // A place the user named is turned into a point to sort by distance: the listings' area names
   // are OpenStreetMap suburbs and rarely match what people type, but a listing that mentions the
   // place does. No point found means no distance order, never a guessed one.
-  let near = {};
+  // A place the user names wins over where they are; without either, no distance order.
+  let point = near ? { lat: near.lat, lng: near.lng } : {};
   if (search.area) {
     const [place] = await listings.hospitals({ q: search.area, limit: 1, offset: 0 });
-    if (place && Number.isFinite(place.lat)) near = { lat: place.lat, lng: place.lng };
+    if (place && Number.isFinite(place.lat)) point = { lat: place.lat, lng: place.lng };
   }
-  const common = { limit: 5, offset: 0, ...near };
+  const common = { limit: 5, offset: 0, ...point };
   const byKind = {
     doctors: () => listings.doctors({ ...common, ...(search.specialty ? { specialization: search.specialty } : {}), ...(search.query ? { q: search.query } : {}) }),
     hospitals: () => listings.hospitals({ ...common, ...(search.specialty ? { speciality: search.specialty } : {}), ...(search.query ? { q: search.query } : {}) }),
@@ -224,14 +227,14 @@ async function documents(user, ids) {
 }
 
 /** One turn of a conversation: store the message, answer it, store the answer. */
-async function turn({ user, conversationId, text, files = [], requestId }) {
+async function turn({ user, conversationId, text, files = [], near = null, requestId }) {
   const store = getStore();
   const history = (await store.assistant.messages(user.id, conversationId, 12)).map((m) => ({ role: m.role, content: m.content }));
   const facts = healthFacts(await store.profiles.get(user.id));
   const shared = files.map((f) => ({ id: f.id, title: f.title }));
   const mine = await store.assistant.addMessage({ conversationId, userId: user.id, role: 'user', content: text, payload: shared.length ? { documents: shared } : {} });
   const a = await answer({ text, history, facts, files, requestId });
-  const results = await findCare(a.search);
+  const results = await findCare(a.search, near);
   const saved = await store.assistant.addMessage({
     conversationId, userId: user.id, role: 'assistant', content: a.reply,
     payload: { urgency: a.urgency, sosRecommended: a.sosRecommended, suggestedSpecialty: a.suggestedSpecialty, results, provider: a.provider, rules: a.rules, rulesVersion: RULES_VERSION },
@@ -295,7 +298,7 @@ export const routes = [
       const flat = body.text.replace(/\s+/g, ' ');
       const title = flat.length <= 60 ? flat : `${flat.slice(0, 60).replace(/\s+\S*$/, '')}...`;
       const conversation = await getStore().assistant.create(user.id, title);
-      const messages = await turn({ user, conversationId: conversation.id, text: body.text, files, requestId });
+      const messages = await turn({ user, conversationId: conversation.id, text: body.text, files, near: body.near, requestId });
       return { status: 201, body: { conversation: conversationView(conversation), messages } };
     },
   },
@@ -316,7 +319,7 @@ export const routes = [
       if (!c) throw notFound();
       await assistantLimits(user);
       const files = await documents(user, body.documentIds);
-      return { status: 201, body: { messages: await turn({ user, conversationId: c.id, text: body.text, files, requestId }) } };
+      return { status: 201, body: { messages: await turn({ user, conversationId: c.id, text: body.text, files, near: body.near, requestId }) } };
     },
   },
   {

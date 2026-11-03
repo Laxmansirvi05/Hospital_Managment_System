@@ -1,6 +1,10 @@
 // Shared parts of the listing detail pages: contact card and the not-found state.
 import { h, icon } from './h.js';
 import { pageHead, extLink, leaveNote, telHref, empty, source } from './ui.js';
+import { api } from './api.js';
+import { km } from './format.js';
+import { createRealMap } from './real-map.js';
+import { getOrigin, onOriginChange, metresBetween } from './location.js';
 
 export function idParam() {
   return new URLSearchParams(location.search).get('id') || '';
@@ -41,4 +45,38 @@ export function quickActions(x) {
     x.phone ? h('a', { class: 'btn btn-primary', href: telHref(x.phone) }, icon('phone', 18), 'Call') : null,
     x.location ? h('a', { class: 'btn btn-secondary', href: `https://www.google.com/maps/search/?api=1&query=${x.location.lat},${x.location.lng}`, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Directions to ${x.name} in Google Maps, opens in a new tab` }, icon('route', 18), 'Directions', icon('external', 16)) : null,
     web ? h('a', { class: 'btn btn-secondary', href: web, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Website of ${x.name}, opens in a new tab` }, icon('globe', 18), 'Website', icon('external', 16)) : null);
+}
+
+/**
+ * The place on a real map with the patient's location, and how far it is from them (2026-11-04).
+ * Both follow the patient's live or chosen location.
+ */
+export function placeMap(place, kind) {
+  const line = h('p', { class: 't-subhead muted row-8' });
+  const map = createRealMap({ pins: [{ ...place.location, label: place.name, kind }], origin: null, height: 260, label: `Map of ${place.name}` });
+  const paint = (o = getOrigin()) => {
+    const metres = metresBetween(o, place.location);
+    const far = metres < 1000 ? `${Math.round(metres / 10) * 10} m` : `${(metres / 1000).toFixed(1)} km`;
+    line.replaceChildren(icon('locate', 16), `${far} in a straight line from ${o.source === 'live' ? 'your live location' : o.label}.`);
+    map.update({ origin: o });
+  };
+  paint();
+  onOriginChange(paint);
+  return h('div', { class: 'stack-8' }, map, line);
+}
+
+/**
+ * Other places of the same kind nearest to this one, from CareRoute's listings, with distance
+ * from here. `path` and `key` name the search endpoint and its list.
+ */
+export function nearbyPlaces({ place, path, key, title, href }) {
+  const list = h('div', { class: 'list' }, h('div', { class: 'skeleton skeleton-row' }));
+  api(`${path}?lat=${place.location.lat}&lng=${place.location.lng}&limit=6`).then((r) => {
+    const others = r[key].filter((x) => x.id !== place.id).slice(0, 5);
+    list.replaceChildren(...(others.length ? others.map((x) => h('a', { class: 'price-row', href: href(x) },
+      h('span', { class: 'stack-4' }, h('span', { class: 't-callout' }, x.name), h('span', { class: 't-footnote muted' }, x.area)),
+      h('span', { class: 'row-8' }, h('span', { class: 't-subhead num' }, km(x.distanceKm)), icon('chevron', 16))))
+      : [h('p', { class: 't-subhead muted' }, 'No other listed place is near here.')]));
+  }).catch(() => list.replaceChildren(h('p', { class: 't-subhead muted' }, 'Nearby places could not load.')));
+  return h('section', { class: 'card stack-12' }, h('h2', { class: 't-title-3' }, title), h('p', { class: 't-footnote muted' }, 'Distances from this place.'), list);
 }

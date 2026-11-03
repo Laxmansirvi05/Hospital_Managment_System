@@ -1,10 +1,9 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { createMap } from '../map3d.js';
 import { pageHead, listingRow, rating, doctorPhoto } from '../ui.js';
 import { hbars } from '../charts.js';
-import { idParam, notFoundPage, contactCard, quickActions } from '../details.js';
+import { idParam, notFoundPage, contactCard, quickActions, placeMap, nearbyPlaces } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 
 const doctorRow = (d) => listingRow({ href: `/doctor/?id=${d.id}`, kind: 'doctor', title: d.name, media: doctorPhoto(d, 'avatar-m'), meta: [[d.specialization, d.experienceYears !== null ? `${d.experienceYears} years` : ''].filter(Boolean).join(' · '), d.title], trail: rating(d) });
@@ -76,7 +75,7 @@ try {
               : h('span', { class: 'tag' }, 'Emergency department not listed'),
             h('span', { class: 't-subhead muted' }, x.area)),
           x.description ? h('p', { class: 't-callout', style: 'max-width:680px' }, x.description) : null,
-          createMap({ pins: [{ ...x.location, kind: 'hospital', label: x.name, showLabel: true, active: true }], tilt: 40 })),
+          placeMap(x, 'hospital')),
         h('section', { class: 'card stack-16' },
           h('h2', { class: 't-title-3' }, 'Specialities'),
           x.specialities.length
@@ -85,7 +84,8 @@ try {
           x.departments.length ? [h('h2', { class: 't-title-3' }, 'Departments'), h('div', { class: 'row-8' }, x.departments.map((d) => h('span', { class: 'tag' }, d)))] : null),
         doctorsSection(docs.doctors),
         reviewsSection({ kind: 'hospital', id: x.id, listing: x, canWrite: user.role === 'patient' })),
-      h('div', { class: 'stack-16' }, contactCard(x)))));
+      h('div', { class: 'stack-16' }, contactCard(x),
+        nearbyPlaces({ place: x, path: '/hospitals', key: 'hospitals', title: 'Nearby hospitals and clinics', href: (y) => `/hospital/?id=${y.id}` })))));
 } catch (err) {
   if (err.status === 404) notFoundPage(main, '/search/hospitals/', 'Search hospitals');
   else loadError(main, err);

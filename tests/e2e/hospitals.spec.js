@@ -3,6 +3,9 @@ import { test, expect } from '@playwright/test';
 const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4000';
 
 async function createAccount(page) {
+  // Each sign-up comes from its own address, so the per-address sign-up limit (10 an hour) is not
+  // used up by the suite. The local server honours this header only when started with TRUST_PROXY=true.
+  await page.setExtraHTTPHeaders({ 'x-forwarded-for': `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
   await page.goto(`${baseURL}/signup/`);
   await page.locator('input[autocomplete="name"]').fill('Directory User');
   await page.locator('input[autocomplete="email"]').fill(`user-${Date.now()}@example.test`);
@@ -66,7 +69,7 @@ test.describe('Hospitals and doctors page refinement', () => {
     expect(href).toMatch(/^\/hospital\/\?id=/);
 
     // Verify map is visible on desktop right side
-    await expect(page.locator('.map3d, .geo-map')).toBeVisible();
+    await expect(page.locator('.rmap, .geo-map').first()).toBeVisible();
 
     // Capture desktop screenshot
     await page.screenshot({ path: 'test-results/hospitals-desktop.png', fullPage: false });

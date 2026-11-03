@@ -4,6 +4,7 @@
 import { h, icon } from '../h.js';
 import { api, uploadTo } from '../api.js';
 import { DOC_TYPES, DOC_ACCEPT, DOC_MAX_BYTES } from '../doc-types.js';
+import { getOrigin } from '../location.js';
 import { confirmDialog } from '../ui.js';
 
 const MAX_DOCS = 3;
@@ -166,6 +167,9 @@ export function createChat({ onClose = () => {}, setMood = () => {}, mode = 'pan
     busy = true;
     send.disabled = true;
     const docs = attached.map((d) => d.id);
+    // Places found are sorted from the patient's live or chosen location; the AI never sees it.
+    const o = getOrigin();
+    const near = o.source === 'default' ? undefined : { lat: o.lat, lng: o.lng };
     log.append(messageEl({ role: 'user', text: value, documents: attached }));
     const thinking = h('div', { class: 'ast-msg ast-msg-assistant ast-thinking' }, h('p', { class: 'ast-text' }, attached.length ? 'Reading your report' : 'Thinking'));
     log.append(thinking);
@@ -175,8 +179,8 @@ export function createChat({ onClose = () => {}, setMood = () => {}, mode = 'pan
     setMood('thinking');
     try {
       const res = conversationId
-        ? await api(`/assistant/conversations/${conversationId}/messages`, { body: { text: value, documentIds: docs } })
-        : await api('/assistant/conversations', { body: { text: value, documentIds: docs } });
+        ? await api(`/assistant/conversations/${conversationId}/messages`, { body: { text: value, documentIds: docs, near } })
+        : await api('/assistant/conversations', { body: { text: value, documentIds: docs, near } });
       if (res.conversation) conversationId = res.conversation.id;
       onConversations(conversationId);
       thinking.replaceWith(messageEl(res.messages[1], { live: true }));

@@ -2,6 +2,17 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-11-04
+
+### Location, end to end (D-70)
+
+- `public/js/location.js`: one location for every page. Use my live location follows the device (watchPosition) and re-sorts when the patient moves more than 150 m; Choose an area uses that area's centre; Reset goes back to Begumpet. The choice carries to every page in the tab without asking again. A location bar on search pages, the dashboard, Explore, SOS and Settings shows where distances are measured from, with a Live badge.
+- Area names and area centres come from a new `GET /areas/centroids` built from CareRoute's own listings (165 areas, 1,946 places on careroute-dev), so no geocoding service sees a patient's location.
+- `public/js/real-map.js`: real OpenStreetMap maps with numbered pins matching the list and a "you" marker, draggable and zoomable, with the OpenStreetMap credit. They replace the illustrative 3D map (`map3d.js` and its styles removed) on search pages and on hospital, pharmacy and diagnostic centre pages, which also say how far the place is from you and list the nearest places of the same kind. The dashboard has a Near you section (nearest hospital, pharmacy and diagnostic centre on a map). Explore's map starts from and follows the same location. The assistant sorts places it finds from it, never sending it to the model.
+- Fixed while testing: a passing "position unavailable" between readings stopped live location; now only a refused permission does.
+- Privacy policy: live location, what is sent and to whom, and OpenStreetMap seeing map tile requests.
+- Tests: unit and API 138 passed (new: the assistant sorts by `near` and the model never sees it); Playwright 15 passed twice on one server, with a simulated device at Kukatpally moving to Banjara Hills (new `tests/e2e/location.spec.js`). Test files touched: tests/api.test.js, tests/e2e/hospitals.spec.js (map selector `.rmap`), and every e2e spec's sign-up helper, which now signs up from its own simulated address so the suite does not use up the 10-an-hour sign-up limit; the local server must run with TRUST_PROXY=true for that (CLAUDE.md).
+
 ## 2026-11-03
 
 ### Assistant page, floating panel, uploads from the device (D-69)

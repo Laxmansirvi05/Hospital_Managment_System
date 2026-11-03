@@ -1,5 +1,6 @@
 import { h, icon } from './h.js';
 import { api } from './api.js';
+import { getOrigin, onOriginChange, startLive } from './location.js';
 
 const TILE = 256;
 const MIN_ZOOM = 7;
@@ -480,13 +481,14 @@ export function createExploreMap({ locations = [], maptilerKey = null, error = n
       if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
     }
   });
+  // The map uses the same location as every other page (location.js): live, or a chosen area.
   locate.addEventListener('click', () => {
     if (!navigator.geolocation) return;
     locate.disabled = true;
-    navigator.geolocation.getCurrentPosition((position) => {
-      state.origin = { lat: position.coords.latitude, lng: position.coords.longitude };
+    startLive().then((o) => {
+      state.origin = { lat: o.lat, lng: o.lng };
       state.center = { ...state.origin };
-      state.zoom = Math.max(state.zoom, 13);
+      state.zoom = Math.max(state.zoom, 14);
       locate.disabled = false;
       render();
     }, () => {
@@ -494,7 +496,19 @@ export function createExploreMap({ locations = [], maptilerKey = null, error = n
       loading.textContent = 'Location permission was not granted.';
       loading.hidden = false;
       window.setTimeout(() => { loading.hidden = true; }, 3000);
-    }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
+    });
+  });
+  const known = getOrigin();
+  if (known.source !== 'default') {
+    state.origin = { lat: known.lat, lng: known.lng };
+    state.center = { ...state.origin };
+    state.zoom = 13;
+  }
+  onOriginChange((o) => {
+    // A live move keeps the marker on the patient; the view moves only if they were in it.
+    state.origin = o.source === 'default' ? null : { lat: o.lat, lng: o.lng };
+    if (state.origin && o.source === 'area') state.center = { ...state.origin };
+    render();
   });
 
   viewport.addEventListener('pointerdown', (event) => {

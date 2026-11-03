@@ -1,9 +1,11 @@
 // Shared search page: tabs, text, area and filters kept in the URL, results with distance,
-// and the 3D map. Each of the three search areas (D-36) configures it.
-import { h, icon, toast } from './h.js';
+// and a real map. Results follow the patient's location, live or chosen (location.js). Each of the
+// three search areas (D-36) configures it.
+import { h, icon } from './h.js';
 import { api } from './api.js';
-import { createMap } from './map3d.js';
-import { pageHead, skeletonList, empty, areaSelect, getOrigin, locateMe, osmCredit } from './ui.js';
+import { createRealMap } from './real-map.js';
+import { pageHead, skeletonList, empty, areaSelect, osmCredit } from './ui.js';
+import { getOrigin, onOriginChange, locationBar } from './location.js';
 
 /**
  * @typedef {object} Tab
@@ -34,7 +36,6 @@ export async function searchPage({ main, title, sub, tabs, art }) {
   const results = h('section', { class: 'card stack-16 results-card', 'aria-live': 'polite' });
   const side = h('div', { class: 'stack-16 search-side' });
   const form = h('form', { class: 'searchbar', role: 'search' });
-  const originLine = h('p', { class: 't-subhead muted row-8' });
 
   function params() { return new URLSearchParams(location.search); }
   function currentTab() { return tabs.find((t) => t.id === params().get('tab')) || tabs[0]; }
@@ -50,22 +51,6 @@ export async function searchPage({ main, title, sub, tabs, art }) {
     if (push) history.pushState(null, '', url);
     else history.replaceState(null, '', url);
     draw();
-  }
-
-  function drawOrigin() {
-    originLine.replaceChildren(icon('locate', 16), `Distances from ${origin.label}. `,
-      h('button', {
-        class: 'link-btn', type: 'button',
-        onclick: async () => {
-          try {
-            origin = await locateMe();
-            drawOrigin();
-            draw();
-          } catch (err) {
-            toast(err.message);
-          }
-        },
-      }, 'Use my location'));
   }
 
   // Redrawing the form replaces its controls; put keyboard focus back on the one the user was on.
@@ -143,15 +128,21 @@ export async function searchPage({ main, title, sub, tabs, art }) {
       osmCredit(list),
     ].filter(Boolean));
     if (tab.pin) {
-      const pins = list.slice(0, 10).map((item, i) => ({ ...tab.pin(item), showLabel: i === 0, active: i === 0 }));
-      side.replaceChildren(createMap({ pins, origin }), originLine);
+      const pins = list.slice(0, 10).map(tab.pin);
+      side.replaceChildren(createRealMap({ pins, origin, height: 380, label: `Map of the first ${pins.length} ${plural}` }),
+        h('p', { class: 't-footnote muted' }, 'Numbers match the list, nearest first.'));
     }
   }
 
   window.addEventListener('popstate', draw);
-  drawOrigin();
+  // Moving with live location on, or choosing an area, re-sorts the results by the new point.
+  onOriginChange((next) => {
+    origin = next;
+    draw();
+  });
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({ title, sub, art }),
+    locationBar(),
     h('section', { class: 'card card-raised' }, form),
     layout));
   draw();

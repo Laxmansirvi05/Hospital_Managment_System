@@ -822,3 +822,141 @@ dialog.sheet[open] {
   text-decoration: none;
   min-width: 0;
 }
+
+/* Location bar (location.js, 2026-11-04): where distances are measured from, and the controls. */
+.loc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8) var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--border-soft);
+}
+
+.loc-icon { display: grid; place-items: center; color: var(--primary); }
+.loc-main { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: var(--space-8); min-width: 12rem; }
+.loc-text { font-weight: 600; }
+
+.loc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 2px var(--space-8);
+  border-radius: var(--radius-full);
+  background: var(--success-tint);
+  color: var(--success);
+  font-size: var(--fs-footnote);
+  font-weight: 700;
+}
+
+.loc-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+.loc-live[hidden] { display: none; }
+.loc-area { width: auto; min-width: 11rem; }
+
+/* Real map (real-map.js): OpenStreetMap tiles with numbered pins. */
+.rmap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-l);
+  background: var(--surface-sunken);
+  box-shadow: 0 0 0 1px var(--border-soft);
+}
+
+.rmap-view {
+  position: relative;
+  height: var(--rmap-h, 300px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.rmap-view.is-dragging { cursor: grabbing; }
+.rmap-tiles, .rmap-marks { position: absolute; inset: 0; }
+.rmap-tile { position: absolute; top: 0; left: 0; width: 256px; height: 256px; user-select: none; -webkit-user-drag: none; }
+
+.rmap-pin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: -14px 0 0 -14px;
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.rmap-pin-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--fs-footnote);
+  font-weight: 700;
+  box-shadow: var(--shadow-float);
+}
+
+.rmap-pin-diagnostic .rmap-pin-dot { background: var(--success); }
+.rmap-pin-pharmacy .rmap-pin-dot { background: var(--warning); }
+.rmap-pin.is-first { z-index: 2; }
+.rmap-pin.is-first .rmap-pin-dot { width: 34px; height: 34px; margin: -3px; }
+
+.rmap-pin-label {
+  max-width: 12rem;
+  padding: 2px var(--space-8);
+  overflow: hidden;
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rmap-you { position: absolute; top: 0; left: 0; z-index: 3; margin: -11px 0 0 -11px; }
+
+.rmap-you-dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 4px solid var(--surface);
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 6px var(--primary-tint), var(--shadow-float);
+}
+
+.rmap-controls {
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rmap-btn { background: var(--surface); box-shadow: var(--shadow-float); }
+
+.rmap-credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 2px var(--space-8);
+  border-top-left-radius: var(--radius-s);
+  background: var(--surface);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* Dashboard: Near you. */
+.near-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-16); align-items: start; }
+.near-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-12); }
+.near-card { display: grid; gap: var(--space-8); align-content: start; }
+.near-main { display: grid; gap: var(--space-4); color: var(--text-1); text-decoration: none; }
+.near-more { display: grid; gap: var(--space-4); list-style: none; font-size: var(--fs-subhead); }
+@media (max-width: 899px) { .near-layout { grid-template-columns: minmax(0, 1fr); } }

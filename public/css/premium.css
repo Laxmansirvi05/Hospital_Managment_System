@@ -732,23 +732,6 @@ html.text-large {
   }
 }
 
-/* Maps: no inner border, rounded like the cards. On detail pages the map is a wide, short band,
-   so the facts below it are reached without scrolling past empty space. */
-.map3d {
-  border: 0;
-  border-radius: var(--radius-xl);
-}
-
-.hero-detail .map3d-stage {
-  aspect-ratio: 1000 / 470;
-}
-
-.hero-detail .map3d-plane {
-  top: 8%;
-  left: 10%;
-  right: 10%;
-}
-
 .quick-actions {
   display: flex;
   flex-wrap: wrap;

@@ -254,29 +254,5 @@ export function areaSelect(areas, value, id = 'area') {
 }
 
 /** Where distances are measured from: the browser location if allowed, else Begumpet. */
-export const DEFAULT_ORIGIN = { lat: 17.447656, lng: 78.45216, label: 'Begumpet' };
-
-export function getOrigin() {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem('careroute.origin') || 'null');
-    if (saved && typeof saved.lat === 'number') return saved;
-  } catch {
-    // Session storage can be blocked; fall back to the default origin.
-  }
-  return DEFAULT_ORIGIN;
-}
-
-export function locateMe() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject(new Error('This browser cannot share location. Distances are from Begumpet.')); return; }
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const o = { lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5), label: 'your location' };
-      try {
-        sessionStorage.setItem('careroute.origin', JSON.stringify(o));
-      } catch {
-        // Without storage the location is used for this page only.
-      }
-      resolve(o);
-    }, () => reject(new Error('Location is off. Distances are from Begumpet. You can still search by area.')), { timeout: 8000, maximumAge: 300000 });
-  });
-}
+// Location lives in location.js; these names stay for the pages that import them from here.
+export { DEFAULT_ORIGIN, getOrigin, locateMe } from './location.js';

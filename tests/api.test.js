@@ -707,6 +707,18 @@ describe('AI assistant (D-65 to D-68, fake model provider)', () => {
     }
   });
 
+  it('sorts places found from the patient\'s location, which never reaches the model', async () => {
+    reset();
+    const u = await patient();
+    await consent(u);
+    next = () => ({ reply: 'Here are pharmacies.', urgency: 'routine', suggestedSpecialty: '', search: { kind: 'pharmacies' } });
+    const near = { lat: 17.4933, lng: 78.3996 };
+    const r = await a.api('/assistant/conversations', { token: u.token, body: { text: 'find a pharmacy', near } });
+    const nearest = (await a.api(`/pharmacies?lat=${near.lat}&lng=${near.lng}&limit=1`, { token: u.token })).body.pharmacies[0];
+    expect(r.body.messages[1].results[0].id).toBe(nearest.id);
+    expect(JSON.stringify(calls[0])).not.toContain('17.4933');
+  });
+
   it('falls back to a plain message, and to "see a doctor soon", when no provider answers', async () => {
     reset();
     const u = await patient();

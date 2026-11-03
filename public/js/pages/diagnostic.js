@@ -1,9 +1,8 @@
 import { h, icon } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { createMap } from '../map3d.js';
 import { pageHead, extLink, safeHref } from '../ui.js';
-import { idParam, notFoundPage, contactCard, quickActions } from '../details.js';
+import { idParam, notFoundPage, contactCard, quickActions, placeMap, nearbyPlaces } from '../details.js';
 import { reviewsSection } from '../reviews.js';
 import { rupees, dateLong } from '../format.js';
 
@@ -55,7 +54,7 @@ try {
             h('span', { class: 't-subhead muted' }, c.area)),
           c.description ? h('p', { class: 't-callout', style: 'max-width:680px' }, c.description) : null,
           c.website ? h('p', {}, extLink(c.website, `Visit ${c.website.replace(/^https?:\/\//, '')}`)) : null,
-          createMap({ pins: [{ ...c.location, kind: 'diagnostic', label: c.name, showLabel: true, active: true }], tilt: 40 })),
+          placeMap(c, 'diagnostic')),
         h('section', { class: 'card stack-12' },
           h('h2', { class: 't-title-3' }, 'Tests listed publicly'),
           c.testsListed.length
@@ -64,7 +63,8 @@ try {
           h('p', { class: 't-footnote muted' }, 'Check prices and preparation with the centre. Bookings and reports are handled by the centre, not by CareRoute.')),
         PRICE_PROVIDERS[c.source.platform] ? testPrices(PRICE_PROVIDERS[c.source.platform]) : null,
         reviewsSection({ kind: 'diagnostic_centre', id: c.id, listing: c, canWrite: user.role === 'patient' })),
-      h('div', { class: 'stack-16' }, contactCard(c)))));
+      h('div', { class: 'stack-16' }, contactCard(c),
+        nearbyPlaces({ place: c, path: '/diagnostic-centres', key: 'diagnosticCentres', title: 'Nearby diagnostic centres', href: (x) => `/diagnostic/?id=${x.id}` })))));
 } catch (err) {
   if (err.status === 404) notFoundPage(main, '/search/diagnostics/', 'Search diagnostic centres');
   else loadError(main, err);

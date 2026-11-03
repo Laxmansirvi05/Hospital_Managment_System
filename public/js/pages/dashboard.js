@@ -1,7 +1,9 @@
 import { h, s, icon, toast, announce } from '../h.js';
 import { api } from '../api.js';
 import { shell, loadError } from '../shell.js';
-import { empty, getOrigin, telHref } from '../ui.js';
+import { empty, telHref } from '../ui.js';
+import { getOrigin, onOriginChange, locationBar } from '../location.js';
+import { createRealMap } from '../real-map.js';
 import { art3d } from '../art3d.js';
 import { km } from '../format.js';
 import { greeting, weekday, dateLong, relativeDay, monthShort, dayOfMonth, nowTimeIst, initials, bytes } from '../format.js';
@@ -16,6 +18,7 @@ const C = 2 * Math.PI * R;
  */
 function nearestEmergency() {
   const box = h('div', { class: 'stack-8' }, h('div', { class: 'skeleton skeleton-row' }));
+  const fill = () => {
   const o = getOrigin();
   api(`/hospitals/nearby?lat=${o.lat}&lng=${o.lng}&emergencyOnly=true&radiusKm=25&limit=3`).then((r) => {
     box.replaceChildren(
@@ -27,7 +30,47 @@ function nearestEmergency() {
         : [h('p', { class: 't-subhead muted' }, 'No hospital near you lists an emergency department. Call 112.')]),
       h('p', { class: 't-footnote muted' }, `Measured from ${o.label || 'your area'}. Only hospitals whose listing says they have an emergency department are shown.`));
   }).catch(() => box.replaceChildren(h('p', { class: 't-subhead muted' }, 'Nearby emergency departments could not load. Call 112.')));
+  };
+  fill();
+  onOriginChange(fill);
   return box;
+}
+
+/**
+ * Near you (2026-11-04): the nearest pharmacy, diagnostic centre and care places from the patient's
+ * live or chosen location, on a real map. Follows the location as it changes.
+ */
+function nearYou() {
+  const list = h('div', { class: 'near-grid' }, h('div', { class: 'skeleton skeleton-block' }));
+  const mapBox = h('div');
+  const KINDS = [
+    { key: 'hospitals', path: '/hospitals', label: 'Hospital or clinic', kind: 'hospital', href: (x) => `/hospital/?id=${x.id}`, more: '/search/hospitals/' },
+    { key: 'pharmacies', path: '/pharmacies', label: 'Pharmacy', kind: 'pharmacy', href: (x) => `/pharmacy/?id=${x.id}`, more: '/search/medicines/?tab=pharmacies' },
+    { key: 'diagnosticCentres', path: '/diagnostic-centres', label: 'Diagnostic centre', kind: 'diagnostic', href: (x) => `/diagnostic/?id=${x.id}`, more: '/search/diagnostics/' },
+  ];
+  let seq = 0;
+  async function fill() {
+    const mine = ++seq;
+    const o = getOrigin();
+    const got = await Promise.all(KINDS.map((k) => api(`${k.path}?lat=${o.lat}&lng=${o.lng}&limit=3`).then((r) => r[k.key]).catch(() => [])));
+    if (mine !== seq) return;
+    list.replaceChildren(...KINDS.map((k, i) => {
+      const [first, ...rest] = got[i];
+      return h('section', { class: 'card near-card' },
+        h('p', { class: 't-footnote muted' }, `Nearest ${k.label.toLowerCase()}`),
+        first ? h('a', { class: 'near-main', href: k.href(first) }, h('span', { class: 't-headline' }, first.name), h('span', { class: 't-subhead muted' }, `${first.area} · ${km(first.distanceKm)}`)) : h('p', { class: 't-subhead muted' }, 'None listed near here.'),
+        rest.length ? h('ul', { class: 'near-more' }, rest.map((x) => h('li', {}, h('a', { href: k.href(x) }, x.name), h('span', { class: 'muted num' }, ` ${km(x.distanceKm)}`)))) : null,
+        h('a', { class: 'btn btn-text btn-sm', href: k.more }, 'See more', icon('chevron', 16)));
+    }));
+    const pins = KINDS.flatMap((k, i) => got[i].slice(0, 1).map((x) => ({ ...x.location, label: x.name, href: k.href(x), kind: k.kind })));
+    mapBox.replaceChildren(createRealMap({ pins, origin: o, height: 260, label: 'Map of the nearest places' }));
+  }
+  fill();
+  onOriginChange(fill);
+  return h('section', { class: 'stack-12 near-you', 'aria-labelledby': 'near-you-title' },
+    h('h2', { class: 't-title-2', id: 'near-you-title' }, 'Near you'),
+    locationBar(),
+    h('div', { class: 'near-layout' }, list, mapBox));
 }
 
 /** Shortcuts into finding care, each with its 3D object and the live count of what CareRoute lists. */
@@ -190,6 +233,7 @@ function render(d, photoUrl) {
         h('a', { class: 'btn btn-primary', href: '/reminders/#new' }, icon('plus', 18), 'Add reminder'))),
     completeness,
     findCare(),
+    nearYou(),
     h('div', { class: 'stat-row' },
       h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, `${d.today.taken}/${d.today.total}`), h('span', { class: 't-subhead muted' }, 'Doses taken today')),
       h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, String(d.counts.reminders)), h('span', { class: 't-subhead muted' }, 'Active reminders')),
