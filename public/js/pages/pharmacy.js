@@ -11,7 +11,7 @@ try {
   const p = await api(`/pharmacies/${encodeURIComponent(idParam())}`);
   document.title = `${p.name} · CareRoute`;
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ art: 'medicine', title: p.name, crumbs: [['Medicines and pharmacies', '/search/medicines/?tab=pharmacies'], [p.name]], large: false }),
+    pageHead({ art: 'pharmacy', title: p.name, crumbs: [['Medicines and pharmacies', '/search/medicines/?tab=pharmacies'], [p.name]], large: false }),
     quickActions(p),
     h('div', { class: 'grid-main-side' },
       h('div', { class: 'stack-24' },

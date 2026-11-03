@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-04
 
+### New logo and animated 3D icons (D-71)
+
+- Logo option C is the CareRoute logo everywhere: the app sidebar, sign-in and sign-up, the home page, the legal pages and the browser tab icon. It is a flat SVG (`public/logo.svg`), with a light version for the sign-in video and the home page photo. The 620 KB `logo.png` is removed.
+- `public/js/art3d.js` now has 15 isometric 3D objects, each with one moving part: hospital, doctor, medicine, pharmacy, diagnostic centre, chart, document, settings, shield, ambulance (flashing beacon), calendar, pills, medical ID (scan line), AI assistant (typing dots) and location pin. New page heads: Emergency, Appointments, Medicine reminders, Medical ID, Doctor, AI assistant and Pharmacy. The dashboard's section heads, Near you cards, stat cards, emergency card and medical ID card show them on a soft tile, and empty states show them in place of line icons.
+- Motion: page-head objects move slowly all the time. Icons on cards move once when the page opens, then while the card is hovered, focused or pressed. Nothing moves under reduced motion. The sidebar and menu icons are unchanged.
+- Tests: unit and API 138 passed, Playwright 15 passed, `pnpm check` passed. No test files changed. Checked in a browser: hover starts the loop, reduced motion stops it, and there were no page errors.
+
 ### Location, end to end (D-70)
 
 - `public/js/location.js`: one location for every page. Use my live location follows the device (watchPosition) and re-sorts when the patient moves more than 150 m; Choose an area uses that area's centre; Reset goes back to Begumpet. The choice carries to every page in the tab without asking again. A location bar on search pages, the dashboard, Explore, SOS and Settings shows where distances are measured from, with a Live badge.

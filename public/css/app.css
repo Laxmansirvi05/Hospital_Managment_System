@@ -960,3 +960,73 @@ dialog.sheet[open] {
 .near-main { display: grid; gap: var(--space-4); color: var(--text-1); text-decoration: none; }
 .near-more { display: grid; gap: var(--space-4); list-style: none; font-size: var(--fs-subhead); }
 @media (max-width: 899px) { .near-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* 3D icons (2026-11-04). The same isometric objects as the page heads, at icon size, each with one
+   moving part. A page head's object moves gently all the time; an icon on a card moves once when
+   the page opens, then again while the card is hovered, focused or pressed, so a page full of
+   cards stays calm. No motion at all when the patient asks for reduced motion. */
+.art-dark-top { fill: #48484A; }
+.art-dark-left { fill: var(--text-1); }
+.art-dark-right { fill: #000; }
+
+.art3d { overflow: visible; }
+.i3d { display: block; flex-shrink: 0; }
+
+.a3 { transform-box: fill-box; transform-origin: 50% 50%; }
+.a3-grow { transform-origin: 50% 100%; }
+.a3-bob { animation: a3-bob 1.6s var(--ease-enter) 1 both; }
+.a3-pulse { animation: a3-pulse 1.4s var(--ease-enter) 1 both; }
+.a3-grow { animation: a3-grow 1.2s var(--ease-enter) 1 both; }
+.a3-press { animation: a3-press 1.4s var(--ease-enter) 1 both; }
+.a3-blink { animation: a3-blink 0.9s ease-in-out 2 both; }
+.a3-drive { animation: a3-drive 0.6s ease-in-out 2 both; }
+.a3-pop { animation: a3-pop 1.4s var(--ease-enter) 1 both; }
+.a3-hop { animation: a3-hop 1.4s var(--ease-enter) 1 both; }
+.a3-scan { animation: a3-scan 1.8s ease-in-out 1 both; }
+.a3-dot { animation: a3-dot 1.2s ease-in-out 1 both; }
+.a3-late { animation-delay: 0.15s; }
+.a3-later { animation-delay: 0.3s; }
+
+/* Page heads: one object per page, moving slowly. */
+.hero-art .a3 { animation-iteration-count: infinite; animation-duration: 3.2s; }
+.hero-art .a3-blink { animation-duration: 1.2s; }
+.hero-art .a3-drive { animation-duration: 1.6s; }
+
+/* Cards: move again while the patient points at, focuses or presses them. */
+:is(a, button, .card, .near-card, .stat):is(:hover, :focus-visible, :focus-within, :active) .i3d .a3,
+:is(a, .card):is(:hover, :focus-visible, :active) .tile-art .a3 {
+  animation-iteration-count: infinite;
+}
+
+@keyframes a3-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes a3-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@keyframes a3-grow { 0% { transform: scaleY(0.55); } 60% { transform: scaleY(1.06); } 100% { transform: scaleY(1); } }
+@keyframes a3-press { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+@keyframes a3-blink { 0%, 100% { fill-opacity: 1; } 50% { fill-opacity: 0.25; } }
+@keyframes a3-drive { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(3px, -2px); } }
+@keyframes a3-pop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 70% { transform: translateY(-4px); } }
+@keyframes a3-hop { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-8deg); } }
+@keyframes a3-scan { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-26px, 15px); } }
+@keyframes a3-dot { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } 60% { transform: translateY(0); } }
+
+/* A 3D icon in the round icon slot of a list row, empty state or card head. */
+.empty-art > .i3d { width: 56px; height: 56px; }
+.card-icon3d {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a3 { animation: none !important; }
+}
+
+.i3d-tile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: var(--radius-l);
+  background: var(--primary-tint);
+}

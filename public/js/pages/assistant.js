@@ -67,7 +67,7 @@ clearBtn.addEventListener('click', async () => {
 });
 
 main.replaceChildren(h('div', { class: 'page astp-page' },
-  pageHead({ art: 'document', title: 'AI assistant', sub: 'Describe how you feel, find care near you, or have a report explained. Guidance, not a diagnosis. In an emergency, call 112.' }),
+  pageHead({ art: 'assistant', title: 'AI assistant', sub: 'Describe how you feel, find care near you, or have a report explained. Guidance, not a diagnosis. In an emergency, call 112.' }),
   h('div', { class: 'astp-layout' },
     h('nav', { class: 'card astp-side', 'aria-label': 'Saved conversations' },
       newBtn,

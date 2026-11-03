@@ -187,7 +187,7 @@ function render(mid, contacts, photoUrl) {
 
   const welcome = new URLSearchParams(location.search).get('welcome');
   main.replaceChildren(h('div', { class: 'page medical-id-page' },
-    pageHead({ title: welcome ? 'Welcome to CareRoute' : 'Medical ID', sub: welcome ? 'Add the details that matter in an emergency. You can fill this in over time. Everything is private unless you turn on sharing.' : 'Your personal and health details in one place. Private unless you turn on sharing.' }),
+    pageHead({ art: 'idcard', title: welcome ? 'Welcome to CareRoute' : 'Medical ID', sub: welcome ? 'Add the details that matter in an emergency. You can fill this in over time. Everything is private unless you turn on sharing.' : 'Your personal and health details in one place. Private unless you turn on sharing.' }),
     h('nav', { class: 'section-nav', 'aria-label': 'Sections' },
       [['identity', 'About you'], ['address', 'Address'], ['health', 'Health'], ['insurance', 'Insurance and doctor'], ['sharing', 'Sharing'], ['contacts', 'Emergency contacts']].map(([id, label]) => h('a', { href: `#${id}` }, label))),
     h('div', { class: 'grid-main-side' }, form, contactsCard(contacts))));

@@ -33,7 +33,7 @@ try {
     h('a', { class: 'btn btn-text btn-sm', href: `/appointments/?doctor=${encodeURIComponent(d.name)}&place=${encodeURIComponent(d.place.name)}&speciality=${encodeURIComponent(d.specialization)}#new` }, icon('calendar', 16), 'Log an appointment you booked'));
 
   main.replaceChildren(h('div', { class: 'page' },
-    pageHead({ title: d.name, crumbs: [['Hospitals and doctors', '/search/hospitals/?tab=doctors'], [d.name]], large: false }),
+    pageHead({ art: 'doctor', title: d.name, crumbs: [['Hospitals and doctors', '/search/hospitals/?tab=doctors'], [d.name]], large: false }),
     h('div', { class: 'quick-actions' },
       safeHref(d.bookingUrl) ? h('a', { class: 'btn btn-primary', href: safeHref(d.bookingUrl), target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Book online with ${d.name} on the ${sourceName} website, opens in a new tab` }, icon('calendar', 18), 'Book online', icon('external', 16)) : null,
       d.place.phone ? h('a', { class: `btn ${safeHref(d.bookingUrl) ? 'btn-secondary' : 'btn-primary'}`, href: telHref(d.place.phone) }, icon('phone', 18), 'Call') : null),

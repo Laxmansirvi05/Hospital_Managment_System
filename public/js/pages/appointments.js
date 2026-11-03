@@ -116,6 +116,7 @@ function render() {
   draw();
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({
+      art: 'calendar',
       title: 'Appointments',
       sub: 'A record of the appointments you booked, so the next one is always on your dashboard.',
       actions: h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm() }, icon('plus', 18), 'Log appointment'),

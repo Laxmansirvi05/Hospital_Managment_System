@@ -4,7 +4,7 @@ import { shell, loadError } from '../shell.js';
 import { empty, telHref } from '../ui.js';
 import { getOrigin, onOriginChange, locationBar } from '../location.js';
 import { createRealMap } from '../real-map.js';
-import { art3d } from '../art3d.js';
+import { art3d, iconTile } from '../art3d.js';
 import { km } from '../format.js';
 import { greeting, weekday, dateLong, relativeDay, monthShort, dayOfMonth, nowTimeIst, initials, bytes } from '../format.js';
 
@@ -44,9 +44,9 @@ function nearYou() {
   const list = h('div', { class: 'near-grid' }, h('div', { class: 'skeleton skeleton-block' }));
   const mapBox = h('div');
   const KINDS = [
-    { key: 'hospitals', path: '/hospitals', label: 'Hospital or clinic', kind: 'hospital', href: (x) => `/hospital/?id=${x.id}`, more: '/search/hospitals/' },
-    { key: 'pharmacies', path: '/pharmacies', label: 'Pharmacy', kind: 'pharmacy', href: (x) => `/pharmacy/?id=${x.id}`, more: '/search/medicines/?tab=pharmacies' },
-    { key: 'diagnosticCentres', path: '/diagnostic-centres', label: 'Diagnostic centre', kind: 'diagnostic', href: (x) => `/diagnostic/?id=${x.id}`, more: '/search/diagnostics/' },
+    { key: 'hospitals', path: '/hospitals', label: 'Hospital or clinic', kind: 'hospital', art: 'hospital', href: (x) => `/hospital/?id=${x.id}`, more: '/search/hospitals/' },
+    { key: 'pharmacies', path: '/pharmacies', label: 'Pharmacy', kind: 'pharmacy', art: 'pharmacy', href: (x) => `/pharmacy/?id=${x.id}`, more: '/search/medicines/?tab=pharmacies' },
+    { key: 'diagnosticCentres', path: '/diagnostic-centres', label: 'Diagnostic centre', kind: 'diagnostic', art: 'diagnostic', href: (x) => `/diagnostic/?id=${x.id}`, more: '/search/diagnostics/' },
   ];
   let seq = 0;
   async function fill() {
@@ -57,7 +57,7 @@ function nearYou() {
     list.replaceChildren(...KINDS.map((k, i) => {
       const [first, ...rest] = got[i];
       return h('section', { class: 'card near-card' },
-        h('p', { class: 't-footnote muted' }, `Nearest ${k.label.toLowerCase()}`),
+        h('div', { class: 'card-icon3d' }, iconTile(k.art, 44), h('p', { class: 't-footnote muted' }, `Nearest ${k.label.toLowerCase()}`)),
         first ? h('a', { class: 'near-main', href: k.href(first) }, h('span', { class: 't-headline' }, first.name), h('span', { class: 't-subhead muted' }, `${first.area} · ${km(first.distanceKm)}`)) : h('p', { class: 't-subhead muted' }, 'None listed near here.'),
         rest.length ? h('ul', { class: 'near-more' }, rest.map((x) => h('li', {}, h('a', { href: k.href(x) }, x.name), h('span', { class: 'muted num' }, ` ${km(x.distanceKm)}`)))) : null,
         h('a', { class: 'btn btn-text btn-sm', href: k.more }, 'See more', icon('chevron', 16)));
@@ -68,7 +68,7 @@ function nearYou() {
   fill();
   onOriginChange(fill);
   return h('section', { class: 'stack-12 near-you', 'aria-labelledby': 'near-you-title' },
-    h('h2', { class: 't-title-2', id: 'near-you-title' }, 'Near you'),
+    h('div', { class: 'card-icon3d' }, iconTile('pin', 40), h('h2', { class: 't-title-2', id: 'near-you-title' }, 'Near you')),
     locationBar(),
     h('div', { class: 'near-layout' }, list, mapBox));
 }
@@ -87,14 +87,14 @@ function findCare() {
     const n = h('span', { class: 't-footnote muted num' }, t.key ? 'Loading' : 'Maps and charts');
     if (t.key) counts.set(t.key, n);
     const art = art3d(t.art);
-    art?.setAttribute('class', 'tile-art');
+    art?.setAttribute('class', 'tile-art art3d');
     return h('a', { class: 'care-tile card-link', href: t.href }, art, h('span', { class: 't-headline' }, t.label), n);
   }));
   api('/insights').then((x) => {
     const totals = { ...x.totals, medicines: x.medicines };
     for (const [k, el] of counts) el.textContent = typeof totals[k] === 'number' ? `${totals[k].toLocaleString('en-IN')} listed` : '';
   }).catch(() => { for (const el of counts.values()) el.textContent = 'Count unavailable'; });
-  return h('section', { class: 'stack-12', 'aria-labelledby': 'find-h' }, h('h2', { class: 't-title-2', id: 'find-h' }, 'Find care'), grid);
+  return h('section', { class: 'stack-12', 'aria-labelledby': 'find-h' }, h('div', { class: 'card-icon3d' }, iconTile('doctor', 40), h('h2', { class: 't-title-2', id: 'find-h' }, 'Find care')), grid);
 }
 
 const { main, user } = await shell({ nav: 'dashboard', title: 'Dashboard' });
@@ -210,14 +210,14 @@ function render(d, photoUrl) {
       : h('p', { class: 't-subhead muted' }, 'Lab reports, prescriptions and scans you upload appear here.'));
 
   const sosCard = h('section', { class: 'card stack-12', 'aria-labelledby': 'sos-h' },
-    h('h2', { class: 't-title-3', id: 'sos-h' }, 'In an emergency'),
+    h('div', { class: 'card-icon3d' }, iconTile('ambulance', 52), h('h2', { class: 't-title-3', id: 'sos-h' }, 'In an emergency')),
     h('a', { class: 'sos-key', href: 'tel:112' }, h('span', { class: 'sos-key-title' }, 'Call 112'), h('span', { class: 'sos-key-sub' }, 'National emergency number')),
     h('p', { class: 't-footnote muted' }, 'Ambulance requests through CareRoute are being built and are not live yet.'),
     nearestEmergency());
 
   const completeness = p.completeness < 100 ? h('a', { class: 'card card-link stack-12', href: '/medical-id/' },
     h('div', { class: 'spread' },
-      h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Complete your medical ID'), h('span', { class: 't-subhead muted' }, 'It helps an ambulance crew treat you quickly.')),
+      h('div', { class: 'card-icon3d' }, iconTile('idcard', 48), h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Complete your medical ID'), h('span', { class: 't-subhead muted' }, 'It helps an ambulance crew treat you quickly.'))),
       h('span', { class: 't-title-3 num' }, `${p.completeness}%`)),
     h('div', { class: 'meter', role: 'progressbar', 'aria-valuenow': p.completeness, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-label': 'Medical ID complete' }, h('span', { style: `width:${p.completeness}%` }))) : null;
 
@@ -235,10 +235,10 @@ function render(d, photoUrl) {
     findCare(),
     nearYou(),
     h('div', { class: 'stat-row' },
-      h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, `${d.today.taken}/${d.today.total}`), h('span', { class: 't-subhead muted' }, 'Doses taken today')),
-      h('a', { class: 'stat card-link', href: '/reminders/' }, h('span', { class: 'stat-value' }, String(d.counts.reminders)), h('span', { class: 't-subhead muted' }, 'Active reminders')),
-      h('a', { class: 'stat card-link', href: '/appointments/' }, h('span', { class: 'stat-value' }, String(d.counts.appointments)), h('span', { class: 't-subhead muted' }, 'Upcoming appointments')),
-      h('a', { class: 'stat card-link', href: '/documents/' }, h('span', { class: 'stat-value' }, String(d.counts.documents)), h('span', { class: 't-subhead muted' }, 'Documents'))),
+      h('a', { class: 'stat card-link', href: '/reminders/' }, iconTile('pill', 48), h('span', { class: 'stat-value' }, `${d.today.taken}/${d.today.total}`), h('span', { class: 't-subhead muted' }, 'Doses taken today')),
+      h('a', { class: 'stat card-link', href: '/reminders/' }, iconTile('medicine', 48), h('span', { class: 'stat-value' }, String(d.counts.reminders)), h('span', { class: 't-subhead muted' }, 'Active reminders')),
+      h('a', { class: 'stat card-link', href: '/appointments/' }, iconTile('calendar', 48), h('span', { class: 'stat-value' }, String(d.counts.appointments)), h('span', { class: 't-subhead muted' }, 'Upcoming appointments')),
+      h('a', { class: 'stat card-link', href: '/documents/' }, iconTile('document', 48), h('span', { class: 'stat-value' }, String(d.counts.documents)), h('span', { class: 't-subhead muted' }, 'Documents'))),
     h('div', { class: 'dash-grid' },
       h('div', { class: 'stack-24' }, medsCard, apptCard),
       h('div', { class: 'stack-24' }, detailsCard, docsCard, sosCard))));

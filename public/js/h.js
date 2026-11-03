@@ -168,9 +168,9 @@ export function icon(name, size = 20, options = {}) {
   }, parts.map(([tag, attrs]) => s(tag, attrs)));
 }
 
-/** Shared CareRoute logo used by the app shell and authentication pages. */
-export function brandMark() {
-  return h('img', { class: 'brand-mark', src: '/logo.png', alt: 'CareRoute', width: 2172, height: 724, decoding: 'async' });
+/** Shared CareRoute logo used by the app shell and authentication pages; `light` is for dark backgrounds. */
+export function brandMark({ light = false } = {}) {
+  return h('img', { class: 'brand-mark', src: light ? '/logo-light.svg' : '/logo.svg', alt: 'CareRoute', width: 446, height: 126, decoding: 'async' });
 }
 
 let toastTimer = 0;

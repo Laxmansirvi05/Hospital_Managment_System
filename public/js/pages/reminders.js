@@ -179,6 +179,7 @@ function render() {
   drawList();
   main.replaceChildren(h('div', { class: 'page' },
     pageHead({
+      art: 'pill',
       title: 'Medicine reminders',
       sub: 'Add the medicines you take and when. Mark each dose as taken from your dashboard.',
       actions: h('button', { class: 'btn btn-primary', type: 'button', onclick: () => openForm() }, icon('plus', 18), 'Add reminder'),

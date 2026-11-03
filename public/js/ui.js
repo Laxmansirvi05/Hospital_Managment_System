@@ -1,6 +1,6 @@
 import { h, icon } from './h.js';
 import { dateLong, km } from './format.js';
-import { art3d } from './art3d.js';
+import { art3d, icon3d } from './art3d.js';
 
 /** Page heading; with `art`, a 3D object sits beside it on wide screens (D-61). */
 export function pageHead({ title, sub, crumbs, actions, large = true, art }) {
@@ -175,9 +175,12 @@ export function skeletonList(rows = 4) {
     Array.from({ length: rows }, () => h('div', { class: 'skeleton skeleton-row' })));
 }
 
+// Empty states whose subject has a 3D object show it instead of the line icon.
+const EMPTY_3D = { calendar: 'calendar', clock: 'pill', report: 'document', search: 'pin' };
+
 export function empty({ iconName = 'search', title, text, action }) {
   return h('div', { class: 'empty' },
-    h('span', { class: 'empty-art' }, icon(iconName, 32)),
+    h('span', { class: 'empty-art' }, (EMPTY_3D[iconName] && icon3d(EMPTY_3D[iconName], 56)) || icon(iconName, 32)),
     h('p', { class: 't-title-3' }, title),
     text ? h('p', { class: 't-subhead muted', style: 'max-width:420px' }, text) : null,
     action || null);

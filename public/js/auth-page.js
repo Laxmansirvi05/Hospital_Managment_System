@@ -116,7 +116,7 @@ function videoPanel() {
     video,
     h('div', { class: 'auth-video-overlay', 'aria-hidden': 'true' }),
     h('div', { class: 'auth-video-branding' },
-      h('div', { class: 'auth-video-brand' }, brandMark()),
+      h('div', { class: 'auth-video-brand' }, brandMark({ light: true })),
       h('p', { class: 'auth-video-tagline' }, 'Healthcare, closer to you.')),
     h('div', { class: 'auth-video-copy' },
       h('h1', {},

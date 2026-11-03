@@ -11,7 +11,7 @@ const { main } = await shell({ nav: 'sos', title: 'Emergency' });
 const nearList = h('div', { class: 'list' }, h('div', { class: 'skeleton skeleton-row' }));
 
 main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
-  pageHead({ title: 'Emergency', sub: 'If someone may be seriously ill or injured, call for help now.' }),
+  pageHead({ art: 'ambulance', title: 'Emergency', sub: 'If someone may be seriously ill or injured, call for help now.' }),
   h('a', { class: 'sos-key', href: 'tel:112' }, h('span', { class: 'sos-key-title' }, 'Call 112'), h('span', { class: 'sos-key-sub' }, 'National emergency number. Works from any phone.')),
   h('p', { class: 'notice notice-warning' }, icon('info', 18), h('span', {}, h('strong', {}, 'Ambulance requests through CareRoute are not live yet. '), 'They are being built. Until then, call 112 or a hospital directly.')),
   h('section', { class: 'card stack-16' },
