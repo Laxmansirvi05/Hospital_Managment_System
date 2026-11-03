@@ -291,8 +291,26 @@ export function createMemoryStore() {
           (!p.area || d.place.area === p.area) &&
           (!p.specialization || d.specialization.toLowerCase().includes(p.specialization.toLowerCase())) &&
           (!p.language || (d.languages ?? []).includes(p.language)) && (!p.group || d.sourcePlatform === p.group));
-        const out = near(list.map((d) => ({ ...d, lat: d.place.lat, lng: d.place.lng })), p).map(clone);
-        return p.sort === 'experience' ? out.sort((a, b) => (b.experienceYears ?? -1) - (a.experienceYears ?? -1)) : out;
+        if (p.sort !== 'experience') return near(list.map((d) => ({ ...d, lat: d.place.lat, lng: d.place.lng })), p).map(clone);
+
+        // Match doctorsQuery: apply the experience ordering before pagination and keep
+        // location fields nested under place, with distanceKm only when requested.
+        let ordered = list.map((d) => {
+          if (p.lat == null || p.lng == null) return d;
+          const distance = distanceKm(p, d.place);
+          return { ...d, distance, distanceKm: +distance.toFixed(2) };
+        });
+        if (p.radiusKm) ordered = ordered.filter((d) => d.distance === undefined || d.distance <= p.radiusKm);
+        ordered.sort((a, b) => {
+          const aYears = a.experienceYears;
+          const bYears = b.experienceYears;
+          if (aYears == null && bYears != null) return 1;
+          if (aYears != null && bYears == null) return -1;
+          return (bYears ?? 0) - (aYears ?? 0) || a.name.localeCompare(b.name);
+        });
+        const offset = p.offset ?? 0;
+        const page = ordered.slice(offset, offset + (p.limit ?? 50));
+        return page.map(({ distance, ...d }) => clone({ ...d, total: ordered.length }));
       },
       async doctor(id) { const d = doctors.find((x) => x.id === id); return d ? clone(doctorView(d)) : null; },
       async medicines(p) {
