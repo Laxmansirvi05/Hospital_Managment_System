@@ -24,6 +24,26 @@
   inset: 0;
   display: grid;
   place-items: center;
+  /* As in the student system robot: it grows a little under the cursor and more while carried. */
+  transition: scale 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ast-robot.is-hovered .ast-stage { scale: 1.05; }
+.ast-robot.is-dragging .ast-stage { scale: 1.1; }
+
+/* A ring that spreads once when the panel opens, to show the double tap landed. */
+.ast-ring {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  pointer-events: none;
+  animation: ast-pulse 600ms ease-out forwards;
+}
+
+@keyframes ast-pulse {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to { transform: scale(1.45); opacity: 0; }
 }
 
 /* Until the model is drawn, and without WebGL: a round badge with the assistant mark. */
@@ -153,5 +173,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ast-shadow { transition: none; }
+  .ast-shadow,
+  .ast-stage { transition: none; }
+  .ast-ring { display: none; }
 }

@@ -78,6 +78,8 @@ export function mountRobot() {
   let open = false;
   let scene = null;
   let cursor = null;
+  let hovered = false;
+  let dragging = false;
 
   const badge = h('span', { class: 'ast-badge', 'aria-hidden': 'true' }, icon('assistant', 24));
   const hint = h('span', { class: 'visually-hidden', id: 'ast-hint' }, 'Press Enter to open, or double-tap. Arrow keys or dragging move it.');
@@ -92,6 +94,19 @@ export function mountRobot() {
     'aria-haspopup': 'dialog',
     'aria-expanded': 'false',
   }, shadow, stage, hint);
+
+  // One place decides the expression: carried beats open, open beats hover.
+  function paintMood() {
+    robot.classList.toggle('is-dragging', dragging);
+    robot.classList.toggle('is-hovered', hovered && !dragging);
+    robot.classList.toggle('is-open', open);
+    scene?.setMood(dragging ? 'dragging' : open ? 'open' : hovered ? 'happy' : 'idle');
+  }
+  function pulse() {
+    const ring = h('span', { class: 'ast-ring', 'aria-hidden': 'true' });
+    stage.append(ring);
+    setTimeout(() => ring.remove(), 700);
+  }
 
   const place = (p) => { robot.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`; };
   const paintSize = () => { robot.style.setProperty('--ast-size', `${size}px`); };
@@ -128,8 +143,8 @@ export function mountRobot() {
     open = next;
     panel.hidden = !open;
     robot.setAttribute('aria-expanded', String(open));
-    robot.classList.toggle('is-open', open);
-    scene?.setMood(open ? 'open' : 'idle');
+    paintMood();
+    if (open) pulse();
     if (open) {
       placePanel();
       focusPanel();
@@ -150,8 +165,8 @@ export function mountRobot() {
     if (!drag.moved) {
       if (Math.hypot(dx, dy) <= DRAG_THRESHOLD_PX) return;
       drag.moved = true;
-      robot.classList.add('is-dragging');
-      scene?.setMood('dragging');
+      dragging = true;
+      paintMood();
     }
     drag.latest = clamp({ x: drag.ox + dx, y: drag.oy + dy });
     if (!drag.frame) {
@@ -180,11 +195,13 @@ export function mountRobot() {
       }
     }
     drag = null;
-    robot.classList.remove('is-dragging');
-    scene?.setMood(open ? 'open' : 'idle');
+    dragging = false;
+    paintMood();
   }
   robot.addEventListener('pointerup', (e) => endDrag(e, false));
   robot.addEventListener('pointercancel', (e) => endDrag(e, true));
+  robot.addEventListener('pointerenter', () => { hovered = true; paintMood(); });
+  robot.addEventListener('pointerleave', () => { hovered = false; paintMood(); });
   // Screen readers (VoiceOver, TalkBack) activate with one synthetic click, which has no pointer taps.
   robot.addEventListener('click', (e) => {
     if (e.detail === 0) setOpen(!open);
@@ -249,7 +266,7 @@ export function mountRobot() {
         return;
       }
       robot.classList.add('has-model');
-      scene.setMood(open ? 'open' : 'idle');
+      paintMood();
     } catch (err) {
       clearTimeout(timer);
       canvas.remove();

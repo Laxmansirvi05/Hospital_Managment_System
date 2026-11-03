@@ -4,6 +4,14 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-03
 
+### Assistant robot: neck, white body, face expressions (D-64)
+
+- The owner saw the neck open when the head turned. The robot is now one piece: it leans towards the cursor as a whole, as the student system's robot does, so nothing can open at the neck. `scripts/convert-robot.mjs` no longer splits the mesh and keeps the model's own smooth normals.
+- The texture's cream areas are pulled to pure white, and the face printed on the visor is painted out. The converter finds the visor from its near-black texture, fits a thin curved surface just in front of it, and stores it as `face` in `robot.glb` (390 KB).
+- The face is drawn live: eyes and mouth glow on the visor and slide towards the cursor, the eyes blink every 3 to 6.5 seconds, and the expression changes: happy eyes under the cursor, wide eyes and a round mouth while carried, slightly larger eyes while the panel is open.
+- Motion matches the student system robot: a 6 second float, 1.05 scale on hover and 1.1 while carried, and a ring that spreads once when the panel opens. Reduced motion keeps all of it still.
+- Checked with a 360 px robot in headless Chromium (SwiftShader): looking left, right, up and down, happy, carried and open states. New e2e test: with reduced motion the robot's frame does not change when the cursor moves. Playwright 10 passed, unit and API 105 passed.
+
 ### Assistant robot, design only (D-64)
 
 - Decided D-64 at the owner's request: a floating 3D medical robot on every signed-in patient page opens the AI assistant. What the assistant does is still OPEN.

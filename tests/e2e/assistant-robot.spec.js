@@ -70,4 +70,20 @@ test.describe('Assistant robot', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
     await context.close();
   });
+
+  test('stays still and does not follow the cursor when reduced motion is asked for', async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    await signUp(page);
+    await expect(page.locator('.ast-robot.has-model')).toBeVisible({ timeout: 15000 });
+    const robot = page.locator('.ast-robot');
+    const box = await robot.boundingBox();
+    await page.mouse.move(20, 20);
+    const first = await robot.screenshot();
+    await page.mouse.move(1260, 780, { steps: 5 });
+    await page.waitForTimeout(1000);
+    expect((await robot.screenshot()).equals(first)).toBe(true);
+    expect(await robot.boundingBox()).toEqual(box);
+    await context.close();
+  });
 });
