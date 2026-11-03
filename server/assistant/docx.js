@@ -4,8 +4,10 @@
 import { inflateRawSync } from 'node:zlib';
 
 const MAX_TEXT = 60000;
-// Parsing budget (security review, 2026-11-03): a document body larger than this is not read.
 const MAX_XML = 2 * 1024 * 1024;
+const MAX_ENTRIES = 256;
+const MAX_TOTAL_UNCOMPRESSED = 8 * 1024 * 1024;
+const MAX_COMPRESSION_RATIO = 1000;
 
 /** The bytes of one file inside a zip, found through the central directory. */
 function zipEntry(buf, wanted) {
@@ -18,27 +20,41 @@ function zipEntry(buf, wanted) {
   if (eocd === -1) return null;
   const count = buf.readUInt16LE(eocd + 10);
   let p = buf.readUInt32LE(eocd + 16);
+  const centralSize = buf.readUInt32LE(eocd + 12);
+  if (count > MAX_ENTRIES || p + centralSize > eocd || count === 0xffff) return null;
+  let totalUncompressed = 0;
+  let target = null;
   for (let n = 0; n < count && p + 46 <= buf.length; n++) {
     if (buf.readUInt32LE(p) !== 0x02014b50) return null;
     const method = buf.readUInt16LE(p + 10);
     const compressed = buf.readUInt32LE(p + 20);
+    const uncompressed = buf.readUInt32LE(p + 24);
     const nameLen = buf.readUInt16LE(p + 28);
     const extraLen = buf.readUInt16LE(p + 30);
     const commentLen = buf.readUInt16LE(p + 32);
     const local = buf.readUInt32LE(p + 42);
+    if (p + 46 + nameLen + extraLen + commentLen > eocd) return null;
     const name = buf.toString('utf8', p + 46, p + 46 + nameLen);
+    const parts = name.replaceAll('\\', '/').split('/');
+    if (name.includes('\\') || name.startsWith('/') || parts.some((part) => part === '..') || /\.(?:zip|docx|7z|rar|tar)$/i.test(name)) return null;
+    if (uncompressed > MAX_XML) return null;
+    totalUncompressed += uncompressed;
+    if (totalUncompressed > MAX_TOTAL_UNCOMPRESSED) return null;
+    if (uncompressed > 0 && (compressed === 0 || uncompressed / compressed > MAX_COMPRESSION_RATIO)) return null;
+
+    if (local + 30 > p || buf.readUInt32LE(local) !== 0x04034b50) return null;
+    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    if (start + compressed > p) return null;
+    if (method === 0 && compressed >= 4 && buf.readUInt32LE(start) === 0x04034b50) return null;
     if (name === wanted) {
-      if (local + 30 > buf.length || buf.readUInt32LE(local) !== 0x04034b50) return null;
-      const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
       const data = buf.subarray(start, start + compressed);
-      if (method === 0) return data;
-      // A zip bomb is stopped by the output cap.
-      if (method === 8) return inflateRawSync(data, { maxOutputLength: MAX_XML });
-      return null;
+      if (method === 0) target = data;
+      else if (method === 8) target = inflateRawSync(data, { maxOutputLength: MAX_XML });
+      else return null;
     }
     p += 46 + nameLen + extraLen + commentLen;
   }
-  return null;
+  return p === buf.readUInt32LE(eocd + 16) + centralSize ? target : null;
 }
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
@@ -57,7 +73,9 @@ export function docxText(bytes) {
   try {
     const entry = zipEntry(Buffer.from(bytes), 'word/document.xml');
     if (!entry || entry.length > MAX_XML) return null;
-    const text = entry.toString('utf8')
+    const xml = entry.toString('utf8');
+    if (/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) return null;
+    const text = xml
       // Line breaks inside the XML are formatting, not text.
       .replace(/\r?\n/g, '')
       .replace(/<w:tab\/>/g, '\t')

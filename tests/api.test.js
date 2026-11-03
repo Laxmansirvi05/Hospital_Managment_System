@@ -677,6 +677,8 @@ describe('AI assistant (D-65 to D-68, fake model provider)', () => {
     const answer = r.body.messages[1];
     expect(answer).toMatchObject({ urgency: 'emergency', sosRecommended: true, results: [] });
     expect(answer.text).toContain('112');
+    expect(answer.text).not.toContain('This sounds mild');
+    expect(calls).toHaveLength(0);
     expect(answer.disclaimer).toMatch(/not a diagnosis/);
   });
 

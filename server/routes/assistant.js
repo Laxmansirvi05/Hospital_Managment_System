@@ -16,8 +16,6 @@ import { todayIst } from './patients.js';
 import { log } from '../log.js';
 
 const PATIENT = ['patient'];
-const URGENCY = ['routine', 'urgent', 'emergency'];
-const rank = (u) => URGENCY.indexOf(u);
 
 const triageSchema = z.object({
   message: z.string().trim().min(1, 'Describe the symptoms').max(2000),
@@ -99,6 +97,17 @@ async function answer({ text, history, facts, files = [], requestId }) {
   // red flag stays an emergency instead of being judged on its own.
   const recent = history.filter((m) => m.role === 'user').slice(-3).map((m) => m.content);
   const rules = checkRedFlags([...recent, text].join('. '));
+  if (rules.redFlag) {
+    return {
+      reply: ruleReply(rules),
+      urgency: 'emergency',
+      sosRecommended: true,
+      suggestedSpecialty: 'Emergency Medicine',
+      search: { kind: 'none' },
+      provider: null,
+      rules: rules.matched.map((m) => m.id),
+    };
+  }
   const context = facts ? `Health facts the patient shared (no identity): ${JSON.stringify(facts)}` : 'The patient has not filled in health facts.';
   const result = await getAi().complete({
     requestId,
@@ -115,16 +124,14 @@ async function answer({ text, history, facts, files = [], requestId }) {
   const unavailable = files.some((f) => f.kind !== 'text')
     ? 'I could not read that document just now. Please try again in a while; the free reading service has a daily limit.'
     : 'I cannot reach the assistant service right now. You can still search for doctors, hospitals, medicines and tests, and in an emergency call 112.';
-  let reply = model?.reply || (rules.redFlag ? ruleReply(rules) : unavailable);
+  let reply = model?.reply || unavailable;
   if (breaksLimits(reply)) {
     log.warn('assistant_limit_blocked', { requestId, provider: result?.provider });
     reply = SAFE_FALLBACK;
   }
   // Safety floor: the rules decide the lowest urgency; a model may only raise it.
   // With no model answer the safe default is to see a doctor soon, never "not urgent".
-  let urgency = model?.urgency || (rules.redFlag ? 'emergency' : 'urgent');
-  if (rules.redFlag && rank(urgency) < rank('emergency')) urgency = 'emergency';
-  if (rules.redFlag && !/112/.test(reply)) reply = `${ruleReply(rules)} ${reply}`.slice(0, 1500);
+  const urgency = model?.urgency || 'urgent';
   return {
     reply,
     urgency,
