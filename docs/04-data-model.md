@@ -10,6 +10,10 @@ Status: PROPOSED. Field names that appear in the Postman collection are kept exa
 - Enums are real Postgres enums.
 - Row Level Security is enabled on every table. No policy grants access to `anon` or `authenticated`. All access goes through the server.
 
+### Verified database state (2026-11-04)
+
+This is an observation, not a replacement for the proposed design above. Read-only Supabase checks found 16 applied migrations in dev and 14 in prod. Dev includes `assistant_conversations`, `assistant_messages`, and `users.assistant_consent_at`; prod has not applied those migrations. The two assistant tables have RLS enabled in dev. `careroute_api` has SELECT, INSERT, UPDATE, and DELETE on both tables; no `anon` or `authenticated` grants were found. Dev's `postgres` default privileges grant these table privileges to `careroute_api` for later `postgres`-created tables. The production role/grants still need owner verification after the migrations are applied.
+
 ## 2. Enums
 
 | Enum | Values | Source |
@@ -35,6 +39,7 @@ Status: PROPOSED. Field names that appear in the Postman collection are kept exa
 | phone | E.164, for example `+919876500000`. Optional since 2026-10-27 (D-63): sign-up does not ask for it |
 | password_hash | `scrypt$N$r$p$salt$hash` (D-24). Empty for a Google account until the patient sets a password (D-63) |
 | google_sub | Google's account id from the ID token, unique, empty unless the patient used Google (D-63). A check requires a password or a Google id |
+| assistant_consent_at | Timestamp of the patient's assistant provider consent (D-67). NULL means no consent. Present in dev only as of 2026-11-04. |
 | role | `user_role`, default `patient` |
 | disabled_at | set when the admin disables the account (P-22) |
 | created_at, updated_at | |
@@ -191,6 +196,10 @@ Append-only timeline of every step: created, offered, accepted, rejected, status
 ### medical_reports (PROPOSED, Q-11)
 
 See `08-medical-reports.md`. Hospital sharing was removed (D-29), so `report_shares` is no longer needed. A `share_with_crew` column is added only if Q-11 allows crew access. Report explanations are not stored by default (P-21).
+
+### patient_files (implemented)
+
+The current application stores documents and profile photos in `patient_files`, with private object storage. The implemented record has `id`, `user_id`, `purpose`, `title`, `kind`, `file_name`, `content_type`, `size_bytes`, `storage_path`, `status`, and timestamps. `20261103000200_more_document_types.sql` adds DOCX and WebP to the allowed content types in dev. This implemented storage table is distinct from the proposed report-specific model above; production still has the earlier file-type constraint until its migration is approved and applied.
 
 ### admin_audit (PROPOSED, P-22)
 

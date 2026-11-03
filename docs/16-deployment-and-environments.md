@@ -6,9 +6,9 @@ Hosting is Vercel plus Supabase only (D-10). No separate server.
 
 | Environment | Web and API | Database | Keys |
 | --- | --- | --- | --- |
-| Local | Local dev server on port 4000 serving `public/` and the API function (to be rebuilt when building starts) | Supabase CLI local stack in Docker (colima). Optional once the cloud development project exists. | `.env.local`, untracked |
-| Preview | Vercel preview deployment per branch | Supabase development project (D-18) | Vercel preview variables, never production keys |
-| Production | Vercel production | Supabase production project (D-18) | Vercel production variables, marked sensitive |
+| Local | Local dev server on port 4000 serving `public/` and the API | `.env.local` targeted `careroute-dev` on 2026-11-04. A separate sample-mode server uses the in-memory store. | `.env.local`, untracked |
+| Preview | Vercel preview deployment per branch | Intended target is Supabase development project (D-18); current Vercel target is UNVERIFIED. Last documented check was 2026-10-25. | Vercel preview variables, never production keys; current names/assignments UNVERIFIED. |
+| Production | Vercel production | Intended target is Supabase production project (D-18); current Vercel target is UNVERIFIED. Last documented check was 2026-10-25. | Vercel production variables, marked sensitive; current names/assignments UNVERIFIED. |
 
 Two Supabase projects are used: development and previews, and production (D-18).
 
@@ -19,7 +19,7 @@ The authoritative list and browser exposure rules are in `09-security.md` sectio
 | Scope | Variables |
 | --- | --- |
 | Browser (public by design, returned only by `/api/v1/config`) | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_MAPTILER_KEY` |
-| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (D-63, both or neither; redirect URI `<site>/api/v1/auth/google/callback`), `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
+| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (D-63, both or neither; redirect URI `<site>/api/v1/auth/google/callback`), `GROQ_API_KEY`, `GROQ_MODEL`, `ASSISTANT_DAILY_LIMIT`, `OPENROUTER_API_KEY`, `OPENROUTER_MODELS`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
 
 Rules:
 
@@ -39,9 +39,8 @@ Facts below were checked while writing these documents. Anything not listed here
 | Twilio trial | Sends only to verified numbers, up to 5 recipients. Twilio's India page says the international route needs no DLT registration, while the domestic route needs company and sender ID registration on the operators' DLT portal. The page does not mention trial accounts, so delivery to Indian numbers on a trial is still unconfirmed. | Demo contacts are limited to verified numbers. Test one Indian number early. |
 | Mapbox | Matrix API: at most 25 input coordinates and 60 requests per minute (Mapbox documentation). The Terms of Service page has no clause restricting use with another provider's map, and requires telling end users when Directions is used in an app. The separate Product Terms were not read. | Pre-filter with PostGIS to 25 candidates or fewer. Show the Directions disclosure. Read the Product Terms before WP-5. |
 | MapTiler free tier | 100,000 API requests and 5,000 sessions per month. Free plan is non-commercial use and research and development only. Going over can suspend the account. The commercial plan starts at 25 US dollars a month. | Fine for a demo. A commercial launch needs a paid plan, which is a cost decision for the owner (Q-20). |
-| Gemini API | Google's terms for unpaid services allow using inputs and outputs to improve its products, with human review. Paid usage is excluded. AI Studio counts as unpaid even with billing set up. | Demo uses synthetic symptom text only. Real use needs paid usage. See Q-17. |
-| Groq | Secondary sources say no training on API data and no default retention, with up to 30 days of reliability logs. Not confirmed from Groq's own pages. | Read Groq's data policy before WP-6 |
-| OpenRouter | Some free models run on hosts whose terms allow training. A data collection setting set to deny excludes them. Secondary sources. | Send the deny setting on every request, confirm in OpenRouter's docs before WP-6 |
+| Groq | The official data page says inference requests are not used to train models by default, and prompt/completion content can be retained for reliability and abuse monitoring for up to 30 days. The account can enable Zero Data Retention in Data Controls. Data is stored in GCP buckets in the US; processing location is not established by that page. | Review the account setting and provider agreement before sending real documents. See the 2026-11-04 release report. |
+| OpenRouter | OpenRouter states it does not train on prompts itself. Prompt logging is opt-in on OpenRouter, but underlying model providers may have their own retention and training policies. Provider data-collection controls and ZDR can restrict eligible endpoints. | Verify account-wide settings and each provider/model endpoint before real documents. A free model label alone does not establish privacy. |
 | pg_cron | Verified on `careroute-dev`: a 30 second schedule is accepted and ran twice, 30 seconds apart, both succeeded. | Offer expiry design stands (D-12). The extension is now installed on dev with no jobs. |
 | Supabase Free | Storage size, database size and Realtime connection and message limits not yet verified | Check before WP-3, WP-5 and WP-9. Listing tables for all of Hyderabad add to database size. |
 | Listing and medicine price sources | Online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Terms, robots.txt and official APIs were checked on 2026-10-24: the terms forbid reproducing content without written permission, 1mg's terms name robots and forbid deep linking, and no public data API was found. Details in `19-setup-checklist.md`. Where the collection job runs is not decided: Vercel Hobby cron runs at most once a day and functions have time limits. | Answer Q-28 before WP-3 and WP-10 |
@@ -49,7 +48,7 @@ Facts below were checked while writing these documents. Anything not listed here
 | Vercel | Function duration and invocation limits for the plan in use not yet verified | Check before WP-5 |
 | Vercel Hobby | Sources disagree on how many functions one deployment may hold (one reports 12, another says it depends on the framework) | The API is one function with a router, so this should not matter. Confirm in WP-0. |
 
-Update this table whenever a limit is confirmed.
+Update this table whenever a limit is confirmed. On 2026-11-04, official Vercel documentation listed one hour of runtime log retention for Hobby. The requested seven-day runtime-log lookback cannot be obtained on this plan. Production deployment and environment checks remain unverified because authorization for the `laxman-sirvi-s-projects` team scope was denied.
 
 ## 4. Database setup
 

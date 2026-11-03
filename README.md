@@ -4,17 +4,17 @@ CareRoute is a healthcare discovery and assistance platform for Hyderabad. It ha
 
 1. **Healthcare discovery.** Search hospitals, doctors, medicines and their listed prices, pharmacies and diagnostic centres. Each result shows public details and links to the provider, who handles any booking, order or payment.
 2. **AI healthcare assistant.** Explains a medical report in plain language and helps people find relevant care from a description in ordinary words. It never diagnoses or prescribes.
-3. **Emergency ambulance system.** A patient or bystander raises an SOS. The nearest suitable ambulance is offered the job, ranked by road ETA and vehicle type, and the driver accepts or rejects it. The patient and family follow it live.
+3. **Emergency ambulance system.** The SOS interface is a demo and is not connected to a live ambulance operator or dispatch workflow. Real operation remains open under Q-21.
 
 Roles are patient, driver and platform admin. There is no hospital portal.
 
 ## Status
 
-Documentation phase. No application code yet. The documents in `docs/` are drafts for the owner's approval. Items that are decided are marked LOCKED in [`docs/00-decisions.md`](docs/00-decisions.md). Items that still need an answer are marked OPEN there.
+Development is active. `docs/00-decisions.md` is the source of truth for owner decisions; other documents describe implementation and proposals. The demo is not a live ambulance dispatch service.
 
 ## Stack
 
-HTML, CSS and JavaScript as the foundation, with a Node.js API, on Vercel. UI frameworks and TypeScript only when necessary and approved. Listing and medicine data from online platforms such as Apollo, MedPlus and Tata 1mg. Supabase for PostgreSQL with PostGIS, file Storage and Realtime. MapLibre with MapTiler tiles for maps. Mapbox for road ETA. Gemini, then Groq, then OpenRouter for the symptom assistant. Twilio trial for SMS. Web only, responsive, English only.
+HTML, CSS and JavaScript as the foundation, with a Node.js API, on Vercel. UI frameworks and TypeScript only when necessary and approved. Listing and medicine data from documented sources, subject to D-53 and source permissions. Supabase for PostgreSQL with PostGIS, file Storage and Realtime. MapLibre with MapTiler tiles for maps. Mapbox for road ETA. Groq, then OpenRouter for the assistant under D-66. Twilio trial for SMS. Web only, responsive, English only.
 
 ## Documents
 

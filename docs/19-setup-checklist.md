@@ -17,15 +17,15 @@ Everything that must exist before building restarts. Each row says what to creat
 | # | Service | Needed for | Status |
 | --- | --- | --- | --- |
 | 1 | GitHub | Code and CI | Done. Repository `Laxmansirvi05/Hospital_Managment_System`, public. All work is on `main`. |
-| 2 | Supabase | Database, Storage, Realtime | Projects done. `careroute-dev` (ref `jelepdfgdxbkbmocrnnx`) and `careroute-prod` (ref `qbiltbhqtesdidjxpscf`), both in `ap-south-1`, free plan, new account. Both have all 6 migrations; dev also has the seed data, prod has none. `.env.local` and Vercel Preview point at dev; Vercel Production points at prod. Account is at the 2 project free limit. |
-| 3 | Vercel | Hosting | Project `careroute` created on the Hobby plan, linked to the GitHub repository, function region `bom1` Mumbai (PROPOSED, next to Supabase `ap-south-1`). Vercel Authentication protects deployments. GitHub link confirmed by the first deploy. Preview and Production environment variables set and checked on 2026-10-25. |
+| 2 | Supabase | Database, Storage, Realtime | Projects `careroute-dev` (`jelepdfgdxbkbmocrnnx`) and `careroute-prod` (`qbiltbhqtesdidjxpscf`) are active in `ap-south-1`. Read-only migration checks on 2026-11-04 found 16 applied migrations on dev and 14 on prod. Dev includes the assistant and additional document-type migrations; prod does not. Current plan, backups, Storage settings and dashboard Auth settings were not available through the connector and remain UNKNOWN. `.env.local` was classified as dev without printing values. Vercel environment targets were not rechecked because the Vercel project scope remained denied. |
+| 3 | Vercel | Hosting | Project `careroute` was last documented on the Hobby plan, linked to the GitHub repository, function region `bom1` Mumbai (PROPOSED, next to Supabase `ap-south-1`). Vercel Authentication protects deployments. GitHub link was confirmed by the first deploy. Preview and Production environment variables were last checked on 2026-10-25; current scope access and variable names/targets are UNVERIFIED. |
 | 4 | MapTiler | Map tiles | To do |
 | 5 | Mapbox | Road ETA and matrix | To do |
-| 6 | Google AI Studio (Gemini) | Triage, first choice | To do |
-| 7 | Groq | Triage, second choice | To do |
-| 8 | OpenRouter | Triage, third choice | To do |
+| 6 | Google AI Studio (Gemini) | Triage | Not configured in current code. D-66 uses Groq, then OpenRouter until the owner changes D-66. |
+| 7 | Groq | Assistant | Configured in current code as the first provider when a valid key is present. Provider terms and retention limits are summarized in `docs/audit/RELEASE_READINESS_2026-11-04.md`. |
+| 8 | OpenRouter | Assistant fallback | Configured in current code as the second provider with `:free` models when a valid key is present. Review the exact routed provider before sending real documents. |
 | 9 | Twilio | SMS | To do |
-| 10 | Listing and medicine price data | Discovery | Hospitals, pharmacies and diagnostic centres from OpenStreetMap (D-50) and doctors from CARE Hospitals' website (D-52): loaded on 2026-10-25, see "Real listing data" below. Medicine prices (D-53): waiting for the owner's data.gov.in API key. Scheduled refresh waits for Q-28. |
+| 10 | Listing and medicine price data | Discovery | Hospitals, pharmacies and diagnostic centres from OpenStreetMap (D-50) and doctors from hospital websites (D-52): loaded on 2026-10-25, see "Real listing data" below. D-53 specifies NPPA ceiling prices and Jan Aushadhi prices through data.gov.in, but an NPPA dataset/API and key variable are not yet verified. No NPPA collector is implemented. Q-28 remains open, and refresh is manual. |
 | 11 | Assistant external sources | AI assistant | Not chosen (Q-26). Nothing to create until the owner decides. |
 
 ## To connect the app to careroute-dev (next step for the owner)
@@ -63,6 +63,8 @@ Then run `pnpm dev`. When the "Sample data mode" banner is gone, the app is usin
 
 Used only by `node --env-file=.env.local scripts/load-listings.js --prod`. Grants checked on 2026-10-25: `SELECT, INSERT, UPDATE` on `hospitals`, `pharmacies`, `diagnostic_centres`, `doctors`, `medicines`, `medicine_listings`, `test_prices`. No DELETE, no reviews, no patient tables, `BYPASSRLS`. Password only in `.env.local` as `PROD_IMPORT_DATABASE_URL`. To add a table to imports: `grant select, insert, update on public.<table> to careroute_import;`.
 
+The last read-only role inventory found `careroute_import` on prod and not on dev. Its table grants and password source above are from the 2026-10-25 check; recheck before an import.
+
 #### Database role `careroute_api` (D-49, LOCKED)
 
 Created on careroute-prod and careroute-dev on 2026-10-25, first because the prod `postgres` password was not available, then on dev so both behave the same. The owner allowed the SQL tool for this.
@@ -88,15 +90,15 @@ Created on careroute-prod and careroute-dev on 2026-10-25, first because the pro
 - Variable: `MAPBOX_SECRET_TOKEN`.
 - Before building WP-5, read Mapbox's terms on using its routing results with a map from another provider (MapTiler). Record the answer in `00-decisions.md`.
 
-### 6 to 8. Triage models (D-07)
+### 6 to 8. Assistant models (D-66)
 
 | Provider | Variable | Check before WP-6 |
 | --- | --- | --- |
-| Google AI Studio, Gemini API | `GEMINI_API_KEY` | Whether the plan in use may train on submitted text (Q-17), rate limits |
-| Groq | `GROQ_API_KEY` | Same |
-| OpenRouter | `OPENROUTER_API_KEY` | Same, plus which models are allowed |
+| Groq | `GROQ_API_KEY`, optional `GROQ_MODEL` | First provider in current code. Official data controls and retention are summarized in the 2026-11-04 release report. |
+| OpenRouter | `OPENROUTER_API_KEY`, optional `OPENROUTER_MODELS` | Second provider. Configure privacy controls and check the selected host before real health data is sent. |
+| Google AI Studio, Gemini API | No current code path | D-07's earlier order is superseded by D-66 until the owner explicitly changes it. |
 
-All three are server only. Symptom text is the only health data they ever receive (`07-ai-triage.md` section 4).
+These are server-only. D-67 allows a patient's message, selected medical ID fields, and uploaded document contents after consent. The exact fields and exclusions are listed in `07-ai-triage.md` and the release report.
 
 ### 9. Twilio (D-13)
 
@@ -120,8 +122,8 @@ Where a finding came only from secondary sources, it says so. Details by service
 | pg_cron on Supabase | Verified by running it on `careroute-dev`. A 30 second schedule works. |
 | Mapbox | No clause found limiting use with another map provider. Product Terms still unread. Matrix API allows 25 coordinates and 60 requests a minute. |
 | MapTiler | Free plan is non-commercial. Fine for the demo, paid for launch (Q-20). |
-| Gemini | Free and AI Studio usage may be used and human-reviewed by Google. The demo must use synthetic symptom text only (Q-17). |
-| Groq, OpenRouter | Secondary sources only. Read their own policies before WP-6. |
+| Groq | Its official data page says inference inputs and outputs can be temporarily retained for up to 30 days for reliability and abuse monitoring by default; Zero Data Retention may be enabled in Data Controls. Review the current account setting before real use. |
+| OpenRouter | OpenRouter says it does not train on prompts itself, but routed providers have separate data policies. Use provider data-collection denial or ZDR controls and check each selected endpoint. |
 | Twilio India | Domestic route needs DLT registration, international does not. Trial delivery to Indian numbers unconfirmed. Test one number. |
 
 ## Platform data research for Q-28 (checked 2026-10-24)

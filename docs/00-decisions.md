@@ -156,7 +156,7 @@ Each of these blocks specific work. The "Blocks" column says what cannot start u
 | Q-18 | Custom domain, and whether Vercel's Hobby plan terms allow this demo's intended use. | Deployment |
 | Q-21 | The vision says CareRoute should work with real ambulance operators and drivers. D-04 says this is a demo with real integrations out of scope. Does the demo stay synthetic, with real operators as a later phase? Real dispatch needs partnerships, driver checks, legal review and coverage that a free-tier demo cannot promise. | Any use with real ambulances or real patients |
 | Q-26 | The vision says the assistant may use external information sources. Which ones, through what service, at what cost, and under what terms? | Assistant work beyond CareRoute's own data |
-| Q-28 | Where the collection job runs. Vercel Hobby cron runs once a day with short function time limits, and D-10 allows only Vercel and Supabase. Options: daily Vercel cron in small batches, Supabase Edge Functions with pg_cron, or GitHub Actions (outside D-10, needs approval). Sources and rules are decided (D-46, P-29). Until this is answered, data is loaded by one-off scripts run by hand (`scripts/import-*.js`). | Scheduled data refresh |
+| Q-28 | Where the collection job runs. Vercel Hobby cron runs once a day with short function time limits, and D-10 allows only Vercel and Supabase. Options: daily Vercel cron in small batches, Supabase Edge Functions with pg_cron, or GitHub Actions (outside D-10, needs approval). Sources and rules are decided (D-46, P-29). Until this is answered, data is loaded by one-off scripts run by hand (`scripts/collect-*.js` and `scripts/load-listings.js`). | Scheduled data refresh |
 
 ## 5. How to change this file
 
