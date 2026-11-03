@@ -12,6 +12,7 @@ import { routes as files } from './routes/files.js';
 import { routes as discovery } from './routes/discovery.js';
 import { routes as account } from './routes/account.js';
 import { routes as reviews } from './routes/reviews.js';
+import { routes as assistant } from './routes/assistant.js';
 
 const PREFIX = '/api/v1';
 
@@ -41,7 +42,7 @@ export function buildTable(list) {
   return table.sort((a, b) => b.statics - a.statics || b.parts.length - a.parts.length);
 }
 
-const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews]);
+const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews, ...assistant]);
 
 function match(table, method, pathname) {
   const parts = pathname.split('/').filter(Boolean);

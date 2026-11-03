@@ -1,0 +1,122 @@
+// The assistant's model providers (D-66): Groq first, then OpenRouter, both through the same
+// OpenAI-style chat API. A provider that fails, times out or answers with something that is not
+// JSON is skipped for the next one. Only fixed reason codes are logged, never what was sent or
+// received, because messages carry health facts (D-67).
+import { getConfig } from '../config.js';
+import { log } from '../log.js';
+
+const TIMEOUT_MS = 20000;
+
+class AiError extends Error {
+  constructor(reason) {
+    super(reason);
+    this.reason = reason;
+  }
+}
+
+/** The first JSON object in a model's text, which may be wrapped in a code fence or prose. */
+export function firstJson(text) {
+  const s = String(text || '');
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start === -1 || end <= start) throw new AiError('no_json');
+  try {
+    return JSON.parse(s.slice(start, end + 1));
+  } catch {
+    throw new AiError('bad_json');
+  }
+}
+
+async function call(provider, { system, messages, files }) {
+  // Documents go as parts beside the text: images as pictures, PDFs as files OpenRouter reads.
+  const content = (m) => (m.files?.length && provider.files
+    ? [{ type: 'text', text: m.content }, ...m.files.map((f) => (f.kind === 'image'
+      ? { type: 'image_url', image_url: { url: f.dataUrl } }
+      : { type: 'file', file: { filename: f.name, file_data: f.dataUrl } }))]
+    : m.content);
+  const body = {
+    model: provider.model,
+    temperature: 0.2,
+    // Room for a document explanation, and for models that think before answering.
+    max_tokens: files ? 2600 : 1400,
+    messages: [{ role: 'system', content: system }, ...messages.map((m) => ({ role: m.role, content: content(m) }))],
+  };
+  // Groq's reasoning models answer faster with less hidden thinking; the answer itself is unchanged.
+  if (provider.name === 'Groq') {
+    body.reasoning_effort = 'low';
+    body.response_format = { type: 'json_object' };
+  }
+  if (files && !provider.files) throw new AiError('no_file_support');
+  // OpenRouter's free PDF reader extracts the text; its paid OCR engine is never asked for.
+  if (provider.fallbacks?.length) body.models = [provider.model, ...provider.fallbacks];
+  if (files && provider.name === 'OpenRouter') body.plugins = [{ id: 'file-parser', pdf: { engine: 'pdf-text' } }];
+  let res;
+  try {
+    res = await fetch(provider.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${provider.key}`, 'Content-Type': 'application/json', 'X-Title': 'CareRoute' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (err) {
+    throw new AiError(err?.name === 'TimeoutError' ? 'timeout' : 'unreachable');
+  }
+  if (!res.ok) throw new AiError(`http_${res.status}`);
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new AiError('response_not_json');
+  }
+  const text = data?.choices?.[0]?.message?.content;
+  if (typeof text !== 'string' || !text.trim()) throw new AiError('empty');
+  try {
+    return firstJson(text);
+  } catch {
+    // Some vision models answer in prose despite the instruction, or run out of room mid-JSON. The
+    // reply text is recovered either way; the caller still applies the rules, the safety check and
+    // its own defaults for the other fields.
+    const cut = /"reply"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(text);
+    let reply = text;
+    if (cut) {
+      try {
+        reply = JSON.parse(`"${cut[1].replace(/\\$/, '')}"`);
+      } catch {
+        reply = cut[1];
+      }
+    }
+    return { reply: reply.replace(/[#*_`>]+/g, '').replace(/[ \t]+/g, ' ').trim().slice(0, 1500) };
+  }
+}
+
+function providers() {
+  return {
+    /**
+     * Asks each provider in turn for a JSON answer. Documents go only to a provider that can read
+     * them. Resolves to { data, provider }, or to null when every provider failed.
+     */
+    async complete({ system, messages, requestId }) {
+      const files = messages.some((m) => m.files?.length);
+      for (const provider of getConfig().aiProviders) {
+        if (files && !provider.files) continue;
+        try {
+          return { data: await call(provider, { system, messages, files }), provider: provider.name };
+        } catch (err) {
+          log.warn('assistant_provider_failed', { requestId, provider: provider.name, reason: err.reason || 'unexpected' });
+        }
+      }
+      return null;
+    },
+  };
+}
+
+let ai = null;
+export function getAi() {
+  if (!ai) ai = providers();
+  return ai;
+}
+
+/** Test hook: replace the providers with a fake. */
+export function setAiForTests(fake) {
+  ai = fake;
+}

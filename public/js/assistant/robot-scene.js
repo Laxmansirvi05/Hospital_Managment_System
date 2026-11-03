@@ -4,7 +4,8 @@
 // Movement follows the robot in the owner's student management system: the whole robot leans
 // towards the cursor (it is one piece, so no gap can open at the neck), the face slides across the
 // visor the same way, it floats slowly, and it blinks. Expressions show what is happening: happy
-// when the cursor is over it, surprised while it is carried, attentive while the panel is open.
+// when the cursor is over it, surprised while it is carried, attentive while the panel is open, and
+// looking up in thought while it waits for an answer.
 import * as THREE from '/vendor/three/three.module.min.js';
 import { GLTFLoader } from '/vendor/three/GLTFLoader.js';
 
@@ -55,7 +56,12 @@ function drawFace(g, w, h, { mood, look, blink }) {
   const my = h * 0.64 + oy;
   g.lineWidth = h * 0.05;
   g.beginPath();
-  if (mood === 'dragging') {
+  if (mood === 'thinking') {
+    // Thinking: a short straight mouth, slightly to one side.
+    g.moveTo(mx - h * 0.05, my + h * 0.02);
+    g.lineTo(mx + h * 0.09, my);
+    g.stroke();
+  } else if (mood === 'dragging') {
     // Surprised: a small round mouth.
     g.ellipse(mx, my + h * 0.03, h * 0.055, h * 0.07, 0, 0, Math.PI * 2);
     g.stroke();
@@ -146,6 +152,8 @@ export async function mountRobotScene(canvas, { pointer, reducedMotion: startRed
   }
 
   function target() {
+    // While it waits for an answer it looks up and to the side, as people do when they think.
+    if (mood === 'thinking' && !reducedMotion) return { x: 0.55, y: -0.75 };
     const p = pointer();
     if (!p || reducedMotion) return { x: 0, y: 0 };
     const r = canvas.getBoundingClientRect();

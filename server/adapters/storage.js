@@ -54,6 +54,11 @@ function memoryStorage() {
     async remove(bucket, path) {
       objects.delete(`${bucket}/${path}`);
     },
+    /** The whole file, for the assistant to read a document the patient chose (D-67). */
+    async read(bucket, path) {
+      const o = objects.get(`${bucket}/${path}`);
+      return o ? { contentType: o.contentType, bytes: Buffer.from(o.bytes) } : null;
+    },
   };
 }
 
@@ -93,6 +98,13 @@ function supabaseStorage({ url, serviceKey }) {
     },
     async remove(bucket, path) {
       await call('DELETE', `/object/${bucket}`, { prefixes: [path] });
+    },
+    /** The whole file, for the assistant to read a document the patient chose (D-67). */
+    async read(bucket, path) {
+      const res = await fetch(`${base}/object/authenticated/${bucket}/${path}`, { headers, signal: AbortSignal.timeout(15000) });
+      if (res.status === 404 || res.status === 400) return null;
+      if (!res.ok) throw new HttpError(502, 'storage_error', 'File storage is not available right now. Try again.');
+      return { contentType: res.headers.get('content-type'), bytes: Buffer.from(await res.arrayBuffer()) };
     },
   };
 }

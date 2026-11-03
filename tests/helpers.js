@@ -7,10 +7,12 @@ import { createMemoryStore } from '../server/db/memory.js';
 import { memoryStorage, setStorageForTests } from '../server/adapters/storage.js';
 import { handle } from '../server/router.js';
 
-export async function startApp({ allowPrivilegedSignup = true, google = false } = {}) {
+export async function startApp({ allowPrivilegedSignup = true, google = false, ai = false } = {}) {
   // With google: true the Google client is set, and the token exchange is a fake the test installs.
   const googleEnv = google ? { GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'test-secret-value' } : {};
-  const config = loadConfig({ NODE_ENV: 'test', ALLOW_PRIVILEGED_SIGNUP: allowPrivilegedSignup ? 'true' : 'false', TRUST_PROXY: 'true', JWT_SECRET: 'x'.repeat(40), TRACKING_TOKEN_PEPPER: 'y'.repeat(40), ...googleEnv });
+  // With ai: true both model providers are configured; the test installs a fake in their place.
+  const aiEnv = ai ? { GROQ_API_KEY: 'test-groq-key-not-real-0000', OPENROUTER_API_KEY: 'test-openrouter-key-not-real-0000' } : {};
+  const config = loadConfig({ NODE_ENV: 'test', ALLOW_PRIVILEGED_SIGNUP: allowPrivilegedSignup ? 'true' : 'false', TRUST_PROXY: 'true', JWT_SECRET: 'x'.repeat(40), TRACKING_TOKEN_PEPPER: 'y'.repeat(40), ...googleEnv, ...aiEnv });
   const store = createMemoryStore();
   const storage = memoryStorage();
   // Config, store and storage are module singletons; activate() puts this app's back after another app replaced them.
@@ -52,7 +54,7 @@ export async function startApp({ allowPrivilegedSignup = true, google = false } 
     return { token: r.body.token, id: r.body.user.id, email, cookies: r.headers.getSetCookie() };
   }
 
-  return { api, user, store, activate, base, close: () => new Promise((r) => server.close(r)) };
+  return { api, user, store, storage, activate, base, close: () => new Promise((r) => server.close(r)) };
 }
 
 /** Joins Set-Cookie headers into one Cookie header. */

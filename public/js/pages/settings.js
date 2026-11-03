@@ -2,7 +2,8 @@
 // browser, not on the server. Account security stays on the Account and privacy page.
 import { h, icon, toast } from '../h.js';
 import { shell, TEXT_LARGE_KEY } from '../shell.js';
-import { pageHead, getOrigin, locateMe, DEFAULT_ORIGIN } from '../ui.js';
+import { pageHead, getOrigin, locateMe, DEFAULT_ORIGIN, confirmDialog } from '../ui.js';
+import { api } from '../api.js';
 import { notificationState, askForNotifications } from '../notify.js';
 
 const { main } = await shell({ nav: 'settings', title: 'Settings' });
@@ -79,6 +80,42 @@ function notificationControl() {
   return { hint, btn };
 }
 
+/** D-67, D-68: the assistant agreement and saved conversations, changeable at any time. */
+function assistantSection() {
+  const status = h('span', { class: 't-footnote muted' }, 'Loading');
+  const withdraw = h('button', { class: 'btn btn-secondary', type: 'button', hidden: true }, 'Withdraw agreement');
+  const clear = h('button', { class: 'btn btn-text', type: 'button' }, 'Delete all conversations');
+  const describe = (info) => {
+    status.textContent = info.consent.agreedAt
+      ? `You agreed on ${new Date(info.consent.agreedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} that your messages, health facts and attached reports may be sent to ${info.consent.providers.join(' and ') || 'the AI service'}. You have ${info.conversations.length} saved conversation${info.conversations.length === 1 ? '' : 's'}.`
+      : `Nothing is sent to an AI service. You have ${info.conversations.length} saved conversation${info.conversations.length === 1 ? '' : 's'}.`;
+    withdraw.hidden = !info.consent.agreedAt;
+  };
+  const load = () => api('/patients/me/assistant').then(describe).catch((err) => { status.textContent = err.message; });
+  withdraw.addEventListener('click', async () => {
+    try {
+      await api('/patients/me/assistant/consent', { method: 'PUT', body: { agree: false } });
+      toast('Agreement withdrawn. The assistant will ask again before sending anything.');
+      load();
+    } catch (err) {
+      toast(err.message);
+    }
+  });
+  clear.addEventListener('click', async () => {
+    if (!(await confirmDialog({ title: 'Delete all assistant conversations?', text: 'They are removed from your account for good.', confirm: 'Delete all' }))) return;
+    try {
+      await api('/assistant/conversations', { method: 'DELETE' });
+      toast('Conversations deleted');
+      load();
+    } catch (err) {
+      toast(err.message);
+    }
+  });
+  load();
+  return section('Assistant', 'The robot on your pages, except the Emergency page. Double-tap it, or select it and press Enter, to ask a question.',
+    h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'AI service'), status), h('div', { class: 'row-8' }, withdraw, clear)));
+}
+
 const loc = locationControls();
 const note = notificationControl();
 
@@ -89,6 +126,7 @@ main.replaceChildren(h('div', { class: 'page' },
       row('Larger text', 'Makes text about 12 percent bigger on every signed-in page.', textSizeSwitch(), 'larger-text')),
     section('Location', 'Used only to sort results by distance. It is not stored on our servers.',
       h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Starting point'), loc.label), loc.control)),
+    assistantSection(),
     section('Medicine reminders', null,
       h('div', { class: 'setting-row' }, h('div', { class: 'stack-4' }, h('span', { class: 't-headline' }, 'Browser notifications'), note.hint), note.btn)),
     section('Account', null,

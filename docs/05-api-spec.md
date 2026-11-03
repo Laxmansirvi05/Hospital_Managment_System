@@ -139,14 +139,25 @@ Not in the collection. Data comes from online platforms such as Apollo, MedPlus 
 | GET `/diagnostic-centres/{id}` | One centre with `testsListed` if public. |
 | GET `/medicines` | Search by medicine name. Returns `{ medicines: [{ id, name, brand, form, strength, listings: [{ platform, priceInr, rating?, productUrl, checkedAt }] }] }`, listings sorted by price. |
 
-## 5. Assistant: discovery and report explanation (PROPOSED, P-21, P-23)
+## 5. Assistant: conversations, discovery and report explanation (D-65 to D-68)
+
+Implemented on `main` (2026-11-03). Not in the Postman collection. Discovery (P-23) and report explanation (P-21) run inside a saved conversation instead of the separate `/assistant/discover` and `/reports/{id}/explain` designs, because the owner chose saved conversations (D-68).
 
 | Method and path | Role | Purpose |
 | --- | --- | --- |
-| POST `/assistant/discover` | patient | Body: `message`, `area?`, `lat?`, `lng?`. Returns `{ suggestedSpecialty, facilityTypes[], results: { doctors, hospitals, pharmacies, diagnosticCentres, medicines }, disclaimer }`. Results come only from CareRoute's own search. |
-| POST `/patients/me/reports/{id}/explain` | patient | Returns `{ summary, terms: [{ term, meaning }], values: [{ name, value, unit, referenceRange, flaggedByReport }], questionsForDoctor[], disclaimer }`. Blocked by Q-25. Not stored by default. |
+| GET `/patients/me/assistant` | patient | `{ consent: { agreedAt, providers[] }, conversations: [{ id, title, createdAt, updatedAt }], disclaimer }` |
+| PUT `/patients/me/assistant/consent` | patient | Body `{ agree: boolean }`. Returns `{ agreedAt }` (null when withdrawn). Nothing goes to a model without it (D-67). |
+| POST `/assistant/conversations` | patient | Body `{ text (1 to 2000), documentIds?: uuid[] (up to 3) }`. 201 `{ conversation, messages: [user, assistant] }`. 409 `consent_required` before agreement; 404 `document_not_found` for a document that is not the patient's own finished upload; 422 `document_too_large` over 4 MB. |
+| GET `/assistant/conversations/{id}` | patient | `{ conversation, messages[] }`. 404 for another patient's conversation. |
+| POST `/assistant/conversations/{id}/messages` | patient | Same body and errors as above. 201 `{ messages: [user, assistant] }`. |
+| DELETE `/assistant/conversations/{id}` | patient | 204. 404 for another patient's conversation. |
+| DELETE `/assistant/conversations` | patient | 204. Deletes every saved conversation of the patient. |
 
-Both follow the safety limits in D-33 and `07-ai-triage.md`.
+An assistant message is `{ id, role: "assistant", text, urgency, sosRecommended, suggestedSpecialty, results: [{ kind, id, name, detail, area, href }], disclaimer, createdAt }`. `results` come only from CareRoute's own listings. A user message is `{ id, role: "user", text, documents?: [{ id, title }], createdAt }`. Each account may send 40 assistant messages an hour (shared with `/assistant/triage`).
+
+`/assistant/triage` keeps the collection's shape, adds `advice`, and calls a model only when the patient has agreed; otherwise it answers from the red-flag rules.
+
+All of it follows the safety limits in D-33 and `07-ai-triage.md`.
 
 ## 6. Emergencies: driver reject (PROPOSED, P-20)
 

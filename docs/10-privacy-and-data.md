@@ -43,8 +43,7 @@ The demo runs on synthetic data only. No real patient, driver, hospital or repor
 | Adding an emergency contact | They will get an SMS with a tracking link when you raise an SOS | Required for the feature |
 | Uploading a report | The file is private until you share it | Share off |
 | Sharing a report | Exactly who will see it and when | Nothing shared |
-| Triage and discovery assistant | Your text is sent to an AI service to produce guidance. Do not enter names or phone numbers. | Notice shown before first use |
-| Report explanation | This report will be sent to an AI service to explain it. It is guidance, not a diagnosis. | Asked each time, before sending |
+| The assistant (triage, discovery, report explanation, D-67) | Which services receive the messages, that they may keep and review them, which health facts go with each message, that attached reports are sent in full, what is never sent, that names inside a report cannot always be removed, that conversations are saved, and that it is guidance, not a diagnosis | Agreement asked once before the first message; withdrawable in Settings. Reports are sent only when the patient attaches them to a message |
 | Leaving CareRoute | You are going to {provider}'s website. CareRoute does not handle bookings, orders or payments. | Shown on outbound links |
 | Location | Why the app needs your location and that it is used only while you raise or follow an SOS | Browser permission prompt, asked at the moment of use |
 
@@ -54,7 +53,7 @@ Consent text is part of the product and follows `12-ux-and-content.md`.
 
 | Service | Receives | Must not receive |
 | --- | --- | --- |
-| Gemini, Groq, OpenRouter | Symptom text, age, language. Discovery assistant text. Report content, only after Q-25. | Name, phone, email, location, user id |
+| Groq, then OpenRouter (D-66) | After agreement (D-67): the message, recent conversation turns, health facts (age in years, sex, blood group, allergies, conditions, current medicines, past surgeries, disabilities) and attached documents in full | Name, phone, email, address, exact date of birth, insurance or policy numbers, emergency contacts, user id |
 | Mapbox | Coordinates of ambulances and the patient, for routing | Names, phone numbers, medical data |
 | Provider websites (outbound links) | Whatever the user chooses to send them after leaving CareRoute. CareRoute adds no tracking parameters. | Anything from CareRoute |
 | Hospital websites' image hosts (D-55): CARE, KIMS, Rainbow and Gleneagles (on AWS S3), Continental, Ankura, Citizens, L V Prasad | Image requests from the browser, which reveal the visitor's IP and which doctor's photo is loaded. The request carries no CareRoute address (`referrerpolicy="no-referrer"`). | Anything else. Owner to confirm this flow is accepted with D-55; the alternative is serving photos through the API (PROPOSED). |

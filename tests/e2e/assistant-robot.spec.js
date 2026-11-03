@@ -88,4 +88,23 @@ test.describe('Assistant robot', () => {
     expect(await robot.boundingBox()).toEqual(box);
     await context.close();
   });
+
+  test('asks for agreement first, then shows the emergency action for a red flag even with no AI service', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signUp(page);
+    const robot = page.getByRole('button', { name: /CareRoute assistant/ });
+    await robot.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'CareRoute assistant' });
+    await expect(dialog.getByText('Before we start')).toBeVisible();
+    await expect(dialog.getByText(/never sends your name, phone, email, address/)).toBeVisible();
+    await dialog.getByRole('button', { name: 'Agree and continue' }).click();
+    const box = dialog.getByRole('textbox', { name: 'Message the assistant' });
+    await box.fill('my father has severe chest pain and is sweating');
+    await box.press('Enter');
+    await expect(dialog.getByRole('link', { name: 'Call 112' })).toHaveAttribute('href', 'tel:112', { timeout: 20000 });
+    await expect(dialog.getByText(/not a diagnosis/).first()).toBeVisible();
+    await dialog.getByRole('button', { name: 'Saved conversations' }).click();
+    await expect(dialog.getByText(/my father has severe chest pain/)).toBeVisible();
+  });
 });

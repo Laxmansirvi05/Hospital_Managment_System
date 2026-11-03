@@ -38,7 +38,7 @@ Hyderabad-first healthcare discovery and assistance web app with three parts: di
 - Server secrets are read only in `server/config.js`. Server code lives in `server/`, never under `public/`. Everything under `public/` is public.
 - Every route checks role and ownership and has tests for 401, 403 and the happy path.
 - Every input is parsed by Zod on the server. Responses are built from explicit fields. Browser code writes data with `textContent` or cloned templates, never `innerHTML` with data.
-- No personal, location or medical data in logs, prompts sent to models, or the public tracking response.
+- No personal, location or medical data in logs or the public tracking response. Prompts sent to models may carry health facts and document contents, never identity (D-67): no name, phone, email, address, exact date of birth, insurance or policy numbers, contacts or user id, and only after the patient agreed.
 - Row Level Security is on for every table with no policy for `anon` or `authenticated`.
 
 ## Review agents and skills

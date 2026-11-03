@@ -200,6 +200,26 @@ Append-only record of every admin action: admin id, action, target table and id,
 
 Every SMS attempt: recipient phone, template name, status, provider response code, timestamps. No message body with health detail. Lets the dashboard and the runbook show whether SMS works.
 
+### assistant_conversations (D-68)
+
+| Column | Notes |
+| --- | --- |
+| id, user_id | owner, cascade on account deletion |
+| title | 1 to 80 characters, from the first message |
+| created_at, updated_at | updated on each message |
+
+### assistant_messages (D-68)
+
+| Column | Notes |
+| --- | --- |
+| id, conversation_id, user_id | cascade from both |
+| role | `user` or `assistant` |
+| content | 1 to 4000 characters |
+| payload | assistant: urgency, sosRecommended, suggestedSpecialty, results shown, provider, rules matched and rules version; user: documents attached (id and title) |
+| created_at | |
+
+`users.assistant_consent_at` (D-67): when the patient agreed that the assistant may send their messages, health facts and attached documents to the model providers. Empty means nothing is sent.
+
 ## 4. Indexes
 
 - `location` on every listing table, `ambulances.location`, `emergencies.patient_location`: GiST.

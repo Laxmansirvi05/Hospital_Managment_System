@@ -33,6 +33,8 @@ export function createMemoryStore() {
   const appointments = [];
   const files = [];
   const reviews = [];
+  const conversations = [];
+  const messages = [];
   const reports = [];
   const hospitals = clone(HOSPITALS);
   const doctors = clone(DOCTORS);
@@ -70,6 +72,7 @@ export function createMemoryStore() {
         for (const s of sessions.values()) if (s.userId === id && !s.revokedAt) Object.assign(s, { revokedAt: now(), revokedReason: 'google_link' });
         return clone(u);
       },
+      async setAssistantConsent(id, at) { const u = users.get(id); if (!u) return null; u.assistantConsentAt = at; return clone(u); },
       async byId(id) { return users.has(id) ? clone(users.get(id)) : null; },
       async list() { return [...users.values()].map(clone).sort((a, b) => a.createdAt - b.createdAt); },
       async setPassword(id, passwordHash) { const u = users.get(id); if (u) u.passwordHash = passwordHash; },
@@ -87,6 +90,8 @@ export function createMemoryStore() {
         const mine = new Set(reviews.filter((r) => r.userId === id).map((r) => r.id));
         drop(reports, (x) => x.userId === id || mine.has(x.reviewId));
         drop(reviews, (x) => x.userId === id);
+        drop(messages, (x) => x.userId === id);
+        drop(conversations, (x) => x.userId === id);
       },
       async setDisabled(id, disabled) { const u = users.get(id); if (!u) return null; u.disabledAt = disabled ? now() : null; return clone(u); },
     },
@@ -174,6 +179,36 @@ export function createMemoryStore() {
       async markReady(userId, id) { const f = files.find((x) => x.id === id && x.userId === userId); if (!f) return null; f.status = 'ready'; return clone(f); },
       async list(userId, purpose) { return files.filter((f) => f.userId === userId && f.purpose === purpose && f.status === 'ready').map(clone).sort((a, b) => b.createdAt - a.createdAt); },
       async remove(userId, id) { const i = files.findIndex((f) => f.id === id && f.userId === userId); if (i < 0) return null; return clone(files.splice(i, 1)[0]); },
+    },
+
+    assistant: {
+      async create(userId, title) {
+        const c = { id: randomUUID(), userId, title, createdAt: now(), updatedAt: now() };
+        conversations.push(c);
+        return clone(c);
+      },
+      async list(userId) { return conversations.filter((c) => c.userId === userId).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 50).map(clone); },
+      async get(userId, id) { const c = conversations.find((x) => x.userId === userId && x.id === id); return c ? clone(c) : null; },
+      async remove(userId, id) {
+        const i = conversations.findIndex((x) => x.userId === userId && x.id === id);
+        if (i === -1) return false;
+        conversations.splice(i, 1);
+        for (let k = messages.length - 1; k >= 0; k--) if (messages[k].conversationId === id) messages.splice(k, 1);
+        return true;
+      },
+      async removeAll(userId) {
+        for (const c of conversations.filter((x) => x.userId === userId)) await this.remove(userId, c.id);
+      },
+      async addMessage({ conversationId, userId, role, content, payload = {} }) {
+        const m = { id: randomUUID(), conversationId, userId, role, content, payload, createdAt: now() };
+        messages.push(m);
+        const c = conversations.find((x) => x.id === conversationId);
+        if (c) c.updatedAt = now();
+        return clone(m);
+      },
+      async messages(userId, conversationId, max = 200) {
+        return messages.filter((m) => m.userId === userId && m.conversationId === conversationId).slice(-max).map(clone);
+      },
     },
 
     reviews: {

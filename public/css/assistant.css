@@ -93,7 +93,7 @@
   z-index: 51;
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - var(--space-24));
+  height: min(640px, calc(100dvh - var(--space-24)));
   overflow: hidden;
   border-radius: var(--radius-xl);
   background: var(--surface);
@@ -126,50 +126,240 @@
 }
 
 .ast-panel-body {
-  display: grid;
-  gap: var(--space-16);
-  padding: var(--space-16) var(--space-20);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-16);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.ast-bubble {
+.ast-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Messages: the patient's on the right in the brand tint, the assistant's on the left. */
+.ast-msg {
   display: grid;
   gap: var(--space-8);
+  max-width: 88%;
   padding: var(--space-12) var(--space-16);
-  border-radius: var(--radius-l) var(--radius-l) var(--radius-l) var(--radius-xs);
+  border-radius: var(--radius-l);
+}
+
+.ast-msg-user {
+  align-self: flex-end;
+  border-bottom-right-radius: var(--radius-xs);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.ast-msg-assistant {
+  align-self: flex-start;
+  border-bottom-left-radius: var(--radius-xs);
   background: var(--surface-sunken);
   box-shadow: 0 0 0 1px var(--border-soft);
 }
 
-.ast-links {
+.ast-thinking .ast-text { color: var(--text-2); }
+.ast-error { background: var(--danger-tint); color: var(--danger); box-shadow: none; }
+
+.ast-level {
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ast-level-urgent { color: var(--warning); }
+
+.ast-sos {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border-radius: var(--radius-m);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+.ast-sos-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-8);
 }
 
-.ast-emergency {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  color: var(--text-2);
-  font-size: var(--fs-footnote);
+.ast-results {
+  display: grid;
+  gap: var(--space-4);
+  list-style: none;
 }
 
-.ast-emergency a { color: var(--primary); font-weight: 600; }
+.ast-result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--space-8);
+  min-height: var(--control-h);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border-soft);
+  color: var(--text-1);
+  text-decoration: none;
+}
 
-.ast-panel-foot {
+@media (hover: hover) {
+  .ast-result:hover { box-shadow: 0 0 0 1px var(--primary); }
+}
+.ast-result .care-icon { color: var(--text-2); }
+.ast-result-name { display: block; font-weight: 600; overflow-wrap: anywhere; }
+
+.ast-result-meta {
+  display: block;
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+}
+
+.ast-disclaimer {
+  color: var(--text-2);
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+}
+
+.ast-suggest {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.ast-suggest .chip { text-align: left; white-space: normal; }
+
+/* The notice, the document picker and the saved conversations share one layout. */
+.ast-notice {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.ast-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.ast-pick {
+  display: grid;
+  gap: var(--space-8);
+  list-style: none;
+}
+
+.ast-pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: var(--space-8) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ast-pick-row input { width: 20px; height: 20px; flex: none; }
+.ast-history-row { display: flex; align-items: center; gap: var(--space-8); }
+
+.ast-doc-chips,
+.ast-attached {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.ast-attached[hidden] { display: none; }
+
+.ast-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--control-h);
+  padding: 0 var(--space-4) 0 var(--space-12);
+  border-radius: var(--radius-full);
+  background: var(--primary-tint);
+  color: var(--primary);
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+}
+
+.ast-msg-user .ast-doc-chip { background: var(--surface); }
+
+.ast-chip-x {
+  display: grid;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ast-panel-bottom {
+  display: grid;
   gap: var(--space-8);
   padding: var(--space-12) var(--space-16) var(--space-16);
   border-top: 1px solid var(--border-soft);
 }
 
-.ast-panel-foot .input { flex: 1; min-width: 0; }
+.ast-panel-bottom:has(> .ast-panel-foot[hidden]):has(> .ast-attached[hidden]) { display: none; }
 
-.ast-send {
-  min-width: 44px;
-  padding-left: var(--space-12);
-  padding-right: var(--space-12);
+.ast-panel-foot {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.ast-label {
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ast-compose-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.ast-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.ast-view-title:focus { outline: none; }
+.ast-view-title:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ast-head-btn { flex: none; }
+
+.ast-panel-foot[hidden] { display: none; }
+
+.ast-input {
+  width: 100%;
+  min-height: var(--control-h);
+  max-height: 140px;
+  resize: none;
+  field-sizing: content;
+}
+
+.ast-send,
+.ast-attach {
+  min-width: var(--control-h);
 }
 
 @media (prefers-reduced-motion: reduce) {

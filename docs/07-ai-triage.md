@@ -1,5 +1,7 @@
 # AI healthcare assistant
 
+Status 2026-11-03: built (D-65 to D-68). The model order is Groq, then OpenRouter free models (D-66). What may be sent is D-67, which replaces section 4's "never send" list for health facts and documents; identity is still never sent. Conversations are saved (D-68), which replaces "not stored by default" in sections 4 and 8. The red-flag rules in `server/assistant/rules.js` are demo rules, not clinically reviewed (section 3). The API is in `05-api-spec.md` section 5.
+
 The assistant helps people understand health information and find healthcare resources (D-33). It gives guidance. It never gives a diagnosis.
 
 It has three jobs:
@@ -7,8 +9,8 @@ It has three jobs:
 | Job | Status | Section |
 | --- | --- | --- |
 | Triage of a described symptom | Collection folder 6 | 1 to 5 |
-| Discovery: find doctors, hospitals, pharmacies, diagnostic centres and medicines from a description | PROPOSED design (P-23) | 7 |
-| Report explanation: explain an uploaded report in plain language | PROPOSED design (P-21), blocked by Q-25 | 8 |
+| Discovery: find doctors, hospitals, pharmacies, diagnostic centres and medicines from a description | Built in conversations (D-65) | 7 |
+| Report explanation: explain an uploaded report in plain language | Built in conversations (D-65, D-67) | 8 |
 
 ## 0. Safety limits (LOCKED, D-33)
 

@@ -1,7 +1,8 @@
 // The floating assistant robot on signed-in patient pages (D-64), after the robot in the owner's
 // student management system. Drag it anywhere and it stays there in this browser; a double tap, or
-// Enter or A on the keyboard, opens the assistant panel. What the assistant answers is not built yet.
+// Enter or A on the keyboard, opens the assistant panel (chat.js).
 import { h, icon } from '../h.js';
+import { createChat } from './chat.js';
 
 const STORAGE_KEY = 'careroute.robot.position';
 const EDGE = 12;
@@ -32,34 +33,6 @@ function webglAvailable() {
   return Boolean(probe.getContext('webgl2') || probe.getContext('webgl'));
 }
 
-/** The assistant panel. Built once, opened beside the robot. */
-function createPanel({ onClose }) {
-  const close = h('button', { class: 'icon-btn ast-panel-close', type: 'button', 'aria-label': 'Close assistant' }, icon('close', 20));
-  const input = h('input', { class: 'input', type: 'text', disabled: true, placeholder: 'Not available yet', 'aria-label': 'Message the assistant', 'aria-describedby': 'ast-status' });
-  const send = h('button', { class: 'btn btn-primary ast-send', type: 'button', disabled: true, 'aria-label': 'Send' }, icon('send', 20));
-  const panel = h('section', { class: 'ast-panel', role: 'dialog', 'aria-modal': 'false', 'aria-labelledby': 'ast-title', hidden: true },
-    h('header', { class: 'ast-panel-head' },
-      h('div', { class: 'ast-panel-heading' },
-        h('h2', { class: 'ast-panel-title', id: 'ast-title' }, 'CareRoute assistant'),
-        h('p', { class: 'ast-panel-sub' }, 'Being built')),
-      close),
-    h('div', { class: 'ast-panel-body' },
-      h('div', { class: 'ast-bubble', id: 'ast-status' },
-        h('p', {}, 'Hello. I am the CareRoute assistant. I cannot answer questions yet.'),
-        h('p', {}, 'Until I can, search finds hospitals, doctors, medicine prices and tests.')),
-      h('div', { class: 'ast-links' },
-        h('a', { class: 'chip', href: '/search/hospitals/' }, 'Hospitals and doctors'),
-        h('a', { class: 'chip', href: '/search/medicines/' }, 'Medicine prices'),
-        h('a', { class: 'chip', href: '/search/diagnostics/' }, 'Tests and labs')),
-      h('p', { class: 'ast-emergency' }, icon('ambulance', 20), h('span', {}, 'In an emergency, call ', h('a', { href: 'tel:112' }, '112'), '.'))),
-    h('footer', { class: 'ast-panel-foot' }, input, send));
-  close.addEventListener('click', onClose);
-  panel.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') onClose();
-  });
-  return { panel, focus: () => close.focus() };
-}
-
 /** Puts the robot on the page. Safe to call more than once. */
 export function mountRobot() {
   if (mounted) return;
@@ -80,6 +53,7 @@ export function mountRobot() {
   let cursor = null;
   let hovered = false;
   let dragging = false;
+  let thinking = false;
 
   const badge = h('span', { class: 'ast-badge', 'aria-hidden': 'true' }, icon('assistant', 24));
   const hint = h('span', { class: 'visually-hidden', id: 'ast-hint' }, 'Press Enter to open, or double-tap. Arrow keys or dragging move it.');
@@ -100,7 +74,7 @@ export function mountRobot() {
     robot.classList.toggle('is-dragging', dragging);
     robot.classList.toggle('is-hovered', hovered && !dragging);
     robot.classList.toggle('is-open', open);
-    scene?.setMood(dragging ? 'dragging' : open ? 'open' : hovered ? 'happy' : 'idle');
+    scene?.setMood(dragging ? 'dragging' : thinking ? 'thinking' : open ? 'open' : hovered ? 'happy' : 'idle');
   }
   function pulse() {
     const ring = h('span', { class: 'ast-ring', 'aria-hidden': 'true' });
@@ -121,12 +95,19 @@ export function mountRobot() {
     placePanel();
   }
 
-  const { panel, focus: focusPanel } = createPanel({ onClose: () => setOpen(false) });
+  const chat = createChat({
+    onClose: () => setOpen(false),
+    setMood: (m) => {
+      thinking = m === 'thinking';
+      paintMood();
+    },
+  });
+  const { panel } = chat;
 
   // The panel opens on whichever side of the robot has room, and never off screen.
   function placePanel() {
     if (!open) return;
-    const pw = Math.min(360, window.innerWidth - EDGE * 2);
+    const pw = Math.min(400, window.innerWidth - EDGE * 2);
     // The width changes how the text wraps, so it is set before the height is measured.
     panel.style.width = `${pw}px`;
     const ph = panel.offsetHeight || 420;
@@ -147,7 +128,7 @@ export function mountRobot() {
     if (open) pulse();
     if (open) {
       placePanel();
-      focusPanel();
+      chat.opened();
     } else {
       robot.focus();
     }

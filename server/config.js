@@ -24,6 +24,17 @@ const schema = z.object({
   // Sign in with Google (D-63): an OAuth web client from Google Cloud. Both or neither.
   GOOGLE_CLIENT_ID: optionalReal(z.string().regex(/^[\w-]+\.apps\.googleusercontent\.com$/, 'must be a Google OAuth web client id')),
   GOOGLE_CLIENT_SECRET: optionalReal(real(z.string().min(10))),
+  // The assistant's model providers, in order (D-66). Free plans only (D-47).
+  GROQ_API_KEY: optionalReal(z.string().min(20)),
+  GROQ_MODEL: z.string().min(3).max(100).default('openai/gpt-oss-120b'),
+  // Model calls the whole site may make in a day, below the providers' free daily allowances.
+  ASSISTANT_DAILY_LIMIT: z.coerce.number().int().min(1).max(100000).default(300),
+  OPENROUTER_API_KEY: optionalReal(z.string().min(20)),
+  // Only ':free' models, so the key can never be charged (CLAUDE.md rule 11). OpenRouter tries them
+  // in order: free models are often rate limited by their host, so one is never enough.
+  OPENROUTER_MODELS: z.string().default('nvidia/nemotron-3.5-super-vl:free,google/gemma-4-26b-a4b-it:free,google/gemma-4-31b-it:free')
+    .transform((v) => v.split(',').map((m) => m.trim()).filter(Boolean))
+    .refine((list) => list.length > 0 && list.length <= 3 && list.every((m) => /^[\w.-]+\/[\w.:-]+:free$/.test(m)), 'must be one to three free models (each ends in :free), separated by commas'),
 });
 
 /**
@@ -38,6 +49,8 @@ const schema = z.object({
  * @property {boolean} trustProxy
  * @property {{ url: string, serviceKey: string } | null} storage
  * @property {{ clientId: string, clientSecret: string } | null} google
+ * @property {{ name: string, url: string, key: string, model: string, files: boolean }[]} aiProviders
+ * @property {number} assistantDailyLimit
  * @property {Record<string, string|boolean>} publicValues
  * @property {string[]} warnings
  */
@@ -95,6 +108,13 @@ export function loadConfig(env = process.env) {
   const google = v.GOOGLE_CLIENT_ID ? { clientId: v.GOOGLE_CLIENT_ID, clientSecret: v.GOOGLE_CLIENT_SECRET } : null;
   if (!google) warnings.push('Google sign-in is off: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set.');
 
+  // D-66: Groq first, then OpenRouter. Only providers with a key take part.
+  const aiProviders = [
+    v.GROQ_API_KEY && { name: 'Groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: v.GROQ_API_KEY, model: v.GROQ_MODEL, files: false },
+    v.OPENROUTER_API_KEY && { name: 'OpenRouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: v.OPENROUTER_API_KEY, model: v.OPENROUTER_MODELS[0], fallbacks: v.OPENROUTER_MODELS.slice(1), files: true },
+  ].filter(Boolean);
+  if (!aiProviders.length) warnings.push('No AI provider key is set. The assistant answers from its fixed rules only.');
+
   // Allow-list for GET /api/v1/config (docs/09-security.md section 3.1). Nothing else is ever returned.
   const publicValues = {};
   if (v.PUBLIC_SUPABASE_URL) publicValues.supabaseUrl = v.PUBLIC_SUPABASE_URL;
@@ -115,6 +135,8 @@ export function loadConfig(env = process.env) {
     trustProxy: v.TRUST_PROXY === 'true' || v.VERCEL === '1',
     storage,
     google,
+    aiProviders,
+    assistantDailyLimit: v.ASSISTANT_DAILY_LIMIT,
     publicValues: Object.freeze(publicValues),
     warnings,
   });

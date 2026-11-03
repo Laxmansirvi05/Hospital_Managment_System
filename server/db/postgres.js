@@ -6,7 +6,9 @@ import { dosesFor } from './geo.js';
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
-const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, googleSub: r.google_sub, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
+const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, googleSub: r.google_sub, assistantConsentAt: r.assistant_consent_at, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
+const convRow = (r) => r && { id: r.id, userId: r.user_id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at };
+const msgRow = (r) => r && { id: r.id, conversationId: r.conversation_id, userId: r.user_id, role: r.role, content: r.content, payload: r.payload || {}, createdAt: r.created_at };
 const sessionRow = (r) => r && { id: r.id, userId: r.user_id, createdAt: r.created_at, refreshHash: r.refresh_hash, previousRefreshHash: r.previous_refresh_hash, expiresAt: r.expires_at, revokedAt: r.revoked_at };
 const profileRow = (r) => r && {
   userId: r.user_id, fullName: r.full_name, dateOfBirth: day(r.date_of_birth), gender: r.gender, preferredLanguage: r.preferred_language,
@@ -135,6 +137,10 @@ export function createPostgresStore(url) {
           return userRow(row) || null;
         });
       },
+      /** D-67: when the patient agreed to send health facts to the assistant's models, or null. */
+      async setAssistantConsent(id, at) {
+        return userRow((await sql`update public.users set assistant_consent_at = ${at}, updated_at = now() where id = ${id} returning *`)[0]) || null;
+      },
       async byId(id) { return userRow((await sql`select * from public.users where id = ${id}`)[0]) || null; },
       async list() { return (await sql`select * from public.users order by created_at`).map(userRow); },
       async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, updated_at = now() where id = ${id}`; },
@@ -249,6 +255,36 @@ export function createPostgresStore(url) {
       async markReady(userId, id) { return fileRow((await sql`update public.patient_files set status = 'ready', updated_at = now() where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },
       async list(userId, purpose) { return (await sql`select * from public.patient_files where user_id = ${userId} and purpose = ${purpose} and status = 'ready' order by created_at desc`).map(fileRow); },
       async remove(userId, id) { return fileRow((await sql`delete from public.patient_files where id = ${id} and user_id = ${userId} returning *`)[0]) || null; },
+    },
+
+    // Saved assistant conversations (D-68). Every query is scoped to the owner.
+    assistant: {
+      async create(userId, title) {
+        return convRow((await sql`insert into public.assistant_conversations (user_id, title) values (${userId}, ${title}) returning *`)[0]);
+      },
+      async list(userId) {
+        return (await sql`select * from public.assistant_conversations where user_id = ${userId} order by updated_at desc limit 50`).map(convRow);
+      },
+      async get(userId, id) {
+        return convRow((await sql`select * from public.assistant_conversations where user_id = ${userId} and id = ${id}`)[0]) || null;
+      },
+      async remove(userId, id) {
+        return (await sql`delete from public.assistant_conversations where user_id = ${userId} and id = ${id}`).count > 0;
+      },
+      async removeAll(userId) {
+        await sql`delete from public.assistant_conversations where user_id = ${userId}`;
+      },
+      async addMessage({ conversationId, userId, role, content, payload = {} }) {
+        const row = (await sql`insert into public.assistant_messages (conversation_id, user_id, role, content, payload)
+          values (${conversationId}, ${userId}, ${role}, ${content}, ${sql.json(payload)}) returning *`)[0];
+        await sql`update public.assistant_conversations set updated_at = now() where id = ${conversationId} and user_id = ${userId}`;
+        return msgRow(row);
+      },
+      async messages(userId, conversationId, max = 200) {
+        const rows = await sql`select * from (select * from public.assistant_messages where user_id = ${userId} and conversation_id = ${conversationId}
+          order by created_at desc limit ${max}) m order by created_at`;
+        return rows.map(msgRow);
+      },
     },
 
     reviews: {

@@ -20,7 +20,7 @@ HTML, CSS and JavaScript are the foundation (D-03). UI frameworks and TypeScript
 | Map rendering | MapLibre GL JS with MapTiler tiles | LOCKED (D-08) |
 | 3D assistant robot | Three.js 0.170.0 with its GLTF loader, vendored in `public/vendor/three` | LOCKED (D-64): only to draw the assistant robot |
 | Routing and ETA | Mapbox Directions and Matrix, server side only | LOCKED (D-09) |
-| Triage model | Gemini, then Groq, then OpenRouter | LOCKED (D-07). Same chain for report explanation and the discovery assistant is PROPOSED (P-21, P-23). |
+| Assistant models | Groq (`openai/gpt-oss-120b`), then OpenRouter free models (`nvidia/nemotron-3.5-super-vl:free`, then two Gemma 4 free models), for triage, discovery and report explanation | LOCKED (D-66, replacing D-07's order until a Gemini key exists) |
 | Discovery search | Postgres full-text search, the `pg_trgm` extension for name matching, PostGIS for distance | PROPOSED (P-19) |
 | Listing and medicine price data | Taken from online platforms such as Apollo, MedPlus and Tata 1mg | LOCKED (D-35). Collection method, terms and where the job runs: OPEN (Q-28) |
 | SMS | Twilio trial behind an adapter | LOCKED (D-13) |
