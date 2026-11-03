@@ -402,6 +402,20 @@ export function createPostgresStore(url) {
           group by area order by area`;
         return rows.map((r) => r.area);
       },
+      /** The middle of each area's listings, so the browser can name a point and place an area. */
+      async areaCentroids() {
+        const rows = await sql`
+          select area as name, count(*)::int as places,
+            round(avg(extensions.st_y(location::extensions.geometry))::numeric, 5)::float8 as lat,
+            round(avg(extensions.st_x(location::extensions.geometry))::numeric, 5)::float8 as lng
+          from (
+            select area, location from public.hospitals where active union all
+            select area, location from public.pharmacies where active union all
+            select area, location from public.diagnostic_centres where active) a
+          where area is not null and area <> 'Hyderabad'
+          group by area order by area`;
+        return rows;
+      },
       async hospitals(p) {
         const n = nearFilter('location', p);
         const rows = await sql`

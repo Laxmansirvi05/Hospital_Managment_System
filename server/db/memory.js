@@ -265,6 +265,14 @@ export function createMemoryStore() {
       },
       async testPrices() { return []; },
       async areas() { return [...AREAS]; },
+      async areaCentroids() {
+        return AREAS.map((name) => {
+          const pts = [...hospitals, ...PHARMACIES, ...DIAGNOSTICS].filter((x) => x.area === name && Number.isFinite(x.lat));
+          if (!pts.length) return null;
+          const avg = (k) => Math.round((pts.reduce((s, x) => s + x[k], 0) / pts.length) * 1e5) / 1e5;
+          return { name, places: pts.length, lat: avg('lat'), lng: avg('lng') };
+        }).filter(Boolean);
+      },
       async hospitals(p) {
         return near(hospitals.filter((h) =>
           matches([h.name, h.area, ...h.specialities, ...h.departments].join(' '), p.q) &&
