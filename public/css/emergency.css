@@ -48,3 +48,14 @@
 .emergency-outcome a { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .tracking-page .emergency-main { width: min(100% - 32px, 680px); margin-top: 24px; }
 .emergency-tracking-status { min-height: 28px; margin: 0; font-size: 1.25rem; font-weight: 700; }
+.emergency-driver-page { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.emergency-driver-page > h1, .emergency-driver-page > .emergency-demo-notice, .emergency-driver-page > .notice { grid-column: 1 / -1; }
+.emergency-driver-card { display: grid; align-content: start; gap: 16px; }
+.emergency-driver-card h2 { margin: 0; font-size: 1.375rem; }
+.emergency-driver-card h3 { margin: 8px 0 0; font-size: 1.125rem; }
+.emergency-driver-content { display: grid; gap: 4px; }
+.emergency-driver-content p { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.emergency-countdown { min-height: 44px; display: flex; align-items: center; font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.emergency-driver-page .emergency-control { min-height: 48px; }
+.emergency-driver-page :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+@media (max-width: 760px) { .emergency-driver-page { grid-template-columns: 1fr; } .emergency-driver-page > h1, .emergency-driver-page > .emergency-demo-notice, .emergency-driver-page > .notice { grid-column: auto; } }
