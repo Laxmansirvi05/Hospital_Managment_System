@@ -80,19 +80,7 @@ async function call(provider, { system, messages, files }) {
   try {
     return firstJson(text);
   } catch {
-    // Some vision models answer in prose despite the instruction, or run out of room mid-JSON. The
-    // reply text is recovered either way; the caller still applies the rules, the safety check and
-    // its own defaults for the other fields.
-    const cut = /"reply"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(text);
-    let reply = text;
-    if (cut) {
-      try {
-        reply = JSON.parse(`"${cut[1].replace(/\\$/, '')}"`);
-      } catch {
-        reply = cut[1];
-      }
-    }
-    return { reply: reply.replace(/[#*_`>]+/g, '').replace(/[ \t]+/g, ' ').trim().slice(0, 1500) };
+    throw new AiError('bad_json');
   }
 }
 
