@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Emergency · CareRoute</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/tokens.css">
@@ -11,26 +12,64 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/premium.css">
+  <link rel="stylesheet" href="/css/emergency.css">
   <script type="module" src="/js/pages/sos.js"></script>
 </head>
-<body>
-  <a class="visually-hidden" href="#main">Skip to content</a>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar" aria-label="Main"></aside>
-    <div>
-      <div class="mode-banner" id="mode-banner" role="note" hidden></div>
-      <div class="offline notice notice-warning notice-flat" role="status">You are offline. Changes will not save until you reconnect.</div>
-      <header class="topbar" id="topbar"></header>
-      <main class="main" id="main" tabindex="-1">
-        <div class="page" aria-busy="true">
-          <div class="skeleton skeleton-hero"></div>
-          <div class="skeleton skeleton-block"></div>
-          <div class="skeleton skeleton-block skeleton-block-l"></div>
+<body class="emergency-page">
+  <a class="visually-hidden" href="#main">Skip to emergency request</a>
+  <header class="emergency-header"><a href="/" class="emergency-brand">CareRoute</a><a href="/signin/" id="account-link">Sign in</a></header>
+  <main id="main" class="emergency-main">
+    <a class="emergency-call" href="tel:112"><span>Call 112</span><small>For immediate help, call from any phone.</small></a>
+    <p class="emergency-demo-notice" role="note"><strong>Demo: no real ambulance is sent.</strong> This form is for trying CareRoute only. Call 112 for a real emergency.</p>
+    <section class="emergency-card" aria-labelledby="sos-title">
+      <h1 id="sos-title">Request a demo ambulance</h1>
+      <p class="emergency-muted">Send one demo request. You can cancel it during the next five seconds.</p>
+      <form id="sos-form" novalidate>
+        <div class="emergency-form-grid">
+          <label>What happened?
+            <select name="emergencyType" required>
+              <option value="cardiac">Heart or chest problem</option><option value="accident">Accident or injury</option>
+              <option value="breathing">Trouble breathing</option><option value="stroke">Possible stroke</option>
+              <option value="pregnancy">Pregnancy emergency</option><option value="other" selected>Something else</option>
+            </select>
+          </label>
+          <label>Who needs help?
+            <select name="forSelf"><option value="true">Me</option><option value="false">Someone else</option></select>
+          </label>
+          <label>Are they conscious?
+            <select name="conscious"><option value="true">Yes</option><option value="false">No</option><option value="">Not sure</option></select>
+          </label>
+          <label>Number of people
+            <input name="patientCount" type="number" min="1" max="20" value="1" inputmode="numeric" required>
+          </label>
+          <label>Ambulance type
+            <select name="ambulanceType"><option>BLS</option><option>ALS</option><option>ICU</option></select>
+          </label>
+          <label id="guest-phone-wrap">Your phone number <span class="emergency-muted">Required for guests</span>
+            <input name="guestPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="98765 43210">
+          </label>
         </div>
-      </main>
-    </div>
-  </div>
-  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
-  <div aria-live="polite" class="visually-hidden" id="live"></div>
+        <fieldset class="emergency-location">
+          <legend>Where should the demo crew go?</legend>
+          <p id="location-help" class="emergency-muted">Allow location or enter an address. If location is unavailable, the demo uses an approximate Hyderabad map point.</p>
+          <button class="btn btn-secondary emergency-control" id="locate" type="button">Use my location</button>
+          <p id="location-status" class="emergency-muted" aria-live="polite">Location has not been checked.</p>
+          <label>Address or landmark
+            <input name="address" type="text" maxlength="300" autocomplete="street-address" aria-describedby="location-help">
+          </label>
+        </fieldset>
+        <label>Notes for the demo crew
+          <textarea name="notes" maxlength="500" rows="3"></textarea>
+        </label>
+        <p id="form-error" class="emergency-error" role="alert" hidden></p>
+        <button class="btn btn-danger emergency-submit" id="send-request" type="submit">Send demo request</button>
+      </form>
+      <section id="undo-panel" class="emergency-undo" aria-live="assertive" hidden>
+        <p id="undo-message">Demo request sent. You can cancel it for five seconds.</p>
+        <button class="btn btn-secondary emergency-control" id="cancel-request" type="button">Cancel request</button>
+      </section>
+    </section>
+  </main>
+  <div id="live" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

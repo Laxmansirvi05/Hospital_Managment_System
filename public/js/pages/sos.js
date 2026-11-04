@@ -1,45 +1,88 @@
-// Ambulance requests (WP-5) are not built yet. This page must never pretend they are:
-// it sends people to 112 and shows what they can do now.
-import { h, icon } from '../h.js';
 import { api } from '../api.js';
-import { shell } from '../shell.js';
-import { pageHead, listingRow, distance } from '../ui.js';
-import { getOrigin, onOriginChange, locationBar } from '../location.js';
-import { createRealMap } from '../real-map.js';
 
-const { main } = await shell({ nav: 'sos', title: 'Emergency' });
+const form = document.querySelector('#sos-form');
+const error = document.querySelector('#form-error');
+const locateButton = document.querySelector('#locate');
+const locationStatus = document.querySelector('#location-status');
+const live = document.querySelector('#live');
+const undoPanel = document.querySelector('#undo-panel');
+const cancelButton = document.querySelector('#cancel-request');
+const accountLink = document.querySelector('#account-link');
+const HYDERABAD_APPROX = { lat: 17.385, lng: 78.4867 };
+let currentUser = null;
+let currentLocation = null;
+let currentRequest = null;
+let undoTimer = null;
+let redirectTimer = null;
 
-const nearList = h('div', { class: 'list' }, h('div', { class: 'skeleton skeleton-row' }));
-const map = createRealMap({ origin: getOrigin(), height: 420, label: 'Map of the nearest emergency departments' });
+try { currentUser = await api('/auth/me'); } catch { currentUser = null; }
+if (currentUser) { accountLink.href = currentUser.role === 'driver' ? '/driver/' : currentUser.role === 'admin' ? '/admin/' : '/dashboard/'; accountLink.textContent = 'Account'; document.querySelector('#guest-phone-wrap').hidden = true; }
 
-// Two columns on wide screens: calling and the list first, the same hospitals on a map beside them.
-main.replaceChildren(h('div', { class: 'page' },
-  pageHead({ art: 'ambulance', title: 'Emergency', sub: 'If someone may be seriously ill or injured, call for help now.' }),
-  h('div', { class: 'grid-main-side sos-layout' },
-  h('div', { class: 'stack-16' },
-  h('a', { class: 'sos-key', href: 'tel:112' }, h('span', { class: 'sos-key-title' }, 'Call 112'), h('span', { class: 'sos-key-sub' }, 'National emergency number. Works from any phone.')),
-  h('p', { class: 'notice notice-warning' }, icon('info', 18), h('span', {}, h('strong', {}, 'Ambulance requests through CareRoute are not live yet. '), 'They are being built. Until then, call 112 or a hospital directly.')),
-  h('section', { class: 'card stack-16' },
-    h('div', { class: 'stack-4' },
-      h('h2', { class: 't-title-2' }, 'Hospitals with an emergency department near you'),
-      h('p', { class: 't-subhead muted' }, 'Call ahead if you can. Tap a hospital for its phone number.')),
-    locationBar(),
-    nearList)),
-  h('div', { class: 'stack-16 sos-side' },
-    map,
-    h('a', { class: 'card card-link stack-8', href: '/medical-id/' },
-      h('span', { class: 't-headline row-8' }, icon('idcard', 18), 'Keep your medical ID ready'),
-      h('span', { class: 't-subhead muted' }, 'Blood group, allergies and medicines help the people treating you.'))))));
+locateButton.addEventListener('click', () => {
+  if (!navigator.geolocation) { locationStatus.textContent = 'Location is not available in this browser. Enter an address to continue.'; return; }
+  locateButton.disabled = true;
+  locationStatus.textContent = 'Checking your location…';
+  navigator.geolocation.getCurrentPosition((position) => {
+    currentLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+    locationStatus.textContent = `Location ready, accuracy about ${Math.round(position.coords.accuracy)} metres.`;
+    locateButton.disabled = false;
+  }, () => {
+    currentLocation = null;
+    locationStatus.textContent = 'Location was not shared. Enter an address or landmark. Demo routing uses an approximate Hyderabad point.';
+    locateButton.disabled = false;
+  }, { enableHighAccuracy: true, timeout: 8_000, maximumAge: 30_000 });
+});
 
-function loadNearest() {
-  const o = getOrigin();
-  api(`/hospitals?emergencyOnly=true&lat=${o.lat}&lng=${o.lng}&limit=5`)
-    .then(({ hospitals }) => {
-      nearList.replaceChildren(...hospitals.map((x) => listingRow({ href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name, meta: [[x.area, x.phone].filter(Boolean).join(' · ')], trail: distance(x) })));
-      map.update({ pins: hospitals.map((x) => ({ ...x.location, label: x.name, href: `/hospital/?id=${x.id}`, kind: 'hospital' })), origin: o });
-    })
-    .catch((err) => nearList.replaceChildren(h('p', { class: 't-subhead muted' }, `${err.message} Call 112.`)));
+form.addEventListener('submit', async (event) => {
+  event.preventDefault(); error.hidden = true;
+  if (!form.reportValidity()) return;
+  const data = new FormData(form);
+  const address = String(data.get('address') || '').trim();
+  if (!currentLocation && !address) { error.textContent = 'Allow location or enter an address to continue.'; error.hidden = false; return; }
+  const body = {
+    emergencyType: data.get('emergencyType'), forSelf: data.get('forSelf') === 'true',
+    conscious: data.get('conscious') === '' ? null : data.get('conscious') === 'true', patientCount: Number(data.get('patientCount')),
+    ambulanceType: data.get('ambulanceType'), notes: String(data.get('notes') || '').trim(), location: currentLocation || HYDERABAD_APPROX,
+    address, ...(currentUser ? {} : { guestPhone: String(data.get('guestPhone') || '').trim() }),
+  };
+  const send = document.querySelector('#send-request'); send.disabled = true; send.textContent = 'Sending request…';
+  try {
+    const result = await api('/emergencies', { method: 'POST', body });
+    currentRequest = { id: result.emergency.id, token: result.trackingToken, user: Boolean(currentUser) };
+    undoPanel.hidden = false; live.textContent = 'Demo request sent. Cancel is available for five seconds.';
+    send.hidden = true; form.querySelectorAll('input,select,textarea,fieldset button').forEach((el) => { el.disabled = true; });
+    let seconds = 5;
+    const message = document.querySelector('#undo-message');
+    message.textContent = `Demo request sent. Cancel available for ${seconds} seconds.`;
+    undoTimer = window.setInterval(() => {
+      seconds -= 1;
+      if (seconds > 0) { message.textContent = `Demo request sent. Cancel available for ${seconds} seconds.`; live.textContent = `Cancel request available for ${seconds} seconds.`; }
+      else { clearInterval(undoTimer); undoTimer = null; message.textContent = 'Opening demo status.'; redirectTimer = window.setTimeout(openStatus, 250); }
+    }, 1_000);
+  } catch (err) {
+    error.textContent = err.status === 422 ? Object.values(err.fields || {}).join(' ') : err.message;
+    error.hidden = false; send.disabled = false; send.textContent = 'Send demo request';
+  }
+});
+
+function openStatus() {
+  if (!currentRequest) return;
+  const params = new URLSearchParams({ token: currentRequest.token });
+  if (currentRequest.user) params.set('id', currentRequest.id);
+  location.assign(`${currentRequest.user ? '/emergency/' : '/track/'}?${params}`);
 }
-loadNearest();
-// With live location on, the list follows the patient as they move.
-onOriginChange(loadNearest);
+
+cancelButton.addEventListener('click', async () => {
+  if (!currentRequest) return;
+  clearInterval(undoTimer); clearTimeout(redirectTimer); undoTimer = null; redirectTimer = null;
+  cancelButton.disabled = true;
+  try {
+    const path = currentRequest.user ? `/emergencies/${currentRequest.id}/cancel` : `/track/${currentRequest.token}/cancel`;
+    await api(path, { method: 'POST', body: {} });
+    currentRequest = null; document.querySelector('#undo-message').textContent = 'Demo request cancelled. No contact message was sent.';
+    cancelButton.hidden = true; live.textContent = 'Demo request cancelled.';
+  } catch (err) {
+    document.querySelector('#undo-message').textContent = `${err.message} Call 112 if you need immediate help.`;
+    live.textContent = 'The request could not be cancelled.';
+  }
+});

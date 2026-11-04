@@ -14,10 +14,15 @@ export function createEmergencyService({ store, eta = async (point, candidates) 
       const candidates = ranked.slice().sort((a, b) => (a.etaSeconds + (a.type === (input.ambulanceType ?? 'BLS') ? 0 : 180)) - (b.etaSeconds + (b.type === (input.ambulanceType ?? 'BLS') ? 0 : 180))).slice(0, 5);
       const matched = await db.createOffers(emergency.id, candidates.map(({ id, ambulanceId, etaSeconds }) => ({ ambulanceId: ambulanceId ?? id, etaSeconds })), ranked.length > 0 && ranked.every((x) => x.etaIsEstimate));
       if (sms && input.contacts?.length) {
-        for (const contact of input.contacts) {
-          try { await sms.sendTracking({ to: contact.phone, emergencyId: emergency.id, trackingUrl: input.trackingUrl }); await db.insertEvent(emergency.id, 'sms_sent', 'system'); }
-          catch { await db.insertEvent(emergency.id, 'sms_failed', 'system'); }
-        }
+        const contacts = input.contacts.map((contact) => ({ phone: contact.phone }));
+        const timer = setTimeout(async () => {
+          if ((await db.getById(emergency.id))?.status === 'cancelled') return;
+          for (const contact of contacts) {
+            try { await sms.sendTracking({ to: contact.phone, emergencyId: emergency.id, trackingUrl: input.trackingUrl }); await db.insertEvent(emergency.id, 'sms_sent', 'system'); }
+            catch { await db.insertEvent(emergency.id, 'sms_failed', 'system'); }
+          }
+        }, 5_000);
+        timer.unref?.();
       }
       return matched;
     },
