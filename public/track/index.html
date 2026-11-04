@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <title>Demo tracking · CareRoute</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/premium.css"><link rel="stylesheet" href="/css/emergency.css">
+  <script type="module" src="/js/pages/track.js"></script>
+</head>
+<body class="emergency-page tracking-page">
+  <a class="visually-hidden" href="#main">Skip to tracking status</a>
+  <main id="main" class="emergency-main">
+    <p class="emergency-demo-notice" role="note"><strong>Demo: no real ambulance is sent.</strong></p>
+    <section class="emergency-card" aria-labelledby="tracking-title">
+      <h1 id="tracking-title">Demo tracking</h1>
+      <p id="tracking-status" class="emergency-tracking-status" role="status" aria-live="polite">Loading demo status…</p>
+      <p id="tracking-eta" class="emergency-eta" aria-live="polite"></p>
+      <div id="tracking-map" class="emergency-map-slot"></div>
+      <p id="tracking-position" class="emergency-muted"></p>
+      <p id="tracking-error" class="emergency-muted" hidden></p>
+    </section>
+  </main>
+</body>
+</html>

@@ -46,3 +46,5 @@
 .emergency-outcome h2, .emergency-feedback h2 { margin: 0; font-size: 1.25rem; }
 .emergency-outcome p { margin: 0; }
 .emergency-outcome a { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.tracking-page .emergency-main { width: min(100% - 32px, 680px); margin-top: 24px; }
+.emergency-tracking-status { min-height: 28px; margin: 0; font-size: 1.25rem; font-weight: 700; }
