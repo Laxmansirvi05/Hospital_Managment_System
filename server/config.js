@@ -21,6 +21,10 @@ const schema = z.object({
   PUBLIC_SUPABASE_URL: optionalReal(z.string().url()),
   PUBLIC_SUPABASE_ANON_KEY: optionalReal(z.string().min(20)),
   PUBLIC_MAPTILER_KEY: optionalReal(z.string().min(8)),
+  MAPBOX_TOKEN: optionalReal(z.string().min(8)),
+  TWILIO_ACCOUNT_SID: optionalReal(z.string().regex(/^AC[0-9a-fA-F]{32}$/)),
+  TWILIO_AUTH_TOKEN: optionalReal(z.string().min(16)),
+  TWILIO_FROM: optionalReal(z.string().regex(/^\+[1-9][0-9]{7,14}$/)),
   // Sign in with Google (D-63): an OAuth web client from Google Cloud. Both or neither.
   GOOGLE_CLIENT_ID: optionalReal(z.string().regex(/^[\w-]+\.apps\.googleusercontent\.com$/, 'must be a Google OAuth web client id')),
   GOOGLE_CLIENT_SECRET: optionalReal(real(z.string().min(10))),
@@ -137,6 +141,10 @@ export function loadConfig(env = process.env) {
     google,
     aiProviders,
     assistantDailyLimit: v.ASSISTANT_DAILY_LIMIT,
+    mapboxToken: v.MAPBOX_TOKEN,
+    twilio: v.TWILIO_ACCOUNT_SID && v.TWILIO_AUTH_TOKEN && v.TWILIO_FROM
+      ? { accountSid: v.TWILIO_ACCOUNT_SID, authToken: v.TWILIO_AUTH_TOKEN, from: v.TWILIO_FROM }
+      : null,
     publicValues: Object.freeze(publicValues),
     warnings,
   });

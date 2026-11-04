@@ -8,9 +8,11 @@ export function createEmergencyService({ store, eta = async (point, candidates) 
     async create(input) {
       const emergency = await db.createEmergency(input);
       const nearby = await db.nearbyAmbulances({ point: input.location, type: input.ambulanceType ?? 'BLS', radiusKm: 10, maxAgeSeconds: 90, limit: 24 });
-      const ranked = await eta(input.location, nearby);
+      const ambulanceRows = await db.listAmbulances();
+      const candidatesWithPosition = nearby.map((candidate) => ({ ...candidate, ...ambulanceRows.find((ambulance) => ambulance.id === candidate.id) }));
+      const ranked = await eta(input.location, candidatesWithPosition);
       const candidates = ranked.slice().sort((a, b) => (a.etaSeconds + (a.type === (input.ambulanceType ?? 'BLS') ? 0 : 180)) - (b.etaSeconds + (b.type === (input.ambulanceType ?? 'BLS') ? 0 : 180))).slice(0, 5);
-      const matched = await db.createOffers(emergency.id, candidates.map(({ id, ambulanceId, etaSeconds }) => ({ ambulanceId: ambulanceId ?? id, etaSeconds })), ranked.some((x) => !x.etaIsEstimate));
+      const matched = await db.createOffers(emergency.id, candidates.map(({ id, ambulanceId, etaSeconds }) => ({ ambulanceId: ambulanceId ?? id, etaSeconds })), ranked.length > 0 && ranked.every((x) => x.etaIsEstimate));
       if (sms && input.contacts?.length) {
         for (const contact of input.contacts) {
           try { await sms.sendTracking({ to: contact.phone, emergencyId: emergency.id, trackingUrl: input.trackingUrl }); await db.insertEvent(emergency.id, 'sms_sent', 'system'); }
