@@ -1,238 +1,95 @@
 # API specification
 
-Source of truth: `postman/ambulance-platform.postman_collection.json`. Sections 1 to 3 restate it. Sections 4 to 8 are new and PROPOSED. If this file and the collection disagree, fix this file, or ask the owner before changing the collection.
+Generated route inventory from the route arrays imported by `server/router.js` on 2026-11-04. The implementation in `server/routes/**` is authoritative. Every implemented method/path is listed once below. Base path: `/api/v1`. JSON requests use `Content-Type: application/json`; protected routes accept bearer access token or the first-party session cookie.
 
-The collection was changed on 2026-10-24 (D-34) to remove the `hospital_admin` and `dispatcher` requests, hospital creation, doctor creation, bed updates, hospital recommendations, pre-alerts and the destination hospital. Folder 7 is now the edge-case folder.
+Roles: `public` means no login; `patient`, `driver`, and `admin` are the signed-in roles. `patient|driver|admin` means any signed-in role. Parameters shown with `:` are path parameters; route handlers validate UUID parameters unless named `token`.
 
-Base path: `/api/v1`. Local base URL in the collection: `http://localhost:4000/api/v1`. JSON everywhere. Protected routes need `Authorization: Bearer <token>` or the session cookie (D-23).
+Success responses below give exact top-level fields and the item schemas used by route view functions. Empty 204 responses have no body. A validation error is 422 `invalid_input`; missing auth is 401; role denial is 403; unmatched path is 404; method mismatch is 405. Routes absent from this inventory are not implemented.
 
-"Role" is the token the collection uses for that request. Where the collection uses one role's token, other roles are expected to get 403. Ownership rules are added in `09-security.md` section 5.
+## Implemented route inventory (68 routes)
 
-Roles: `patient`, `driver`, `admin` (D-29).
+| Method | Path | Role | Request fields | Success response fields |
+| --- | --- | --- | --- | --- |
+| GET | `/health` | public |  | 200 {status} |
+| GET | `/config` | public |  | 200 {allow-listed public config fields, dataMode} |
+| POST | `/auth/register` | public | Body: name, email, phone? (E.164 or 10 digit Indian mobile), password, role? (patient|driver|admin; defaults patient) | 201 {token,user{id,role,name}} |
+| POST | `/auth/login` | public | Body: email, password | 200 {token,user{id,role,name}} |
+| GET | `/auth/me` | patient|driver|admin |  | 200 {id,name,email,phone,role,createdAt,hasPassword,google} |
+| POST | `/auth/refresh` | public |  | 200 {token,user{id,role,name}} |
+| POST | `/auth/logout` | patient|driver|admin |  | 204 empty |
+| GET | `/auth/google/start` | public | Query: next? (same-site path);  | 302 redirect; sets flow cookie |
+| GET | `/auth/google/callback` | public |  | 302 redirect; sets or clears session cookies |
+| POST | `/auth/password` | patient|driver|admin | Body: currentPassword? (Google-only accounts may omit), newPassword | 204 empty |
+| POST | `/auth/sessions/revoke-others` | patient|driver|admin |  | 204 empty |
+| POST | `/patients/me/delete-account` | patient | Body: password?, confirm="DELETE" | 204 empty; clears cookies |
+| GET | `/patients/me/medical-id` | patient |  | 200 {fullName,phone,dateOfBirth,age,gender,preferredLanguage,address,bloodGroup,heightCm,weightKg,allergies,conditions,currentMedicines,pastSurgeries,disabilities,organDonor,medicalNotes,insurance,primaryDoctor,shareWithCrew,hasPhoto,completeness} |
+| PUT | `/patients/me/medical-id` | patient | Body: Any subset of fullName, dateOfBirth, gender, preferredLanguage, address{line1,line2,landmark,area,city,pinCode}, bloodGroup, heightCm, weightKg, allergies[], conditions[], currentMedicines[], pastSurgeries[], disabilities[], organDonor, medicalNotes, insurance{provider,policyNumber}, primaryDoctor{name,phone}, shareWithCrew | 200 same medical-ID fields |
+| GET | `/patients/me/contacts` | patient |  | 200 {contacts:[{id,name,phone,relation}]} |
+| POST | `/patients/me/contacts` | patient | Body: name, phone, relation | 201 {id,name,phone,relation} |
+| DELETE | `/patients/me/contacts/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| GET | `/patients/me/reminders` | patient |  | 200 {reminders:[{id,medicineName,dose,instructions,times,daysOfWeek,startDate,endDate,notes,active}]} |
+| GET | `/patients/me/reminders/today` | patient | Query: date? (YYYY-MM-DD; defaults to today in Asia/Kolkata);  | 200 {date,doses:[{id,reminderId,date,time,status}]} |
+| POST | `/patients/me/reminders` | patient | Body: medicineName, dose, times[], startDate; optional instructions, daysOfWeek[], endDate, notes, active | 201 reminder object |
+| PATCH | `/patients/me/reminders/:id` | patient | Path params: id (UUID unless token); Body: Optional subset: medicineName, dose, instructions, times[], daysOfWeek[], startDate, endDate, notes, active | 200 reminder object |
+| DELETE | `/patients/me/reminders/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| POST | `/patients/me/reminders/:id/doses` | patient | Path params: id (UUID unless token); Body: date, time, status (taken|skipped) | 200 dose record |
+| GET | `/patients/me/appointments` | patient |  | 200 {appointments:[{id,doctorName,speciality,place,hospitalId,date,time,reason,notes,status}]} |
+| POST | `/patients/me/appointments` | patient | Body: doctorName, place, date, time; optional speciality, hospitalId, reason, notes | 201 appointment object |
+| PATCH | `/patients/me/appointments/:id` | patient | Path params: id (UUID unless token); Body: Optional subset: doctorName, speciality, place, date, time, reason, notes, status (scheduled|done|cancelled) | 200 appointment object |
+| DELETE | `/patients/me/appointments/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| GET | `/patients/me/dashboard` | patient | Query: date? (YYYY-MM-DD; defaults to today in Asia/Kolkata);  | 200 {date,patient,today,appointments,documents,counts} |
+| POST | `/patients/me/reports` | patient | Body: title, kind (lab|prescription|scan|discharge|insurance|other), fileName, contentType, sizeBytes | 201 {id,uploadUrl,method,contentType} |
+| POST | `/patients/me/reports/:id/complete` | patient | Path params: id (UUID unless token);  | 200 {id,title,kind,fileName,contentType,sizeBytes,uploadedAt} |
+| GET | `/patients/me/reports` | patient |  | 200 {reports:[file object]} |
+| GET | `/patients/me/reports/:id/download` | patient | Path params: id (UUID unless token);  | 200 {url,expiresInSeconds} |
+| DELETE | `/patients/me/reports/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| POST | `/patients/me/photo` | patient | Body: contentType (image/jpeg|image/png), sizeBytes | 201 {id,uploadUrl,method,contentType} |
+| POST | `/patients/me/photo/:id/complete` | patient | Path params: id (UUID unless token);  | 200 {hasPhoto} |
+| GET | `/patients/me/photo` | patient |  | 200 {url,expiresInSeconds} |
+| DELETE | `/patients/me/photo` | patient |  | 204 empty |
+| PUT | `/uploads/:token` | public | Path params: token (UUID unless token); Body: Raw bytes; Content-Type must match the upload record | 200 {ok}; raw response |
+| GET | `/files/:token` | public | Path params: token (UUID unless token);  | 200 file bytes with stored Content-Type |
+| GET | `/test-prices` | patient|driver|admin | Query: q?, area?, lat?, lng?, radiusKm?, limit? (1..50), offset? (0..5000), speciality?, specialization?, emergencyOnly?, open24?, test?, type?, chain?, category?, provider?, language?, group?, sort?;  | 200 {tests:[{name,provider,priceInr,centresOffering,url,checkedAt}],total} |
+| GET | `/insights` | patient|driver|admin |  | 200 {totals,byType,byArea,bySpeciality,bySource,byChain,medicines,byMedicineGroup,commonTests,fees,points} |
+| GET | `/map-locations` | patient|driver|admin |  | 200 {locations:[...]} |
+| GET | `/areas` | patient|driver|admin |  | 200 {areas:[string]} |
+| GET | `/areas/centroids` | patient|driver|admin |  | 200 {areas:[{name,places,lat,lng}]} |
+| GET | `/hospitals/nearby` | patient|driver|admin | Query: lat, lng, radiusKm?, limit?, offset?, emergencyOnly?, speciality?, type?, area?, q?;  | 200 {hospitals:[hospital],total} |
+| GET | `/hospitals` | patient|driver|admin | Query: q?, area?, lat?, lng?, radiusKm?, limit?, offset?, speciality?, type?, emergencyOnly?;  | 200 {hospitals:[hospital],total} |
+| GET | `/hospitals/:id` | patient|driver|admin | Path params: id (UUID unless token);  | 200 hospital object |
+| GET | `/hospitals/:id/doctors` | patient|driver|admin | Path params: id (UUID unless token); Query: specialization?;  | 200 {doctors:[doctor]} |
+| GET | `/doctors` | patient|driver|admin | Query: q?, area?, lat?, lng?, radiusKm?, limit?, offset?, specialization?, language?, sort?;  | 200 {doctors:[doctor],total} |
+| GET | `/doctors/:id` | patient|driver|admin | Path params: id (UUID unless token);  | 200 doctor object |
+| GET | `/medicines` | patient|driver|admin | Query: q?, limit?, offset?, category?, provider?;  | 200 {medicines:[medicine],total} |
+| GET | `/medicines/:id` | patient|driver|admin | Path params: id (UUID unless token);  | 200 medicine object |
+| GET | `/pharmacies` | patient|driver|admin | Query: q?, area?, lat?, lng?, radiusKm?, limit?, offset?, open24?, chain?;  | 200 {pharmacies:[pharmacy],total} |
+| GET | `/pharmacies/:id` | patient|driver|admin | Path params: id (UUID unless token);  | 200 pharmacy object |
+| GET | `/diagnostic-centres` | patient|driver|admin | Query: q?, area?, lat?, lng?, radiusKm?, limit?, offset?, test?, category?;  | 200 {diagnosticCentres:[centre],total} |
+| GET | `/diagnostic-centres/:id` | patient|driver|admin | Path params: id (UUID unless token);  | 200 diagnostic-centre object |
+| GET | `/reviews` | patient|driver|admin | Query: kind, id (UUID);  | 200 {summary:{average,count},reviews:[{id,rating,body,author,updatedAt,mine}]} |
+| PUT | `/reviews` | patient | Body: kind (hospital|doctor|pharmacy|diagnostic_centre), id, rating (1..5), body? | 200 {id,rating,body,author,updatedAt,mine} |
+| DELETE | `/reviews/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| POST | `/reviews/:id/report` | patient | Path params: id (UUID unless token);  | 204 empty |
+| POST | `/assistant/triage` | patient | Body: message (1..2000), age? (0..120), language? (en) | 200 {urgency,sosRecommended,suggestedSpecialty,advice,disclaimer} |
+| GET | `/patients/me/assistant` | patient |  | 200 {consent,conversations,disclaimer} |
+| PUT | `/patients/me/assistant/consent` | patient | Body: agree (boolean) | 200 {agreedAt} |
+| POST | `/assistant/conversations` | patient | Body: text (1..2000), documentIds? (up to 3 UUIDs), near? {lat,lng} | 201 {conversation,messages} |
+| GET | `/assistant/conversations/:id` | patient | Path params: id (UUID unless token);  | 200 {conversation,messages} |
+| POST | `/assistant/conversations/:id/messages` | patient | Path params: id (UUID unless token); Body: text (1..2000), documentIds? (up to 3 UUIDs), near? {lat,lng} | 201 {messages} |
+| DELETE | `/assistant/conversations/:id` | patient | Path params: id (UUID unless token);  | 204 empty |
+| DELETE | `/assistant/conversations` | patient |  | 204 empty |
 
-## 1. Endpoint catalogue (collection)
+## Shared listing item fields
 
-### 0. Health
+- Hospital: `id,name,area,address,location{lat,lng},phone,email,website,rating,ratingCount,source{platform,url,checkedAt},distanceKm?`, plus `facilityType,description,emergencyAvailable,specialities,departments` and optional image/logo fields.
+- Doctor: `id,name,title,specialization,qualifications,experienceYears,publishedTimings,profileUrl,rating,ratingCount,photoUrl,languages,expertise,bookingUrl,consultationFeeInr,place{kind,id,name,area,address,phone,location{lat,lng}},source{platform,url,checkedAt},distanceKm?`.
+- Pharmacy: hospital base fields plus `chain,hours,open24`. Diagnostic centre: hospital base fields plus `hours,description,testsListed`. Medicine: `id,name,form,pack,category,prescriptionRequired,listings[{platform,priceInr,productUrl,checkedAt}]`.
+- Search list responses include `total` before paging. Common search query limits are `limit=1..50`, `offset=0..5000`; location requires both `lat` and `lng`. Only fields emitted by the route view functions are returned.
 
-| Method and path | Auth | Success | Notes |
-| --- | --- | --- | --- |
-| GET `/health` | none | 200 `{ status: "ok" }` | Checks API and database. |
+## Implemented but not in the older collection
 
-### 1. Auth
+The Postman collection now contains all 68 implemented routes, including patient reminders, appointments, reports, photos, discovery, reviews and saved assistant conversations. Google OAuth endpoints are browser redirects and require the configured test/deployment OAuth flow. Upload endpoints use one-time upload/download URLs; they cannot be fully exercised with an ordinary JSON request.
 
-| Method and path | Auth | Request body | Success |
-| --- | --- | --- | --- |
-| POST `/auth/register` | none | `name`, `email`, `password`, `role`, optional `phone` (D-63) | 201 `{ token, user: { id, role, name } }`. 409 if the email exists. |
-| POST `/auth/login` | none | `email`, `password` | 200 `{ token, ... }` |
-| GET `/auth/me` | any role | none | 200 `{ id, name, email, phone, role, createdAt, hasPassword, google }`, role at the top level as the collection reads it. `phone` may be null (D-63) |
-| GET `/auth/google/start?next=` | none | Browser navigation | 302 to Google with PKCE, `state` and `nonce`; sets the `cr_google` cookie (10 minutes, path `/api/v1/auth/google`). `next` must be a same-site path. 302 to `/signin/?google=unavailable` when not configured. New (D-63). |
-| GET `/auth/google/callback` | none | Google's redirect | On success, session cookies and 302 to `next`, `/dashboard/`, or `/medical-id/?welcome=1` for a new account. On failure, 302 to `/signin/?google=` one of `cancelled`, `expired`, `failed`, `not_patient`, `linked_elsewhere`, `disabled`, `unavailable`, `try_again`. New (D-63). |
-| POST `/auth/refresh` | refresh cookie | none | 200 `{ token, user }` and new cookies. Rotates the refresh token. 401 if unknown, expired, revoked or reused. New (D-22). |
-| POST `/auth/logout` | any role | none | 204, session revoked, cookies cleared. New (D-22). |
+## Planned, not implemented
 
-Auth rules decided for WP-1 (designed, not built on `main`):
-
-- Register and login also set two httpOnly cookies: `cr_access` (15 minutes, path `/`) and `cr_refresh` (7 days, path `/api/v1/auth`). The JSON `token` is the same access token, for API clients (D-22, D-23).
-- `role` defaults to `patient`. `driver` and `admin` return 403 `role_not_allowed` unless `ALLOW_PRIVILEGED_SIGNUP=true` (D-21, D-29).
-- Email is stored lower case. A 10-digit Indian mobile number becomes `+91` followed by the number. Other numbers must be in `+` country code form (PROPOSED).
-- Passwords are 8 to 128 characters (PROPOSED, NIST SP 800-63B minimum).
-- Wrong password and unknown email give the same 401 `invalid_credentials`.
-- An expired access token gives 401 `token_expired`, so the browser knows to refresh.
-- Too many attempts give 429 `rate_limited` with `Retry-After` (D-25).
-- Writes authenticated by cookie need the same `Origin` and the header `x-careroute-csrf: 1`, otherwise 403 `csrf_failed` (D-23).
-
-### 2. Patient medical ID and contacts
-
-| Method and path | Role | Request body | Success |
-| --- | --- | --- | --- |
-| PUT `/patients/me/medical-id` | patient | `bloodGroup`, `allergies[]`, `medicalNotes`, `shareWithCrew` | 200 the saved medical ID |
-| GET `/patients/me/medical-id` | patient | none | 200 the medical ID |
-| POST `/patients/me/contacts` | patient | `name`, `phone`, `relation` | 201 `{ id, ... }` |
-| GET `/patients/me/contacts` | patient | none | 200 `{ contacts: [] }` |
-| DELETE `/patients/me/contacts/{id}` | patient | none | 204 |
-
-### 3. Hospital and doctor discovery
-
-Hospitals and doctors are listing data managed by the admin (section 7). The collection reads them from seed data, so the database must hold at least one hospital near the sample coordinates.
-
-| Method and path | Role | Request | Success |
-| --- | --- | --- | --- |
-| GET `/hospitals/nearby` | patient | query `lat`, `lng`, `radiusKm`, `emergencyOnly` | 200 `{ hospitals: [{ ..., distanceKm }] }` sorted nearest first. The collection stores the first id as `hospitalId`. |
-| GET `/hospitals/{id}` | patient | none | 200 hospital with departments and public details |
-| GET `/hospitals/{id}/doctors` | patient | query `specialization` optional | 200 `{ doctors: [] }` |
-
-Whether these work without signing in is OPEN (Q-27). The collection sends a patient token.
-
-### 4. Ambulances
-
-| Method and path | Role | Request | Success |
-| --- | --- | --- | --- |
-| POST `/ambulances` | driver | `registrationNumber`, `type`, `operatorName`, `driverPhone` | 201 `{ id, ... }` |
-| PATCH `/ambulances/{id}/status` | driver | `status`: `available`, `offline`, `busy` | 200 `{ status }` |
-| POST `/ambulances/{id}/location` | driver | `lat`, `lng`, `headingDegrees`, `speedKmph` | 200 `{ ok: true }` |
-
-### 5. Emergencies
-
-| Method and path | Role | Request | Success |
-| --- | --- | --- | --- |
-| POST `/emergencies` | patient | `patientLocation { lat, lng, address? }`, `forSelf`, `emergencyType`, `conscious`, `patientCount`, `ambulanceType`, `notes` | 201 `{ id, status, trackingToken, etaSeconds, createdAt }`. Status is `matching` or `assigned`. |
-| POST `/emergencies/guest` | none | `phone`, `patientLocation`, `emergencyType`, `ambulanceType` | 201 includes `trackingToken` |
-| GET `/emergencies/{id}` | patient | none | 200 `{ id, status, ambulance, etaSeconds, ... }` |
-| GET `/emergencies/mine` | patient | none | 200 `{ emergencies: [] }` newest first |
-| GET `/emergencies/driver/inbox` | driver | none | 200 `{ offers: [] }` each with `id` |
-| POST `/emergencies/{id}/accept` | driver | none | 200 `{ status: "assigned", etaSeconds }`. 409 if not acceptable. 403 for non-drivers. |
-| PATCH `/emergencies/{id}/status` | driver | `status` | 200 `{ status }`. `picked_up` takes no destination (D-30). |
-| GET `/emergencies/{id}/track` | none | query `token` | 200 `{ status, ambulance position, ETA }`. No medical data. |
-| POST `/emergencies/{id}/feedback` | patient | `rating` 1 to 5, `comment` | 201 `{ rating, ... }`. Only after completion. |
-| POST `/emergencies/{id}/cancel` | patient | `reason` | 200 `{ status: "cancelled" }`. Only before pickup. |
-
-Driver status values used in the trip, in order: `en_route`, `arrived`, `picked_up`, `at_hospital`, `completed`.
-
-### 6. Assistant: triage
-
-| Method and path | Role | Request | Success |
-| --- | --- | --- | --- |
-| POST `/assistant/triage` | patient | `message`, `age`, `language` | 200 `{ urgency, sosRecommended, suggestedSpecialty, disclaimer }` |
-
-### 7. Edge cases and negative tests
-
-| Case | Expected |
-| --- | --- |
-| Guest SOS without login | 201 with `trackingToken` |
-| Raise and cancel a second SOS | 201, then 200 `cancelled` |
-| Latitude 200 on `POST /emergencies` | 422, response text mentions "location" |
-| `GET /emergencies/mine` without a token | 401 |
-| Patient calls `POST /emergencies/{id}/accept` | 403 |
-| Driver accepts an already completed emergency | 409 |
-| Register an email that exists | 409 |
-| Any request | Responds in under 2 seconds |
-
-## 2. Realtime contract
-
-| Item | Value | Source |
-| --- | --- | --- |
-| Channel name | `emergency:<id>` | COLLECTION (was a Socket.IO room, now a Supabase Realtime channel, see D-11) |
-| Events | location update, status change, offer | PROPOSED names, to be fixed in WP-5 |
-| Authorization | OPEN (Q-14) | |
-
-## 3. Shared rules for listing responses (PROPOSED, P-19, P-24)
-
-- Every listing has `id`, `name`, `kind`, `address`, `area`, `location { lat, lng }`, `phone` (may be `null`, D-51), `email` (only if public), `website`, `sourcePlatform`, `sourceUrl`, `checkedAt`.
-- Hospitals have `emergencyAvailable`: `true`, `false`, or `null` when the source does not say. `emergencyOnly` returns only `true`.
-- Doctors also have `title` (string, may be empty, D-54), `photoUrl` (the hospital's own image address or `null`, D-55), `languages` and `expertise` (string arrays), `bookingUrl` (the hospital's own booking page or `null`, D-57) and `consultationFeeInr` (number or `null`). A doctor's `place.phone` is the hospital's appointment number for that doctor when published, else the hospital's main number.
-- `rating` and `reviewCount` appear only once Q-24 is decided. Until then they are absent, not zero.
-- Search endpoints accept `q`, `area`, `lat`, `lng`, `radiusKm`, `limit` (max 50) and `offset` (max 5000, for paging; replaces the planned `cursor`). Each search response also has `total`: the number of results matching the query and filters before paging (0 when the offset is past the end). They return `{ <plural>: [], nextCursor }`. With `lat` and `lng`, each item has `distanceKm` and results are nearest first unless `sort` says otherwise.
-- Only listings marked active by the admin are returned.
-
-## 4. Discovery (PROPOSED, P-19)
-
-Not in the collection. Data comes from online platforms such as Apollo, MedPlus and Tata 1mg (D-35). Collection method is OPEN (Q-28). Sign-in requirement is OPEN (Q-27).
-
-| Method and path | Purpose |
-| --- | --- |
-| GET `/hospitals` | Search hospitals. Extra filters: `speciality`, `department`, `emergencyOnly`. |
-| GET `/doctors` | Search doctors without choosing a hospital. Filters: `specialization`, `hospitalId`. Returns profiles with `qualifications`, `experienceYears`, `hospital` or `clinic`, `publishedTimings` (only if officially published), `profileUrl`. |
-| GET `/doctors/{id}` | One doctor profile. |
-| GET `/pharmacies` | Search pharmacies and medical stores. |
-| GET `/pharmacies/{id}` | One pharmacy. |
-| GET `/diagnostic-centres` | Search diagnostic centres and labs. Filter: `test`. |
-| GET `/diagnostic-centres/{id}` | One centre with `testsListed` if public. |
-| GET `/medicines` | Search by medicine name. Returns `{ medicines: [{ id, name, brand, form, strength, listings: [{ platform, priceInr, rating?, productUrl, checkedAt }] }] }`, listings sorted by price. |
-
-## 5. Assistant: conversations, discovery and report explanation (D-65 to D-68)
-
-Implemented on `main` (2026-11-03). Not in the Postman collection. Discovery (P-23) and report explanation (P-21) run inside a saved conversation instead of the separate `/assistant/discover` and `/reports/{id}/explain` designs, because the owner chose saved conversations (D-68).
-
-| Method and path | Role | Purpose |
-| --- | --- | --- |
-| GET `/patients/me/assistant` | patient | `{ consent: { agreedAt, providers[] }, conversations: [{ id, title, createdAt, updatedAt }], disclaimer }` |
-| PUT `/patients/me/assistant/consent` | patient | Body `{ agree: boolean }`. Returns `{ agreedAt }` (null when withdrawn). Nothing goes to a model without it (D-67). |
-| POST `/assistant/conversations` | patient | Body `{ text (1 to 2000), documentIds?: uuid[] (up to 3) }`. 201 `{ conversation, messages: [user, assistant] }`. 409 `consent_required` before agreement; 404 `document_not_found` for a document that is not the patient's own finished upload; 422 `document_too_large` over 4 MB. |
-| GET `/assistant/conversations/{id}` | patient | `{ conversation, messages[] }`. 404 for another patient's conversation. |
-| POST `/assistant/conversations/{id}/messages` | patient | Same body and errors as above. 201 `{ messages: [user, assistant] }`. |
-| DELETE `/assistant/conversations/{id}` | patient | 204. 404 for another patient's conversation. |
-| DELETE `/assistant/conversations` | patient | 204. Deletes every saved conversation of the patient. |
-
-An assistant message is `{ id, role: "assistant", text, urgency, sosRecommended, suggestedSpecialty, results: [{ kind, id, name, detail, area, href }], disclaimer, createdAt }`. `results` come only from CareRoute's own listings. A user message is `{ id, role: "user", text, documents?: [{ id, title }], createdAt }`. Message bodies may include `near: { lat, lng }`, the patient's live or chosen location, used only to sort places found and never sent to the model (D-70). Each account may send 40 assistant messages an hour (shared with `/assistant/triage`), and the site 300 model calls a day (`ASSISTANT_DAILY_LIMIT`). Attached documents may be PDF, JPEG, PNG, WebP or Word (.docx); Word files are sent to the model as text (D-69). 422 `document_unreadable` for a Word file that cannot be read.
-
-`/assistant/triage` keeps the collection's shape, adds `advice`, and calls a model only when the patient has agreed; otherwise it answers from the red-flag rules.
-
-All of it follows the safety limits in D-33 and `07-ai-triage.md`.
-
-## 6. Emergencies: driver reject (PROPOSED, P-20)
-
-| Method and path | Role | Purpose |
-| --- | --- | --- |
-| POST `/emergencies/{id}/reject` | driver | The driver's open offer becomes `declined` and the next ranked offer opens. 200 `{ offerState: "declined" }`. 409 if the driver has no open offer for this emergency. |
-
-## 7. Admin (PROPOSED, P-18, P-22)
-
-All routes need the `admin` role.
-
-| Method and path | Purpose |
-| --- | --- |
-| GET `/admin/users` | List accounts: `id`, `name`, `email`, `role`, `createdAt`, `disabled`. Never medical data. |
-| PATCH `/admin/users/{id}` | Disable or enable an account. |
-| POST, PATCH `/admin/listings/{kind}` and `/admin/listings/{kind}/{id}` | Create and edit a hospital, doctor, pharmacy, diagnostic centre or medicine listing. `kind` is one of `hospitals`, `doctors`, `pharmacies`, `diagnostic-centres`, `medicines`. |
-| PATCH `/admin/listings/{kind}/{id}/visibility` | Hide or show a listing. Listings are hidden, not deleted, so the history of what was shown is kept. |
-| GET `/admin/emergencies/active` | Former `GET /dispatch/active`: every emergency not completed or cancelled (P-18). |
-| GET `/admin/ambulances/nearby` | Former `GET /ambulances/nearby`: query `lat`, `lng`, `type`, `radiusKm` (P-18). |
-| GET `/admin/analytics/summary` | Former `GET /dispatch/analytics/summary`: query `from`, `to`. Returns `totalRequests`, `avgAssignSeconds` (P-18). |
-| GET `/admin/analytics/response-times` | Former `GET /dispatch/analytics/response-times`: query `groupBy=hour`. Returns `series` (P-18). |
-
-## 8. Medical reports (PROPOSED, P-11)
-
-Not in the collection. If approved, add these requests and tests to the collection in WP-9.
-
-| Method and path | Role | Purpose |
-| --- | --- | --- |
-| POST `/patients/me/reports` | patient | Create a report record and return a one-time signed upload URL. Body: `title`, `kind`, `fileName`, `contentType`, `sizeBytes`. |
-| POST `/patients/me/reports/{id}/complete` | patient | Confirm the upload finished so the server can verify the stored file. |
-| GET `/patients/me/reports` | patient | List own reports: `{ reports: [] }`. |
-| GET `/patients/me/reports/{id}/download` | patient | Return a short-lived signed download URL. |
-| DELETE `/patients/me/reports/{id}` | patient | Delete the record and the file. 204. |
-| PUT `/patients/me/reports/{id}/sharing` | patient | Set `shareWithCrew`. Exists only if Q-11 allows crew access. |
-
-## 9. Rules that apply to every endpoint
-
-1. The request is validated against a Zod schema before any other work.
-2. Role and ownership are checked before any data is read.
-3. Responses contain only fields the caller may see. The public tracking response is a separate type, so medical data cannot be added to it by accident.
-4. Secrets, tokens, password hashes and other users' data never appear in a response or a log.
-5. A route with no test for 401, 403 and the happy path is not finished.
-6. Outbound links in responses (`website`, `profileUrl`, `productUrl`, `sourceUrl`) are `https` or `http` URLs only, validated when the admin saves them.
-
-## 10. Built on 2026-10-25 (D-36 to D-41)
-
-Implemented on `main`. Not in the Postman collection yet; add them with the owner's approval.
-
-| Method and path | Role | Purpose |
-| --- | --- | --- |
-| GET `/config` | none | Allow-listed public values and `dataMode` (`sample` or `live`) |
-| GET, PUT `/patients/me/medical-id` | patient | Expanded medical ID (D-39). PUT is a partial update; the collection's four fields still work. Response adds `age`, `hasPhoto`, `completeness`. |
-| POST `/patients/me/photo`, POST `/patients/me/photo/{id}/complete`, GET and DELETE `/patients/me/photo` | patient | Photo upload with a one-time link, byte check, short-lived view link (P-26) |
-| GET, POST `/patients/me/reminders`; PATCH, DELETE `/patients/me/reminders/{id}` | patient | Medicine reminders (D-38): `medicineName`, `dose`, `instructions`, `times[]`, `daysOfWeek[]`, `startDate`, `endDate`, `notes`, `active` |
-| GET `/patients/me/reminders/today?date=` | patient | Doses due on a date with status `due`, `taken` or `skipped` |
-| POST `/patients/me/reminders/{id}/doses` | patient | Record `taken` or `skipped` for `date` and `time` |
-| GET, POST `/patients/me/appointments`; PATCH, DELETE `/patients/me/appointments/{id}` | patient | Appointment log (D-37). CareRoute does not book. |
-| GET `/patients/me/dashboard?date=` | patient | Dashboard in one call (D-40) |
-| GET `/insights` | signed in | Aggregates for the Explore page: totals, counts by type, area, speciality, hospital group, pharmacy chain and medicine group, common test prices, fee range, and listing coordinates (`kind`, `type`, `lat`, `lng`, rounded). No personal data. Cached on the server for 5 minutes; browsers revalidate (`Cache-Control: private, no-cache`). |
-| GET `/map-locations` | signed in | Facility names, categories, contact details and source-backed coordinates for mapped hospitals/clinics, pharmacies and diagnostic centres. Records without valid coordinates are omitted. |
-| GET `/areas/centroids` | signed in | `{ areas: [{ name, places, lat, lng }] }`: the average location of each area's active listings, so the browser can name the patient's area and place a chosen area itself (D-70). Cached for an hour. |
-| GET `/test-prices` | signed in | Published diagnostic test prices. Query `q`, `provider`, `limit` (max 50), `offset`. Returns `{ tests: [{ name, provider, priceInr, centresOffering, url, checkedAt }], total }`. |
-| GET `/areas` | signed in | Hyderabad areas for filters, built from the active listings (sorted by name). The `area` search parameter accepts any text up to 80 characters; an unknown area returns an empty list, not an error. |
-| GET `/hospitals`, `/doctors`, `/doctors/{id}`, `/medicines`, `/medicines/{id}`, `/pharmacies`, `/pharmacies/{id}`, `/diagnostic-centres`, `/diagnostic-centres/{id}` | signed in | The three search areas (D-36), with `lat` and `lng` for nearest first |
-
-Section 8 (reports) is built with `kind` values `lab`, `prescription`, `scan`, `discharge`, `insurance`, `other`, and limits PDF, JPEG or PNG up to 10 MB (PROPOSED until Q-11).
-
-### Added later on 2026-10-25 (D-43, D-45)
-
-| Method and path | Role | Purpose |
-| --- | --- | --- |
-| POST `/auth/password` | any role | `currentPassword`, `newPassword`. 204. Ends every other session. |
-| POST `/auth/sessions/revoke-others` | any role | Sign out on all other devices. 204. |
-| POST `/patients/me/delete-account` | patient | `password`, `confirm: "DELETE"`. Removes stored files, then the account and all its data (D-45). 204, cookies cleared. 502 `delete_incomplete` if storage fails, in which case nothing is deleted. |
-| GET `/reviews?kind=&id=` | signed in | `kind` is `hospital`, `doctor`, `pharmacy` or `diagnostic_centre`. Returns `{ summary: { average, count }, reviews: [{ id, rating, body, author, updatedAt, mine }] }`. `author` is a first name only. |
-| PUT `/reviews` | patient | `kind`, `id`, `rating` 1 to 5, `body` up to 1,000 characters. Creates or updates the caller's one review for that listing. |
-| DELETE `/reviews/{id}` | patient | Own review only. 204. |
-| POST `/reviews/{id}/report` | patient | Not your own. Three reports from different patients hide it until an admin checks (P-28). 204. |
+These designs appeared in earlier drafts but have no matching handler in `server/router.js`: ambulance registration/status/location; emergency creation, guest SOS, status, accept/reject, cancel, feedback, tracking and history; driver inbox; admin users/listings/analytics; separate assistant discovery or report-explanation endpoints; report sharing. They are **PLANNED** and are not present in Postman. The live SOS experience is demo-only.
