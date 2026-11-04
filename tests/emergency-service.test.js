@@ -27,6 +27,8 @@ describe('emergency service and demo crew simulator', () => {
     clock.tick(delay - 1); await service.tick();
     expect((await clock.store.emergencies.getById(emergency.id)).status).toBe('matching');
     clock.tick(1); await service.tick();
+    expect((await clock.store.emergencies.getById(emergency.id)).status).toBe('assigned');
+    await service.tick();
     expect((await clock.store.emergencies.getById(emergency.id)).status).toBe('en_route');
     expect(offer.expiresAt - offer.offeredAt).toBe(30_000);
     for (let i = 0; i < 6; i += 1) { clock.tick(3); await service.tick(); }

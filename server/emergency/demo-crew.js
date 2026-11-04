@@ -41,6 +41,8 @@ export async function runDemoCrew(store, { now = () => new Date(), timing = DEFA
       if (demoDeclines(emergency.id)) await db.declineOffer(emergency.id, ambulance.id);
       else await db.acceptEmergency(emergency.id, ambulance.id);
       acted += 1;
+      // Keep the accepted state observable for one read before advancing the trip.
+      continue;
     }
     const current = await db.getById(emergency.id);
     if (!current?.ambulanceId || !['assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital', 'completed'].includes(current.status)) continue;
