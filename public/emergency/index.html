@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Demo status · CareRoute</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/tokens.css"><link rel="stylesheet" href="/css/base.css"><link rel="stylesheet" href="/css/components.css"><link rel="stylesheet" href="/css/app.css"><link rel="stylesheet" href="/css/premium.css"><link rel="stylesheet" href="/css/emergency.css">
+  <script type="module" src="/js/pages/emergency.js"></script>
+</head>
+<body class="emergency-page">
+  <a class="visually-hidden" href="#main">Skip to demo status</a>
+  <header class="emergency-header"><a class="emergency-brand" href="/dashboard/">CareRoute</a><a href="/sos/">New request</a></header>
+  <main id="main" class="emergency-main">
+    <a class="emergency-call" href="tel:112"><span>Call 112</span><small>For immediate help, call from any phone.</small></a>
+    <p class="emergency-demo-notice" role="note"><strong>Demo: no real ambulance is sent.</strong> Call 112 for a real emergency.</p>
+    <section class="emergency-card" aria-labelledby="status-title">
+      <h1 id="status-title">Demo request status</h1>
+      <p id="status-copy" class="emergency-muted" role="status">Loading status…</p>
+      <p id="connection-state" class="emergency-muted" role="status" hidden></p>
+      <ol id="status-steps" class="emergency-steps" aria-label="Trip progress"></ol>
+      <p id="eta" class="emergency-eta" aria-live="polite"></p>
+      <div id="map-slot" class="emergency-map-slot"></div>
+      <p id="position-text" class="emergency-muted">Demo crew location has not been shared yet.</p>
+      <div class="emergency-actions">
+        <button id="copy-link" class="btn btn-secondary emergency-control" type="button">Copy tracking link</button>
+        <button id="cancel-trip" class="btn btn-secondary emergency-control" type="button" hidden>Cancel request</button>
+      </div>
+      <a id="tracking-link" class="emergency-muted" hidden></a>
+      <section id="no-match" class="emergency-outcome" hidden>
+        <h2>No demo crew accepted</h2><p>Call 112 for a real emergency, or send another demo request.</p><a class="btn btn-danger emergency-control" href="tel:112">Call 112</a><a class="btn btn-secondary emergency-control" href="/sos/">Try again</a>
+      </section>
+      <form id="feedback-form" class="emergency-feedback" hidden>
+        <h2>How was the demo?</h2>
+        <label>Rating
+          <select name="rating" required><option value="5">5, very clear</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1, not clear</option></select>
+        </label>
+        <label>Comment <textarea name="comment" maxlength="500" rows="3"></textarea></label>
+        <button class="btn btn-primary emergency-control" type="submit">Send feedback</button>
+        <p id="feedback-result" class="emergency-muted" role="status"></p>
+      </form>
+    </section>
+  </main>
+  <div id="live" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
