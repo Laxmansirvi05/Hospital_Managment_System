@@ -34,7 +34,13 @@ function setProps(el, props) {
     if (value === false || value === null || value === undefined) continue;
     if (key === 'class') el.setAttribute('class', value);
     // CSSOM writes are allowed by a CSP without 'unsafe-inline'; a style attribute would be blocked.
-    else if (key === 'style') el.style.cssText = value;
+    else if (key === 'style') {
+      for (const declaration of String(value).split(';')) {
+        const colon = declaration.indexOf(':');
+        if (colon < 1) continue;
+        el.style.setProperty(declaration.slice(0, colon).trim(), declaration.slice(colon + 1).trim());
+      }
+    }
     else if (key.startsWith('on') && typeof value === 'function') el.addEventListener(key.slice(2).toLowerCase(), value);
     else if (key === 'value' && 'value' in el) el.value = value;
     else if (key === 'checked' && 'checked' in el) el.checked = Boolean(value);

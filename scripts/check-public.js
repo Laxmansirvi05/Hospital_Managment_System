@@ -9,7 +9,10 @@ const RULES = [
   [/\binnerHTML\b|\bouterHTML\b|insertAdjacentHTML/, 'writes HTML from a string'],
   [/\beval\(|new Function\(/, 'evaluates code from a string'],
   [/\u2014/, 'contains an em dash'],
-  [/style="/, 'inline style attribute, blocked by the CSP'],
+  [/\bstyle\s*=\s*["']/, 'inline style attribute, blocked by the CSP'],
+  [/setAttribute\(\s*["']style["']/, 'runtime style attribute write, blocked by the CSP'],
+  [/\.cssText\b/, 'runtime cssText write, blocked by the CSP'],
+  [/\bstyle\s*=(?=["'`]|\$\{)/, 'style attribute in a template string, blocked by the CSP'],
 ];
 const TEXT_EXTENSIONS = new Set(['.html', '.css', '.js', '.json', '.svg', '.webmanifest', '.txt', '.xml']);
 
