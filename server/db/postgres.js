@@ -120,7 +120,7 @@ export function createPostgresStore(url) {
     users: {
       async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
         const rows = await sql`insert into public.users (name, email, phone, password_hash, google_sub, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${googleSub}, ${role})
-          on conflict (email) do nothing returning *`;
+          on conflict do nothing returning *`;
         return userRow(rows[0]) || null;
       },
       async byEmail(email) { return userRow((await sql`select * from public.users where email = ${email}`)[0]) || null; },

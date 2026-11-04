@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { createMemoryStore } from '../server/db/memory.js';
 
 describe('memory/Postgres listing adapter contract', () => {
@@ -24,5 +25,19 @@ describe('memory/Postgres listing adapter contract', () => {
 
   it('returns the documented empty memory test-price collection without inventing prices', async () => {
     expect(await createMemoryStore().listings.testPrices({ limit: 10 })).toEqual([]);
+  });
+
+  it('returns null for duplicate email and Google identities in memory', async () => {
+    const users = createMemoryStore().users;
+    const first = await users.create({ name: 'A', email: 'a@example.test', googleSub: 'google-a', role: 'patient' });
+
+    expect(await users.create({ name: 'B', email: 'a@example.test', googleSub: 'google-b', role: 'patient' })).toBeNull();
+    expect(await users.create({ name: 'C', email: 'c@example.test', googleSub: first.googleSub, role: 'patient' })).toBeNull();
+  });
+
+  it('uses an untargeted Postgres conflict clause for all unique user keys', () => {
+    const source = readFileSync(new URL('../server/db/postgres.js', import.meta.url), 'utf8');
+    expect(source).toMatch(/insert into public\.users[\s\S]*?on conflict do nothing returning \*/i);
+    expect(source).not.toMatch(/on conflict \(email\) do nothing/i);
   });
 });
