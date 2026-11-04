@@ -34,10 +34,15 @@ const NAV = [
   },
 ];
 
-// The larger text setting is per device (Settings page). Applied as soon as this module runs.
+// Display settings are per device (Settings page). Applied as soon as this module runs.
 export const TEXT_LARGE_KEY = 'careroute.textLarge';
+export const REDUCE_MOTION_KEY = 'careroute.reduceMotion';
+export const ROBOT_HIDDEN_KEY = 'careroute.robot.hidden';
+let robotHidden = false;
 try {
   if (localStorage.getItem(TEXT_LARGE_KEY) === '1') document.documentElement.classList.add('text-large');
+  if (localStorage.getItem(REDUCE_MOTION_KEY) === '1') document.documentElement.classList.add('reduce-motion');
+  robotHidden = localStorage.getItem(ROBOT_HIDDEN_KEY) === '1';
 } catch (err) {
   // Storage can be blocked; the page then uses the normal text size.
   console.debug('text size setting unavailable', err.name);
@@ -129,7 +134,8 @@ export async function shell({ nav, title }) {
   // The assistant robot (D-64) floats over every patient page; its own files load after the page.
   // Not on the emergency page, where nothing should compete with calling for help.
   // Not on the assistant page itself, which is the same assistant at full size.
-  if (isPatient && nav !== 'sos' && nav !== 'assistant') {
+  // A patient can also hide it in Settings; the AI assistant page in the sidebar stays.
+  if (isPatient && nav !== 'sos' && nav !== 'assistant' && !robotHidden) {
     if (!document.querySelector('link[href="/css/assistant.css"]')) document.head.append(h('link', { rel: 'stylesheet', href: '/css/assistant.css' }));
     import('./assistant/robot.js')
       .then((m) => m.mountRobot())

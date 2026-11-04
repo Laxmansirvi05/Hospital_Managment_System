@@ -521,3 +521,12 @@ label:active .care-icon {
     animation-duration: 0ms !important;
   }
 }
+
+/* CareRoute's own Reduce motion setting (Settings page) does what the system setting does. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+  animation-iteration-count: 1 !important;
+}

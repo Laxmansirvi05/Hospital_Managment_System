@@ -908,6 +908,11 @@ dialog.sheet[open] {
 .rmap-pin.is-first .rmap-pin-dot { width: 34px; height: 34px; margin: -3px; }
 
 .rmap-pin-label {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: var(--space-4);
+  transform: translateY(-50%);
   max-width: 12rem;
   padding: 2px var(--space-8);
   overflow: hidden;
@@ -919,6 +924,8 @@ dialog.sheet[open] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.rmap-pin.is-left .rmap-pin-label { right: 100%; left: auto; margin-right: var(--space-4); margin-left: 0; }
 
 .rmap-you { position: absolute; top: 0; left: 0; z-index: 3; margin: -11px 0 0 -11px; }
 
@@ -954,7 +961,11 @@ dialog.sheet[open] {
 }
 
 /* Dashboard: Near you. */
-.near-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-16); align-items: start; }
+.near-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-16); align-items: stretch; }
+/* The map is as tall as the cards beside it, so the row has no empty corner. */
+.near-map, .near-map .rmap { display: grid; height: 100%; }
+.near-map .rmap-view { height: 100%; min-height: 260px; }
+.near-more .num { white-space: nowrap; }
 .near-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-12); }
 .near-card { display: grid; gap: var(--space-8); align-content: start; }
 .near-main { display: grid; gap: var(--space-4); color: var(--text-1); text-decoration: none; }
@@ -1019,6 +1030,10 @@ dialog.sheet[open] {
 
 @media (prefers-reduced-motion: reduce) {
   .a3 { animation: none !important; }
+}
+
+.reduce-motion .a3 {
+  animation: none !important;
 }
 
 .i3d-tile {

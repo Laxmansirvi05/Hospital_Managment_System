@@ -30,6 +30,9 @@ test('live location sorts results, follows a move, carries across pages and show
   await expect(page.locator('.loc-text')).toHaveText(/live location, near Kukatpally/);
   await expect(page.locator('.loc-live')).toBeVisible();
   await expect(page.locator('.rmap .rmap-you')).toBeVisible();
+  // OpenStreetMap answers a tile request without a Referer with a 403 "Access blocked" tile
+  // (seen on 2026-11-04), so map tiles must keep the site's referrer policy.
+  await expect(page.locator('img.rmap-tile').first()).toHaveAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
   await expect(page.locator('.results-card .list a').first()).toContainText('Kukatpally');
 
   await context.setGeolocation({ latitude: 17.4126, longitude: 78.4392 });

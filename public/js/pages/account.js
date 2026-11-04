@@ -86,12 +86,14 @@ function deleteCard() {
   return form;
 }
 
-main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
+main.replaceChildren(h('div', { class: 'page' },
   pageHead({ art: 'shield', title: 'Account and privacy', sub: `Signed in as ${user.email}.` }),
+  // Packed columns like Settings, so wide screens are not two empty margins around one column.
+  h('div', { class: 'settings-grid' },
   passwordCard(),
   devicesCard(),
   h('section', { class: 'card stack-12' },
     h('h2', { class: 't-title-3' }, 'Your data'),
     h('p', { class: 't-subhead muted' }, 'Your medical ID, documents and reminders are private to you. The ambulance crew sees your medical ID only if you turn on sharing, and your documents only once a booking is confirmed.'),
-    h('div', { class: 'row-8' }, h('a', { class: 'btn btn-secondary btn-sm', href: '/medical-id/#sharing' }, 'Sharing settings'), h('a', { class: 'btn btn-secondary btn-sm', href: '/documents/' }, 'Your documents'))),
-  user.role === 'patient' ? deleteCard() : null));
+    h('div', { class: 'row-8' }, h('a', { class: 'btn btn-secondary btn-sm', href: '/medical-id/#share' }, 'Sharing settings'), h('a', { class: 'btn btn-secondary btn-sm', href: '/documents/' }, 'Your documents'))),
+  user.role === 'patient' ? deleteCard() : null)));

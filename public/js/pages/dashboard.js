@@ -42,7 +42,7 @@ function nearestEmergency() {
  */
 function nearYou() {
   const list = h('div', { class: 'near-grid' }, h('div', { class: 'skeleton skeleton-block' }));
-  const mapBox = h('div');
+  const mapBox = h('div', { class: 'near-map' });
   const KINDS = [
     { key: 'hospitals', path: '/hospitals', label: 'Hospital or clinic', kind: 'hospital', art: 'hospital', href: (x) => `/hospital/?id=${x.id}`, more: '/search/hospitals/' },
     { key: 'pharmacies', path: '/pharmacies', label: 'Pharmacy', kind: 'pharmacy', art: 'pharmacy', href: (x) => `/pharmacy/?id=${x.id}`, more: '/search/medicines/?tab=pharmacies' },
@@ -240,6 +240,6 @@ function render(d, photoUrl) {
       h('a', { class: 'stat card-link', href: '/appointments/' }, iconTile('calendar', 48), h('span', { class: 'stat-value' }, String(d.counts.appointments)), h('span', { class: 't-subhead muted' }, 'Upcoming appointments')),
       h('a', { class: 'stat card-link', href: '/documents/' }, iconTile('document', 48), h('span', { class: 'stat-value' }, String(d.counts.documents)), h('span', { class: 't-subhead muted' }, 'Documents'))),
     h('div', { class: 'dash-grid' },
-      h('div', { class: 'stack-24' }, medsCard, apptCard),
-      h('div', { class: 'stack-24' }, detailsCard, docsCard, sosCard))));
+      h('div', { class: 'stack-24' }, medsCard, apptCard, docsCard),
+      h('div', { class: 'stack-24' }, detailsCard, sosCard))));
 }

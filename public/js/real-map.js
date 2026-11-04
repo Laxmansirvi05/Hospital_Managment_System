@@ -66,7 +66,9 @@ export function createRealMap({ pins = [], origin = null, height = 300, label = 
       for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + ht) / TILE); ty++) {
         if (ty < 0 || ty >= n) continue;
         const x = ((tx % n) + n) % n;
-        const img = h('img', { class: 'rmap-tile', alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', src: `https://tile.openstreetmap.org/${state.zoom}/${x}/${ty}.png` });
+        // OpenStreetMap refuses tile requests from a browser that sends no Referer (a 403 "Access
+        // blocked" tile), so tiles keep the site's policy, which sends only the origin.
+        const img = h('img', { class: 'rmap-tile', alt: '', decoding: 'async', referrerpolicy: 'strict-origin-when-cross-origin', src: `https://tile.openstreetmap.org/${state.zoom}/${x}/${ty}.png` });
         img.style.transform = `translate(${tx * TILE - left}px, ${ty * TILE - top}px)`;
         frag.push(img);
       }
@@ -77,8 +79,10 @@ export function createRealMap({ pins = [], origin = null, height = 300, label = 
       node.style.transform = `translate(${q.x - left}px, ${q.y - top}px)`;
       return node;
     };
+    // A label near the right edge would run under the map buttons or off the map, so it opens leftwards.
+    const nearRight = (p) => project(p, state.zoom).x - left > w - 220;
     const pinNodes = state.pins.map((p, i) => place(p, h(p.href ? 'a' : 'span', {
-      class: `rmap-pin rmap-pin-${p.kind || 'place'}${i === 0 ? ' is-first' : ''}`,
+      class: `rmap-pin rmap-pin-${p.kind || 'place'}${i === 0 ? ' is-first' : ''}${nearRight(p) ? ' is-left' : ''}`,
       ...(p.href ? { href: p.href } : {}),
       'aria-label': `${i + 1}. ${p.label}`,
       title: p.label,
@@ -88,9 +92,12 @@ export function createRealMap({ pins = [], origin = null, height = 300, label = 
   }
 
   let drag = null;
+  // Once the patient drags or zooms, a resize keeps their view instead of fitting all places again.
+  let touched = false;
   view.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || e.target.closest('a')) return;
     drag = { x: e.clientX, y: e.clientY, c: project(state.center, state.zoom) };
+    touched = true;
     view.setPointerCapture?.(e.pointerId);
     view.classList.add('is-dragging');
   });
@@ -103,13 +110,14 @@ export function createRealMap({ pins = [], origin = null, height = 300, label = 
   view.addEventListener('pointerup', end);
   view.addEventListener('pointercancel', end);
   const zoomBy = (d) => {
+    touched = true;
     state.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom + d));
     render();
   };
   zoomIn.addEventListener('click', () => zoomBy(1));
   zoomOut.addEventListener('click', () => zoomBy(-1));
-  fitBtn.addEventListener('click', () => { fit(); render(); });
-  new ResizeObserver(() => render()).observe(view);
+  fitBtn.addEventListener('click', () => { touched = false; fit(); render(); });
+  new ResizeObserver(() => { if (!touched) fit(); render(); }).observe(view);
 
   el.update = ({ pins: p = state.pins, origin: o = state.origin } = {}) => {
     state.pins = p.filter(valid).map((x) => ({ ...x, lat: Number(x.lat), lng: Number(x.lng) }));

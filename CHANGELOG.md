@@ -4,6 +4,15 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-04
 
+### Maps fixed, Settings redesigned, layout audit of the patient pages
+
+- Fixed: every real map showed OpenStreetMap's "403 Access blocked" tiles. The map asked the browser to send no Referer, and OpenStreetMap refuses browser tile requests without one. Tiles now follow the site's policy (`strict-origin-when-cross-origin`, origin only). A browser test checks this.
+- Maps: the search pages' map column is wider and its map fills the height of the screen while it stays in view. The dashboard's Near you map is as tall as the cards beside it. A pin's name opens to the left near the right edge instead of running under the zoom buttons. Maps fit their places again when their box changes size, until the patient drags or zooms.
+- Settings: sections pack into two columns (three on very wide screens), each with a 3D icon. New, all kept in this browser: Reduce motion (stops moving icons and keeps the robot still, as the device setting does), Show the robot on pages, Send a test notification, an Emergency section (Call 112, medical ID sharing, emergency contacts), and Reset settings in this browser. On phones a switch stays on the right of its label.
+- Layout audit at 1440 and 390 pixels wide of every signed-in patient page: Account and privacy and the charts on Explore pack into columns instead of one narrow column or a short column beside a tall one; Explore's map is full width; Emergency shows its hospitals on a map beside the list; the dashboard's two columns end at about the same height; the fifth Find care tile fills its row; Medical ID keeps the contacts card in view; a long phone number button no longer pushes the doctor page 3 pixels past the screen.
+- Fixed: Account and privacy linked to `/medical-id/#sharing`, which does not exist; it is `#share`.
+- Tests: unit and API 138 passed, Playwright 15 passed, `pnpm check` passed, all against a sample-data server. Test file touched: tests/e2e/location.spec.js (new referrer check).
+
 ### New logo and animated 3D icons (D-71)
 
 - Logo option C is the CareRoute logo everywhere: the app sidebar, sign-in and sign-up, the home page, the legal pages and the browser tab icon. It is a flat SVG (`public/logo.svg`), with a light version for the sign-in video and the home page photo. The 620 KB `logo.png` is removed.

@@ -5,13 +5,18 @@ import { api } from '../api.js';
 import { shell } from '../shell.js';
 import { pageHead, listingRow, distance } from '../ui.js';
 import { getOrigin, onOriginChange, locationBar } from '../location.js';
+import { createRealMap } from '../real-map.js';
 
 const { main } = await shell({ nav: 'sos', title: 'Emergency' });
 
 const nearList = h('div', { class: 'list' }, h('div', { class: 'skeleton skeleton-row' }));
+const map = createRealMap({ origin: getOrigin(), height: 420, label: 'Map of the nearest emergency departments' });
 
-main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
+// Two columns on wide screens: calling and the list first, the same hospitals on a map beside them.
+main.replaceChildren(h('div', { class: 'page' },
   pageHead({ art: 'ambulance', title: 'Emergency', sub: 'If someone may be seriously ill or injured, call for help now.' }),
+  h('div', { class: 'grid-main-side sos-layout' },
+  h('div', { class: 'stack-16' },
   h('a', { class: 'sos-key', href: 'tel:112' }, h('span', { class: 'sos-key-title' }, 'Call 112'), h('span', { class: 'sos-key-sub' }, 'National emergency number. Works from any phone.')),
   h('p', { class: 'notice notice-warning' }, icon('info', 18), h('span', {}, h('strong', {}, 'Ambulance requests through CareRoute are not live yet. '), 'They are being built. Until then, call 112 or a hospital directly.')),
   h('section', { class: 'card stack-16' },
@@ -19,15 +24,20 @@ main.replaceChildren(h('div', { class: 'page', style: 'max-width:880px' },
       h('h2', { class: 't-title-2' }, 'Hospitals with an emergency department near you'),
       h('p', { class: 't-subhead muted' }, 'Call ahead if you can. Tap a hospital for its phone number.')),
     locationBar(),
-    nearList),
-  h('a', { class: 'card card-link stack-8', href: '/medical-id/' },
-    h('span', { class: 't-headline row-8' }, icon('idcard', 18), 'Keep your medical ID ready'),
-    h('span', { class: 't-subhead muted' }, 'Blood group, allergies and medicines help the people treating you.'))));
+    nearList)),
+  h('div', { class: 'stack-16 sos-side' },
+    map,
+    h('a', { class: 'card card-link stack-8', href: '/medical-id/' },
+      h('span', { class: 't-headline row-8' }, icon('idcard', 18), 'Keep your medical ID ready'),
+      h('span', { class: 't-subhead muted' }, 'Blood group, allergies and medicines help the people treating you.'))))));
 
 function loadNearest() {
   const o = getOrigin();
   api(`/hospitals?emergencyOnly=true&lat=${o.lat}&lng=${o.lng}&limit=5`)
-    .then(({ hospitals }) => nearList.replaceChildren(...hospitals.map((x) => listingRow({ href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name, meta: [[x.area, x.phone].filter(Boolean).join(' · ')], trail: distance(x) }))))
+    .then(({ hospitals }) => {
+      nearList.replaceChildren(...hospitals.map((x) => listingRow({ href: `/hospital/?id=${x.id}`, kind: 'hospital', title: x.name, meta: [[x.area, x.phone].filter(Boolean).join(' · ')], trail: distance(x) })));
+      map.update({ pins: hospitals.map((x) => ({ ...x.location, label: x.name, href: `/hospital/?id=${x.id}`, kind: 'hospital' })), origin: o });
+    })
     .catch((err) => nearList.replaceChildren(h('p', { class: 't-subhead muted' }, `${err.message} Call 112.`)));
 }
 loadNearest();

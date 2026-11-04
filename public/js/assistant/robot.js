@@ -14,7 +14,9 @@ const SIZE = 152;
 const SIZE_COMPACT = 97;
 // Below 1024 px the tab bar is on screen, so the smaller robot sits above it.
 const COMPACT = window.matchMedia('(max-width: 1023px)');
-const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
+const SYSTEM_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
+// The device setting or CareRoute's own Reduce motion setting (Settings page).
+const REDUCED = { get matches() { return SYSTEM_REDUCED.matches || document.documentElement.classList.contains('reduce-motion'); }, addEventListener: (t, fn) => SYSTEM_REDUCED.addEventListener(t, fn) };
 const LOAD_TIMEOUT_MS = 10000;
 
 let mounted = false;
