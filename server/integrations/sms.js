@@ -14,7 +14,8 @@ export function createFakeSmsAdapter() {
 
 /** Twilio REST adapter. It exposes only a safe failure and never logs request details. */
 export function createSmsAdapter({ config, fetchImpl = fetch, sampleMode = false } = {}) {
-  if (sampleMode || !config) return createFakeSmsAdapter();
+  if (sampleMode) return createFakeSmsAdapter();
+  if (!config) return { async sendTracking() { throw new Error('SMS is not configured'); } };
   return {
     async sendTracking({ to, trackingUrl }) {
       if (!config.accountSid || !config.authToken || !config.from) throw new Error('SMS provider is not configured');

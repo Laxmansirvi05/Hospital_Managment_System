@@ -13,6 +13,7 @@ import { routes as discovery } from './routes/discovery.js';
 import { routes as account } from './routes/account.js';
 import { routes as reviews } from './routes/reviews.js';
 import { routes as assistant } from './routes/assistant.js';
+import { routes as emergencies } from './routes/emergencies.js';
 
 const PREFIX = '/api/v1';
 
@@ -42,7 +43,7 @@ export function buildTable(list) {
   return table.sort((a, b) => b.statics - a.statics || b.parts.length - a.parts.length);
 }
 
-const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews, ...assistant]);
+const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews, ...assistant, ...emergencies]);
 
 function match(table, method, pathname) {
   const parts = pathname.split('/').filter(Boolean);
@@ -106,12 +107,13 @@ export async function handle(req, res) {
     if (route.roles !== 'public') {
       session = await authenticate(req);
       if (!session) throw unauthorized();
+      if (session) checkCsrf(req, session.viaCookie);
       if (!route.roles.includes(session.user.role)) throw forbidden('role_not_allowed', 'Your account cannot do this.');
     } else {
       // Public writes still refuse a foreign Origin, which also blocks login CSRF.
       checkCsrf(req, false);
     }
-    if (session) checkCsrf(req, session.viaCookie);
+    if (session && route.roles === 'public') checkCsrf(req, session.viaCookie);
 
     const ctx = { req, res, url, params: found.params, query: url.searchParams, user: session?.user ?? null, sessionId: session?.sessionId ?? null, requestId };
     const result = await route.handler(ctx);
