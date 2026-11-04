@@ -22,7 +22,7 @@ function near(list, p) {
   return out.slice(p.offset ?? 0, (p.offset ?? 0) + (p.limit ?? 50)).map((x) => ({ ...x, total: out.length }));
 }
 
-export function createMemoryStore() {
+export function createMemoryStore(options = {}) {
   const users = new Map();
   const sessions = new Map();
   const limits = new Map();
@@ -36,6 +36,47 @@ export function createMemoryStore() {
   const conversations = [];
   const messages = [];
   const reports = [];
+  const emergencyNow = options.now ?? now;
+  const ambulances = new Map();
+  const emergencies = new Map();
+  const emergencyOffers = [];
+  const emergencyEvents = [];
+  const emergencyFeedback = new Map();
+  const emergencyStatusOrder = ['matching', 'assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital', 'completed'];
+  const demoAmbulances = [
+    ['DEMO-0001', 'BLS', 'Demo crew Begumpet', 17.4435, 78.4676], ['DEMO-0002', 'ALS', 'Demo crew Secunderabad', 17.4399, 78.4983],
+    ['DEMO-0003', 'ICU', 'Demo crew Banjara Hills', 17.4156, 78.4347], ['DEMO-0004', 'BLS', 'Demo crew Jubilee Hills', 17.4326, 78.4071],
+    ['DEMO-0005', 'ALS', 'Demo crew HITEC City', 17.4435, 78.3772], ['DEMO-0006', 'BLS', 'Demo crew Gachibowli', 17.4401, 78.3489],
+    ['DEMO-0007', 'BLS', 'Demo crew Kukatpally', 17.4948, 78.3996], ['DEMO-0008', 'ALS', 'Demo crew Ameerpet', 17.4375, 78.4482],
+    ['DEMO-0009', 'BLS', 'Demo crew Dilsukhnagar', 17.3688, 78.5247], ['DEMO-0010', 'ICU', 'Demo crew LB Nagar', 17.3457, 78.5522],
+    ['DEMO-0011', 'BLS', 'Demo crew Charminar', 17.3616, 78.4747], ['DEMO-0012', 'ALS', 'Demo crew Uppal', 17.4058, 78.5591],
+  ];
+  for (const [registrationNumber, type, driverName, lat, lng] of demoAmbulances) {
+    const id = randomUUID();
+    ambulances.set(id, { id, driverUserId: null, registrationNumber, type, status: 'available', operatorName: 'CareRoute Demo Crew', driverName, driverPhone: null, isDemo: true, lat, lng, heading: 0, speedKmph: 0, lastPingAt: emergencyNow(), createdAt: emergencyNow(), updatedAt: emergencyNow() });
+  }
+  const addEmergencyEvent = (emergencyId, kind, actorRole = 'system', data = {}) => {
+    const row = { id: randomUUID(), emergencyId, kind, actorRole, data: clone(data), createdAt: emergencyNow() };
+    emergencyEvents.push(row);
+    return row;
+  };
+  const openNextEmergencyOffer = (emergencyId) => {
+    const queued = emergencyOffers.filter((offer) => offer.emergencyId === emergencyId && offer.state === 'queued').sort((a, b) => a.rank - b.rank)[0];
+    const emergency = emergencies.get(emergencyId);
+    if (!emergency) return null;
+    if (queued) {
+      queued.state = 'open'; queued.offeredAt = emergencyNow(); queued.expiresAt = new Date(+queued.offeredAt + 30_000);
+      emergency.offersMade += 1; emergency.updatedAt = emergencyNow();
+      addEmergencyEvent(emergencyId, 'offered', 'system', { ambulance_id: queued.ambulanceId, rank: queued.rank });
+      return queued;
+    }
+    if (emergency.status === 'matching') {
+      emergency.status = 'no_match'; emergency.closedAt = emergencyNow(); emergency.updatedAt = emergencyNow();
+      emergency.trackingExpiresAt = new Date(Math.min(+new Date(+emergency.createdAt + 24 * 3600_000), +new Date(+emergencyNow() + 2 * 3600_000)));
+      addEmergencyEvent(emergencyId, 'no_match', 'system');
+    }
+    return null;
+  };
   const hospitals = clone(HOSPITALS);
   const doctors = clone(DOCTORS);
 
@@ -52,6 +93,125 @@ export function createMemoryStore() {
   return {
     kind: 'memory',
     async close() {},
+
+    emergencies: {
+      async nearbyAmbulances({ point, type = 'BLS', radiusKm = 10, maxAgeSeconds = 90, limit = 24 }) {
+        const rank = { BLS: 0, ALS: 1, ICU: 2 };
+        const cutoff = +emergencyNow() - maxAgeSeconds * 1000;
+        return [...ambulances.values()].filter((a) => a.status === 'available' && rank[a.type] >= rank[type] && a.lat != null && a.lng != null
+          && distanceKm(point, { lat: a.lat, lng: a.lng }) <= radiusKm && (a.isDemo || +a.lastPingAt > cutoff))
+          .map((a) => ({ id: a.id, type: a.type, distanceKm: distanceKm(point, { lat: a.lat, lng: a.lng }), isDemo: a.isDemo }))
+          .sort((a, b) => a.distanceKm - b.distanceKm).slice(0, Math.min(Math.max(limit, 1), 24)).map(clone);
+      },
+      async createEmergency(input) {
+        const createdAt = emergencyNow();
+        const row = { id: randomUUID(), patientUserId: input.patientUserId ?? null, guestPhone: input.guestPhone ?? null, forSelf: input.forSelf ?? true,
+          emergencyType: input.emergencyType ?? 'other', conscious: input.conscious ?? null, patientCount: input.patientCount ?? 1,
+          ambulanceType: input.ambulanceType ?? 'BLS', notes: input.notes ?? null, location: clone(input.location), address: input.address ?? null,
+          status: 'matching', ambulanceId: null, etaSeconds: input.etaSeconds ?? null, etaIsEstimate: true, offersMade: 0,
+          trackingTokenHash: input.trackingTokenHash, trackingExpiresAt: new Date(+createdAt + 24 * 3600_000), cancelReason: null, isDemo: true,
+          createdAt, assignedAt: null, enRouteAt: null, arrivedAt: null, pickedUpAt: null, atHospitalAt: null, completedAt: null, closedAt: null, updatedAt: createdAt };
+        emergencies.set(row.id, row);
+        addEmergencyEvent(row.id, 'created', row.patientUserId ? 'patient' : 'guest');
+        return clone(row);
+      },
+      async createOffers(emergencyId, candidates, etaIsEstimate = true) {
+        const emergency = emergencies.get(emergencyId);
+        if (!emergency || emergency.status !== 'matching') return null;
+        if (emergencyOffers.some((offer) => offer.emergencyId === emergencyId)) return clone(emergency);
+        emergency.etaIsEstimate = etaIsEstimate;
+        for (const [index, candidate] of candidates.slice(0, 5).entries()) {
+          emergencyOffers.push({ id: randomUUID(), emergencyId, ambulanceId: candidate.ambulanceId, rank: index + 1, etaSeconds: candidate.etaSeconds ?? null,
+            state: 'queued', offeredAt: null, expiresAt: null, createdAt: emergencyNow() });
+        }
+        openNextEmergencyOffer(emergencyId);
+        return clone(emergency);
+      },
+      async acceptEmergency(emergencyId, ambulanceId) {
+        const emergency = emergencies.get(emergencyId);
+        if (!emergency || emergency.status !== 'matching') return null;
+        const ambulance = ambulances.get(ambulanceId);
+        const offer = emergencyOffers.find((o) => o.emergencyId === emergencyId && o.ambulanceId === ambulanceId && o.state === 'open' && +o.expiresAt > +emergencyNow());
+        if (!offer || !ambulance || ambulance.status !== 'available') return null;
+        offer.state = 'accepted'; ambulance.status = 'busy'; ambulance.updatedAt = emergencyNow();
+        for (const other of emergencyOffers.filter((o) => o.emergencyId === emergencyId && ['queued', 'open'].includes(o.state))) other.state = 'expired';
+        emergency.status = 'assigned'; emergency.ambulanceId = ambulanceId; emergency.assignedAt = emergencyNow(); emergency.updatedAt = emergencyNow();
+        emergency.etaSeconds = offer.etaSeconds ?? emergency.etaSeconds;
+        addEmergencyEvent(emergencyId, 'accepted', 'driver', { ambulance_id: ambulanceId });
+        return clone(emergency);
+      },
+      async declineOffer(emergencyId, ambulanceId) {
+        const emergency = emergencies.get(emergencyId);
+        if (!emergency || emergency.status !== 'matching') return null;
+        const offer = emergencyOffers.find((o) => o.emergencyId === emergencyId && o.ambulanceId === ambulanceId && o.state === 'open');
+        if (!offer) return null;
+        offer.state = 'declined';
+        addEmergencyEvent(emergencyId, 'declined', 'driver', { ambulance_id: ambulanceId });
+        openNextEmergencyOffer(emergencyId);
+        return clone(emergency);
+      },
+      async expireOffers() {
+        let count = 0;
+        for (const emergency of [...emergencies.values()].sort((a, b) => +a.createdAt - +b.createdAt)) {
+          if (emergency.status !== 'matching') continue;
+          const offer = emergencyOffers.find((o) => o.emergencyId === emergency.id && o.state === 'open' && +o.expiresAt <= +emergencyNow());
+          if (!offer) continue;
+          offer.state = 'expired'; addEmergencyEvent(emergency.id, 'expired', 'system', { ambulance_id: offer.ambulanceId });
+          openNextEmergencyOffer(emergency.id); count += 1;
+        }
+        return count;
+      },
+      async advanceEmergency(emergencyId, ambulanceId, to) {
+        const emergency = emergencies.get(emergencyId);
+        const next = emergencyStatusOrder.indexOf(to);
+        if (!emergency || next < 2 || emergency.ambulanceId !== ambulanceId || emergency.status !== emergencyStatusOrder[next - 1]) return null;
+        const from = emergency.status; const at = emergencyNow(); emergency.status = to; emergency.updatedAt = at;
+        const timestamp = { en_route: 'enRouteAt', arrived: 'arrivedAt', picked_up: 'pickedUpAt', at_hospital: 'atHospitalAt', completed: 'completedAt' }[to];
+        emergency[timestamp] = at;
+        if (to === 'completed') { emergency.closedAt = at; emergency.trackingExpiresAt = new Date(Math.min(+new Date(+emergency.createdAt + 24 * 3600_000), +new Date(+at + 2 * 3600_000))); }
+        addEmergencyEvent(emergencyId, 'status_changed', 'driver', { from, to });
+        return clone(emergency);
+      },
+      async cancelEmergency(emergencyId, reason = null) {
+        const emergency = emergencies.get(emergencyId);
+        if (!emergency || !['matching', 'assigned', 'en_route', 'arrived'].includes(emergency.status)) return null;
+        const at = emergencyNow(); emergency.status = 'cancelled'; emergency.cancelReason = reason == null ? null : String(reason).slice(0, 200);
+        emergency.closedAt = at; emergency.updatedAt = at;
+        emergency.trackingExpiresAt = new Date(Math.min(+new Date(+emergency.createdAt + 24 * 3600_000), +new Date(+at + 2 * 3600_000)));
+        for (const offer of emergencyOffers.filter((o) => o.emergencyId === emergencyId && ['queued', 'open'].includes(o.state))) offer.state = 'expired';
+        const ambulance = emergency.ambulanceId && ambulances.get(emergency.ambulanceId);
+        if (ambulance?.status === 'busy') { ambulance.status = 'available'; ambulance.updatedAt = at; }
+        addEmergencyEvent(emergencyId, 'cancelled', 'patient', { reason: emergency.cancelReason });
+        return clone(emergency);
+      },
+      async releaseAmbulance(ambulanceId) {
+        const ambulance = ambulances.get(ambulanceId);
+        const active = [...emergencies.values()].some((e) => e.ambulanceId === ambulanceId && ['assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital'].includes(e.status));
+        if (!ambulance || ambulance.status !== 'busy' || ambulance.lat == null || ambulance.lng == null || active) return false;
+        ambulance.status = 'available'; ambulance.updatedAt = emergencyNow(); return true;
+      },
+      async addFeedback(emergencyId, { rating, comment = null }) {
+        const emergency = emergencies.get(emergencyId);
+        if (!emergency || emergency.status !== 'completed' || emergencyFeedback.has(emergencyId)) return null;
+        const row = { emergencyId, rating, comment, createdAt: emergencyNow() }; emergencyFeedback.set(emergencyId, row);
+        addEmergencyEvent(emergencyId, 'feedback', 'patient'); return clone(row);
+      },
+      async getById(id) { return emergencies.has(id) ? clone(emergencies.get(id)) : null; },
+      async getByTokenHash(hash) { const row = [...emergencies.values()].find((e) => e.trackingTokenHash === hash && +e.trackingExpiresAt > +emergencyNow()); return row ? clone(row) : null; },
+      async activeForPatient(patientUserId) { const row = [...emergencies.values()].filter((e) => e.patientUserId === patientUserId && !['completed', 'cancelled', 'no_match'].includes(e.status)).sort((a, b) => +b.createdAt - +a.createdAt)[0]; return row ? clone(row) : null; },
+      async history(patientUserId, { limit = 50, offset = 0 } = {}) { return [...emergencies.values()].filter((e) => e.patientUserId === patientUserId).sort((a, b) => +b.createdAt - +a.createdAt).slice(offset, offset + limit).map(clone); },
+      async listAdmin({ status = null, limit = 100 } = {}) { return [...emergencies.values()].filter((e) => !status || e.status === status).sort((a, b) => +b.createdAt - +a.createdAt).slice(0, limit).map(clone); },
+      async listAmbulances() { return [...ambulances.values()].map(clone); },
+      async ambulanceByDriver(driverUserId) { const row = [...ambulances.values()].find((a) => a.driverUserId === driverUserId); return row ? clone(row) : null; },
+      async setAmbulanceStatus(id, status) { const row = ambulances.get(id); if (!row) return null; row.status = status; row.updatedAt = emergencyNow(); return clone(row); },
+      async updateAmbulanceLocation(id, { lat, lng, heading = null, speed = null }) { const row = ambulances.get(id); if (!row) return null; Object.assign(row, { lat, lng, heading, speedKmph: speed, lastPingAt: emergencyNow(), updatedAt: emergencyNow() }); return clone(row); },
+      async openOfferForAmbulance(id) { const row = emergencyOffers.find((o) => o.ambulanceId === id && o.state === 'open' && +o.expiresAt > +emergencyNow()); return row ? clone(row) : null; },
+      async offersForEmergency(id) { return emergencyOffers.filter((o) => o.emergencyId === id).sort((a, b) => a.rank - b.rank).map(clone); },
+      async activeForAmbulance(id) { const row = [...emergencies.values()].find((e) => e.ambulanceId === id && ['assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital'].includes(e.status)); return row ? clone(row) : null; },
+      async timeline(id) { return emergencyEvents.filter((e) => e.emergencyId === id).sort((a, b) => +a.createdAt - +b.createdAt).map(clone); },
+      async feedbackForEmergency(id) { const row = emergencyFeedback.get(id); return row ? clone(row) : null; },
+      async insertEvent(id, kind, actorRole = 'system', data = {}) { if (!emergencies.has(id)) return null; return clone(addEmergencyEvent(id, kind, actorRole, data)); },
+    },
 
     users: {
       async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
