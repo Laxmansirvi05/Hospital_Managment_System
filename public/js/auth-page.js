@@ -58,23 +58,34 @@ function passwordField({ id, label, autocomplete, hint }) {
 }
 
 function videoPanel() {
+  const poster = '/assets/careroute-ambulance-poster.webp';
   const video = h('video', {
     class: 'auth-video',
-    autoplay: true,
     muted: true,
     loop: true,
     playsinline: true,
-    preload: 'metadata',
-    poster: '/assets/careroute-ambulance.webp',
+    preload: 'none',
+    poster,
     'aria-label': 'CareRoute ambulance travelling through Hyderabad',
-  }, h('source', { src: '/assets/careroute_ambulance_4K.mp4', type: 'video/mp4' }));
+  }, h('source', { type: 'video/mp4' }));
   // Boolean attributes do not reliably update media properties in every browser.
   video.muted = true;
   video.defaultMuted = true;
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  if (reducedMotion) {
-    video.removeAttribute('autoplay');
-    video.pause();
+  const saveData = navigator.connection?.saveData === true;
+  const smallScreen = window.matchMedia?.('(max-width: 720px)').matches;
+  const source = video.querySelector('source');
+  let mediaReady = false;
+  const loadVideo = () => {
+    if (mediaReady || reducedMotion || saveData || smallScreen) return;
+    mediaReady = true;
+    source.src = '/assets/careroute-ambulance-720p.mp4';
+    video.load();
+    video.play().catch(() => panel.classList.add('is-video-fallback'));
+  };
+  if (!reducedMotion && !saveData && !smallScreen) {
+    const schedule = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 1800));
+    schedule(loadVideo, { timeout: 3000 });
   }
 
   const panel = h('section', { class: 'auth-video-panel', 'aria-label': 'CareRoute introduction' });
@@ -103,6 +114,7 @@ function videoPanel() {
     updateSoundToggle();
     if (soundOn) {
       try {
+        loadVideo();
         await video.play();
       } catch {
         soundOn = false;
@@ -124,7 +136,7 @@ function videoPanel() {
         h('span', {}, 'Every route counts.')),
       h('p', {}, 'Connecting people to the healthcare they need, when they need it.')),
     h('div', { class: 'auth-video-fallback', 'aria-hidden': 'true' },
-      h('img', { src: '/assets/careroute-ambulance.webp', alt: '' }),
+      h('img', { src: poster, alt: '' }),
       h('span', {}, 'CareRoute')),
   );
   return h('div', { class: 'auth-video-layer' }, panel, soundToggle);
