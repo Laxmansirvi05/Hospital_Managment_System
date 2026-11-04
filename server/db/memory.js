@@ -55,6 +55,7 @@ export function createMemoryStore(options = {}) {
     const id = randomUUID();
     ambulances.set(id, { id, driverUserId: null, registrationNumber, type, status: 'available', operatorName: 'CareRoute Demo Crew', driverName, driverPhone: null, isDemo: true, lat, lng, heading: 0, speedKmph: 0, lastPingAt: emergencyNow(), createdAt: emergencyNow(), updatedAt: emergencyNow() });
   }
+  for (const row of options.extraAmbulances ?? []) ambulances.set(row.id ?? randomUUID(), { status: 'offline', isDemo: false, ...clone(row) });
   const addEmergencyEvent = (emergencyId, kind, actorRole = 'system', data = {}) => {
     const row = { id: randomUUID(), emergencyId, kind, actorRole, data: clone(data), createdAt: emergencyNow() };
     emergencyEvents.push(row);
@@ -105,7 +106,7 @@ export function createMemoryStore(options = {}) {
       },
       async createEmergency(input) {
         const createdAt = emergencyNow();
-        const row = { id: randomUUID(), patientUserId: input.patientUserId ?? null, guestPhone: input.guestPhone ?? null, forSelf: input.forSelf ?? true,
+        const row = { id: input.id ?? randomUUID(), patientUserId: input.patientUserId ?? null, guestPhone: input.guestPhone ?? null, forSelf: input.forSelf ?? true,
           emergencyType: input.emergencyType ?? 'other', conscious: input.conscious ?? null, patientCount: input.patientCount ?? 1,
           ambulanceType: input.ambulanceType ?? 'BLS', notes: input.notes ?? null, location: clone(input.location), address: input.address ?? null,
           status: 'matching', ambulanceId: null, etaSeconds: input.etaSeconds ?? null, etaIsEstimate: true, offersMade: 0,
