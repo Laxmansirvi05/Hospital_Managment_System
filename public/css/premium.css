@@ -2004,20 +2004,19 @@ html.text-large {
   overflow-wrap: anywhere;
 }
 
-/* Keep every account section in a single row on wide workspaces. */
+/* Pack account sections into two balanced columns without stretching short cards. */
 @media (min-width: 1024px) {
   .account-settings-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-12);
-    column-count: initial;
+    column-count: 2;
+    column-gap: var(--space-12);
   }
 
   .account-settings-grid > * {
-    align-self: start;
-    align-content: start;
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
     min-width: 0;
-    margin: 0;
+    margin: 0 0 var(--space-12);
   }
 
   .account-settings-grid > .card {
@@ -2026,18 +2025,6 @@ html.text-large {
 
   .account-settings-grid .form-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 1360px) {
-  .account-settings-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1600px) {
-  .account-settings-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
