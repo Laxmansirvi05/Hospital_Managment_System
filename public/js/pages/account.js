@@ -174,7 +174,7 @@ main.replaceChildren(h('div', { class: 'page' },
   pageHead({ art: 'shield', title: 'Account and privacy', sub: 'Who you are signed in as, what you share, and how to keep your account safe.' }),
   profileCard(dash, photoUrl),
   // Packed columns like Settings, so wide screens are not two empty margins around one column.
-  h('div', { class: 'settings-grid' },
+  h('div', { class: 'settings-grid account-settings-grid' },
     isPatient ? privacyCard(dash, assistant) : null,
     isPatient ? dataCard(dash, assistant) : null,
     passwordCard(),
