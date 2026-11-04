@@ -35,6 +35,8 @@ Date: 2026-11-04
 ## Pass 2 handoff, 2026-11-04
 
 - W1 generic conflict handling and adapter assertions are committed as `07f3384`; W13 media deferral/encode is `2d44dd2`; W15 CSSOM/CSP fix is `e536c91`.
+- Owner requested the original auth video quality. Commit `dafd1cd` switches playback to the existing 3840x2160 H.264 asset and regenerates the 4K WebP poster. Loading remains deferred; the full 64.5 MB file is not downloaded until idle on eligible screens.
+- The earlier generated 720p derivative remains unreferenced, as W20 is report-only. It is recorded as a possible cleanup candidate.
 - W10 remains a partial manual audit because the saved public sweep redirects protected routes to sign-in and G2 is blank. No axe dependency was added.
 - W11 detail pages show a no-phone message and directions, but result cards do not expose phone availability. Owner should confirm the desired list-card interaction before a UI change.
 - W9 assistant focus trap remains missing. Robot source was in the owner's recent UI lane; no edits were made to it.

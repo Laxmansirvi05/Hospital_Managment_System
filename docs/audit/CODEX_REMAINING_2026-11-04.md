@@ -4,7 +4,7 @@ Date: 2026-11-04
 
 ## Summary
 
-- W1 to W9 work is recorded below; W13 reduces the auth video from 64,522,280 bytes to 956,245 bytes and defers its request.
+- W1 to W9 work is recorded below; W13 initially tried a reduced video, then restored the original 4K source at the owner's request while retaining deferred loading.
 - W15 removes the runtime `cssText` write and adds source and browser checks for CSP style violations.
 - Final local checks: 138 unit/API tests and 23 E2E tests passed; `pnpm check` passed.
 - No production database, Supabase, AI provider, deployment, paid service, or push was used in this pass.
@@ -26,7 +26,7 @@ Date: 2026-11-04
 | W10 | Partial | None | Saved browser candidates reviewed as heuristics. 72 visits include 51 protected-route sign-in redirects; the 9px minimum and target counts are not reliable for those pages. No axe scan because G2 is blank; full manual contrast, focus, tab order, labels, and 200% zoom audit remains. |
 | W11 | Partial | None | `public/js/details.js:24-35,43-46` shows the no-phone message and directions on detail pages. `public/js/ui.js:123-152` list cards omit phone availability. No change made because list presentation and owner design lane need review. |
 | W12 | Done | None | Repository grep found no `/search/doctors/` app link, redirect, or documentation reference outside audit evidence. No redirect added. |
-| W13 | Done | `2d44dd2` | `public/js/auth-page.js`, `public/assets/careroute-ambulance-720p.mp4` (956,245 bytes), `public/assets/careroute-ambulance-poster.webp` (80,556 bytes), `tests/e2e/auth-media.spec.js`. Original MP4 and images preserved. Local static Range request still returns HTTP 200 and the full 956,245 bytes. |
+| W13 | Done, revised for owner quality preference | `2d44dd2`, `dafd1cd` | `public/js/auth-page.js`, `public/assets/careroute-ambulance-poster.webp` (540,086 bytes, 3840x2160), `tests/e2e/auth-media.spec.js`. Auth pages defer the original 4K H.264 source (64,522,280 bytes, 3840x2160). The earlier generated 720p derivative remains unused and is reported as a W20 cleanup candidate. |
 | W14 | Done, review only | None | `README.md`, `public/` copy scan found no unsupported live dispatch, tracking, SMS, response-time, price-ceiling, diagnosis, or doctor-availability promise. Matching hits state limitations: README lines 6-7, 13; `public/terms/index.html:59,64`; `public/privacy/index.html:69`; `public/js/pages/reminders.js:192`. No edits needed. |
 | W15 | Done | `e536c91` | `public/js/h.js`, `scripts/check-public.js`, `tests/e2e/csp-runtime-styles.spec.js`; individual CSSOM writes replace `cssText`, scanner checks style attribute writes and template markup, browser saw no CSP style violations on public pages or signed-in dashboard. |
 | W16 | Gated | None | G1 is blank. No dependency changes. |
@@ -40,9 +40,9 @@ Date: 2026-11-04
 - **Medium, remaining:** W10 is not a complete manual WCAG 2.1 AA audit. The 2026-11-03 saved sweep had 72 route/viewport rows, no measured horizontal overflow, and 51 protected-route redirects. It cannot establish accessible names, real control dimensions, contrast, keyboard focus order, or 200% zoom behavior on signed-in pages.
 - **Medium, remaining:** listing cards do not state “phone not listed.” Detail pages show that message and directions when location is present. Confirm whether the list-card design should add a directions action before changing its structure.
 - **Medium, remaining:** assistant panel uses `aria-modal="false"` and has no focus trap. See `public/js/assistant/chat.js`; robot implementation is owner work committed within the protected three-hour window during this pass.
-- **Low, remaining:** local static server does not honor Range requests. The new optimized file is 956,245 bytes, so a range fix was not necessary for the 4 MB cap. Recheck CDN delivery after an owner-approved deployment.
+- **Low, remaining:** local static server does not honor Range requests. The original 64.5 MB 4K source is deferred until idle; mobile, reduced-motion, and data-saver users skip it. Local playback may transfer the full file. Recheck CDN delivery after an owner-approved deployment.
 - **Low, remaining:** W20's 0-file candidate result is heuristic. Runtime imports and generated selectors can defeat static reference scans.
-- **Verified:** W13 auth media test confirms both auth pages transfer under 1 MB before any video request. Video loads only after idle on wide screens; reduced motion, data saver, and screens up to 720px skip it.
+- **Verified:** W13 auth media test confirms both auth pages transfer under 1 MB before any video request, then request the original 4K source after idle on wide screens. Reduced motion, data saver, and screens up to 720px skip it.
 - **Verified:** W15 `pnpm check` passes; the browser test reports zero style-related CSP console violations on home, sign-in, sign-up, privacy, terms, and a signed-in dashboard.
 
 ## Needs owner
@@ -63,9 +63,10 @@ Date: 2026-11-04
 | `pnpm check` | Passed: `public/ check passed`. |
 | `NODE_ENV=test pnpm test` | Passed: 138 tests, 67 unit and 71 API. |
 | `CAREROUTE_BASE_URL=http://127.0.0.1:4013 pnpm exec playwright test tests/e2e --workers=1` | Passed: 23/23 E2E tests, sequentially. One earlier parallel run had the existing reduced-motion screenshot test fail once; the sequential full rerun passed. |
-| `CAREROUTE_BASE_URL=http://127.0.0.1:4013 pnpm exec playwright test tests/e2e/auth-media.spec.js --workers=1` | Passed: 2/2. |
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4014 pnpm exec playwright test tests/e2e/auth-media.spec.js --workers=1` | Passed after restoring original 4K source: 2/2. The request is intercepted after the initial transfer to confirm the deferred URL without downloading the 64 MB video. |
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4014 pnpm exec playwright test tests/e2e --workers=1` | Passed after restoring original 4K source: 23/23 sequentially. |
 | `CAREROUTE_BASE_URL=http://127.0.0.1:4013 pnpm exec playwright test tests/e2e/csp-runtime-styles.spec.js --workers=1` | Passed: 2/2. |
-| `curl -r 0-1023 .../assets/careroute-ambulance-720p.mp4` | Not range-supported locally: HTTP 200, 956,245 bytes returned. |
+| `curl -r 0-1023 .../assets/careroute_ambulance_4K.mp4` | Not range-supported locally: HTTP 200, full 64,522,280-byte file returned. |
 | Postgres extension check | Not run: PostGIS control file absent. |
 | Full manual W10, axe, signed-in 200% zoom and contrast computation | Not verified. G2 remains blank. |
 
