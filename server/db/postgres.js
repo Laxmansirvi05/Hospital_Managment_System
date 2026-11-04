@@ -1,6 +1,7 @@
 // Postgres store (P-04). Parameterised queries only, through the postgres driver's tagged
 // templates. Same interface as memory.js.
 import postgres from 'postgres';
+import { randomUUID } from 'node:crypto';
 import { dosesFor } from './geo.js';
 
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
@@ -28,6 +29,24 @@ const fileRow = (r) => r && {
   id: r.id, userId: r.user_id, purpose: r.purpose, title: r.title, kind: r.kind, fileName: r.file_name, contentType: r.content_type,
   sizeBytes: r.size_bytes, storagePath: r.storage_path, status: r.status, createdAt: r.created_at,
 };
+export const emergencyRow = (r) => r && ({
+  id: r.id, patientUserId: r.patient_user_id, guestPhone: r.guest_phone, forSelf: r.for_self, emergencyType: r.emergency_type, conscious: r.conscious,
+  patientCount: r.patient_count, ambulanceType: r.ambulance_type, notes: r.notes, location: { lat: num(r.patient_lat), lng: num(r.patient_lng) }, address: r.patient_address,
+  status: r.status, ambulanceId: r.ambulance_id, etaSeconds: r.eta_seconds === null ? null : num(r.eta_seconds), etaIsEstimate: r.eta_is_estimate,
+  offersMade: r.offers_made, trackingTokenHash: r.tracking_token_hash, trackingExpiresAt: r.tracking_expires_at, cancelReason: r.cancel_reason,
+  isDemo: r.is_demo, createdAt: r.created_at, assignedAt: r.assigned_at, enRouteAt: r.en_route_at, arrivedAt: r.arrived_at,
+  pickedUpAt: r.picked_up_at, atHospitalAt: r.at_hospital_at, completedAt: r.completed_at, closedAt: r.closed_at, updatedAt: r.updated_at,
+});
+export const ambulanceRow = (r) => r && ({
+  id: r.id, driverUserId: r.driver_user_id, registrationNumber: r.registration_number, type: r.type, status: r.status, operatorName: r.operator_name,
+  driverName: r.driver_name, driverPhone: r.driver_phone, isDemo: r.is_demo, lat: num(r.lat), lng: num(r.lng), heading: r.heading_degrees,
+  speedKmph: num(r.speed_kmph), lastPingAt: r.last_ping_at, createdAt: r.created_at, updatedAt: r.updated_at,
+});
+export const emergencyOfferRow = (r) => r && ({ id: r.id, emergencyId: r.emergency_id, ambulanceId: r.ambulance_id, rank: r.rank,
+  etaSeconds: r.eta_seconds === null ? null : num(r.eta_seconds), state: r.state, offeredAt: r.offered_at, expiresAt: r.expires_at, createdAt: r.created_at });
+export const emergencyEventRow = (r) => r && ({ id: r.id, emergencyId: r.emergency_id, kind: r.kind, actorRole: r.actor_role,
+  actorUserId: r.actor_user_id, data: r.data || {}, createdAt: r.created_at });
+export const emergencyFeedbackRow = (r) => r && ({ emergencyId: r.emergency_id, rating: r.rating, comment: r.comment, createdAt: r.created_at });
 
 // Column maps for partial updates. Only listed keys can ever reach SQL.
 const PROFILE_COLS = {
@@ -98,6 +117,10 @@ export function createPostgresStore(url) {
     ...(r.distance_km !== null && r.distance_km !== undefined ? { distanceKm: r.distance_km } : {}),
   });
   const latlng = (col) => sql`extensions.st_y(${column(col)}::extensions.geometry) as lat, extensions.st_x(${column(col)}::extensions.geometry) as lng`;
+  const emergencySelect = sql`select e.*, extensions.st_y(e.patient_location::extensions.geometry) as patient_lat,
+    extensions.st_x(e.patient_location::extensions.geometry) as patient_lng from public.emergencies e`;
+  const ambulanceSelect = sql`select a.*, extensions.st_y(a.location::extensions.geometry) as lat,
+    extensions.st_x(a.location::extensions.geometry) as lng from public.ambulances a`;
 
   async function doctorsQuery(where, p = {}) {
     const loc = 'coalesce(h.location, d.clinic_location)';
@@ -116,6 +139,98 @@ export function createPostgresStore(url) {
     kind: 'postgres',
     async ping() { await sql`select 1`; },
     async close() { await sql.end({ timeout: 5 }); },
+
+    emergencies: {
+      async nearbyAmbulances({ point: p, type = 'BLS', radiusKm = 10, maxAgeSeconds = 90, limit = 24 }) {
+        const rows = await sql`select id, type, distance_m, is_demo from public.nearby_ambulances(${point(p.lat, p.lng)}, ${type}::public.ambulance_type, ${radiusKm}, ${maxAgeSeconds}, ${limit})`;
+        return rows.map((r) => ({ id: r.id, type: r.type, distanceKm: num(r.distance_m) / 1000, isDemo: r.is_demo }));
+      },
+      async createEmergency(input) {
+        const id = input.id ?? randomUUID(); const p = input.location;
+        return sql.begin(async (tx) => {
+          const [row] = await tx`insert into public.emergencies (id, patient_user_id, guest_phone, for_self, emergency_type, conscious, patient_count,
+            ambulance_type, notes, patient_location, patient_address, eta_seconds, tracking_token_hash, is_demo)
+            values (${id}, ${input.patientUserId ?? null}, ${input.guestPhone ?? null}, ${input.forSelf ?? true}, ${input.emergencyType ?? 'other'},
+              ${input.conscious ?? null}, ${input.patientCount ?? 1}, ${input.ambulanceType ?? 'BLS'}, ${input.notes ?? null}, ${point(p.lat, p.lng)},
+              ${input.address ?? null}, ${input.etaSeconds ?? null}, ${input.trackingTokenHash}, true) returning *,
+              extensions.st_y(patient_location::extensions.geometry) as patient_lat, extensions.st_x(patient_location::extensions.geometry) as patient_lng`;
+          await tx`insert into public.emergency_events (emergency_id, kind, actor_role) values (${id}, 'created', ${input.patientUserId ? 'patient' : 'guest'})`;
+          return emergencyRow(row);
+        });
+      },
+      async createOffers(emergencyId, candidates, etaIsEstimate = true) {
+        const payload = candidates.slice(0, 5).map((c) => ({ ambulance_id: c.ambulanceId, eta_seconds: c.etaSeconds ?? null }));
+        const [row] = await sql`select * from public.create_offers(${emergencyId}, ${json(payload)}, ${etaIsEstimate})`;
+        if (!row?.id) return null;
+        const [mapped] = await sql`${emergencySelect} where e.id = ${emergencyId}`;
+        return emergencyRow(mapped);
+      },
+      async acceptEmergency(emergencyId, ambulanceId) {
+        const [result] = await sql`select * from public.accept_emergency(${emergencyId}, ${ambulanceId})`;
+        if (!result?.id) return null;
+        const [row] = await sql`${emergencySelect} where e.id = ${emergencyId} and e.status = 'assigned' and e.ambulance_id = ${ambulanceId}`;
+        return emergencyRow(row) || null;
+      },
+      async declineOffer(emergencyId, ambulanceId) {
+        const [result] = await sql`select * from public.decline_offer(${emergencyId}, ${ambulanceId})`;
+        if (!result?.id) return null;
+        const [row] = await sql`${emergencySelect} where e.id = ${emergencyId}`;
+        return emergencyRow(row) || null;
+      },
+      async expireOffers() { const [row] = await sql`select public.expire_offers() as count`; return row.count; },
+      async advanceEmergency(emergencyId, ambulanceId, to) {
+        const [result] = await sql`select * from public.advance_emergency(${emergencyId}, ${ambulanceId}, ${to}::public.emergency_status)`;
+        if (!result?.id) return null;
+        const [row] = await sql`${emergencySelect} where e.id = ${emergencyId} and e.ambulance_id = ${ambulanceId} and e.status = ${to}::public.emergency_status`;
+        return emergencyRow(row) || null;
+      },
+      async cancelEmergency(emergencyId, reason = null) {
+        const [result] = await sql`select * from public.cancel_emergency(${emergencyId}, ${reason})`;
+        if (!result?.id) return null;
+        const [row] = await sql`${emergencySelect} where e.id = ${emergencyId} and e.status = 'cancelled'`;
+        return emergencyRow(row) || null;
+      },
+      async releaseAmbulance(ambulanceId) { const [row] = await sql`select public.release_ambulance(${ambulanceId}) as released`; return row.released; },
+      async addFeedback(emergencyId, { rating, comment = null }) {
+        const [row] = await sql`insert into public.emergency_feedback (emergency_id, rating, comment)
+          select ${emergencyId}, ${rating}, ${comment} where exists (select 1 from public.emergencies where id = ${emergencyId} and status = 'completed')
+          on conflict (emergency_id) do nothing returning *`;
+        if (row) await sql`insert into public.emergency_events (emergency_id, kind, actor_role) values (${emergencyId}, 'feedback', 'patient')`;
+        return emergencyFeedbackRow(row) || null;
+      },
+      async getById(id) { const [row] = await sql`${emergencySelect} where e.id = ${id}`; return emergencyRow(row) || null; },
+      async getByTokenHash(hash) { const [row] = await sql`${emergencySelect} where e.tracking_token_hash = ${hash} and e.tracking_expires_at > now()`; return emergencyRow(row) || null; },
+      async activeForPatient(userId) {
+        const [row] = await sql`${emergencySelect} where e.patient_user_id = ${userId} and e.status not in ('completed', 'cancelled', 'no_match') order by e.created_at desc limit 1`;
+        return emergencyRow(row) || null;
+      },
+      async history(userId, { limit = 50, offset = 0 } = {}) {
+        return (await sql`${emergencySelect} where e.patient_user_id = ${userId} order by e.created_at desc limit ${limit} offset ${offset}`).map(emergencyRow);
+      },
+      async listAdmin({ status = null, limit = 100 } = {}) {
+        return (await sql`${emergencySelect} where (${status}::text is null or e.status::text = ${status}) order by e.created_at desc limit ${limit}`).map(emergencyRow);
+      },
+      async listAmbulances() { return (await sql`${ambulanceSelect} order by a.registration_number`).map(ambulanceRow); },
+      async ambulanceByDriver(driverUserId) { const [row] = await sql`${ambulanceSelect} where a.driver_user_id = ${driverUserId}`; return ambulanceRow(row) || null; },
+      async setAmbulanceStatus(id, status) { const [row] = await sql`update public.ambulances set status = ${status}::public.ambulance_status, updated_at = now() where id = ${id} returning *, extensions.st_y(location::extensions.geometry) as lat, extensions.st_x(location::extensions.geometry) as lng`; return ambulanceRow(row) || null; },
+      async updateAmbulanceLocation(id, { lat, lng, heading = null, speed = null }) {
+        const [row] = await sql`update public.ambulances set location = ${point(lat, lng)}, heading_degrees = ${heading}, speed_kmph = ${speed}, last_ping_at = now(), updated_at = now()
+          where id = ${id} returning *, extensions.st_y(location::extensions.geometry) as lat, extensions.st_x(location::extensions.geometry) as lng`;
+        return ambulanceRow(row) || null;
+      },
+      async openOfferForAmbulance(id) { const [row] = await sql`select * from public.emergency_offers where ambulance_id = ${id} and state = 'open' and expires_at > now() order by offered_at limit 1`; return emergencyOfferRow(row) || null; },
+      async offersForEmergency(id) { return (await sql`select * from public.emergency_offers where emergency_id = ${id} order by rank`).map(emergencyOfferRow); },
+      async activeForAmbulance(id) {
+        const [row] = await sql`${emergencySelect} where e.ambulance_id = ${id} and e.status in ('assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital') order by e.created_at desc limit 1`;
+        return emergencyRow(row) || null;
+      },
+      async timeline(id) { return (await sql`select * from public.emergency_events where emergency_id = ${id} order by created_at, id`).map(emergencyEventRow); },
+      async feedbackForEmergency(id) { const [row] = await sql`select * from public.emergency_feedback where emergency_id = ${id}`; return emergencyFeedbackRow(row) || null; },
+      async insertEvent(id, kind, actorRole = 'system', data = {}) {
+        const [row] = await sql`insert into public.emergency_events (emergency_id, kind, actor_role, data) values (${id}, ${kind}, ${actorRole}, ${json(data)}) returning *`;
+        return emergencyEventRow(row);
+      },
+    },
 
     users: {
       async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
