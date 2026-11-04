@@ -79,7 +79,7 @@ function videoPanel() {
   const loadVideo = () => {
     if (mediaReady || reducedMotion || saveData || smallScreen) return;
     mediaReady = true;
-    source.src = '/assets/careroute-ambulance-720p.mp4';
+    source.src = '/assets/careroute_ambulance_4K.mp4';
     video.load();
     video.play().catch(() => panel.classList.add('is-video-fallback'));
   };

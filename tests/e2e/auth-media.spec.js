@@ -5,6 +5,7 @@ const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4000';
 for (const route of ['/signin/', '/signup/']) {
   test(`${route} keeps the intro video out of the initial page transfer`, async ({ page }) => {
     const videoRequests = [];
+    await page.route('**/assets/careroute_ambulance_4K.mp4', (requestRoute) => requestRoute.abort());
     page.on('request', (request) => {
       if (/careroute-ambulance-720p\.mp4|careroute_ambulance_4K\.mp4/.test(request.url())) videoRequests.push(request.url());
     });
@@ -17,5 +18,7 @@ for (const route of ['/signin/', '/signup/']) {
     expect(videoRequests).toEqual([]);
     await expect(page.locator('.auth-video')).toHaveAttribute('preload', 'none');
     await expect(page.locator('.auth-video')).toHaveAttribute('poster', '/assets/careroute-ambulance-poster.webp');
+    const deferredVideo = await page.waitForRequest(/careroute_ambulance_4K\.mp4/, { timeout: 5000 });
+    expect(deferredVideo.url()).toContain('/assets/careroute_ambulance_4K.mp4');
   });
 }
