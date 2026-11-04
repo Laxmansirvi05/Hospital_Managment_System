@@ -8,7 +8,7 @@
   "packageManager": "pnpm@11.2.2",
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local scripts/dev.js",
-    "test": "vitest run tests/unit.test.js tests/api.test.js",
+    "test": "vitest run tests/*.test.js",
     "test:e2e": "playwright test tests/e2e",
     "check": "node scripts/check-public.js"
   },

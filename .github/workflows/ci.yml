@@ -29,5 +29,5 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Check public files
         run: pnpm check
-      - name: Run unit and API tests
+      - name: Run all server tests
         run: pnpm test
