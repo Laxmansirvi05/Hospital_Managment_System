@@ -19,6 +19,7 @@ import { getOrigin, onOriginChange, locationBar } from './location.js';
  * @property {(params: URLSearchParams, update: Function) => HTMLElement[]} [filters]
  * @property {boolean} [usesArea]
  * @property {boolean} [fullWidth] removes the optional side column for this tab
+ * @property {string} [note] a short line under the results, such as where prices come from
  * @property {string} noun
  * @property {HTMLElement} [aside]
  */
@@ -125,6 +126,7 @@ export async function searchPage({ main, title, sub, tabs, art }) {
       tab.pin && list.length ? h('p', { class: 't-footnote muted' }, 'Nearest first.') : null,
       list.length ? h('div', { class: 'list' }, list.map(tab.row)) : empty({ title: `No ${plural} found`, text: page > 1 ? 'This page is past the end of the list.' : 'Try a shorter search, another area, or fewer filters.' }),
       pager,
+      tab.note && list.length ? h('p', { class: 't-footnote muted' }, icon('info', 14), ` ${tab.note}`) : null,
       osmCredit(list),
     ].filter(Boolean));
     if (tab.pin) {

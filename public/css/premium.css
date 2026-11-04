@@ -312,16 +312,16 @@ body {
 /* Compare medicine prices is intentionally full-width and uses a denser, three-up card grid.
    The data attribute is set by searchPage for this tab only; pharmacy results keep the shared
    search layout above unchanged. */
-.search-layout[data-search-tab="medicines"] {
+.search-layout:is([data-search-tab="medicines"], [data-search-tab="tests"]) {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.results-card[data-search-tab="medicines"] .list {
+.results-card:is([data-search-tab="medicines"], [data-search-tab="tests"]) .list {
   grid-template-columns: 1fr;
   gap: var(--space-16);
 }
 
-.results-card[data-search-tab="medicines"] .list > .list-row {
+.results-card:is([data-search-tab="medicines"], [data-search-tab="tests"]) .list > .list-row {
   min-height: 0;
   padding: var(--space-14, 14px) var(--space-16);
   align-items: flex-start;
@@ -1937,4 +1937,129 @@ html.text-large {
     position: sticky;
     top: var(--space-24);
   }
+}
+
+/* Account and privacy (2026-11-04): who is signed in across the top, then privacy, data and
+   security cards packed into columns. */
+.account-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-16) var(--space-20);
+  margin-bottom: var(--space-16);
+}
+
+.account-hero .avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.account-ready {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-l);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.account-ready .strong {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--primary);
+}
+
+@media (min-width: 768px) {
+  .account-hero {
+    grid-template-columns: auto minmax(0, 1fr) minmax(220px, 280px);
+  }
+
+  .account-ready {
+    grid-column: auto;
+  }
+}
+
+.account-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8);
+}
+
+/* An odd last tile takes the whole row, so the grid has no hole. */
+.account-stats > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.account-who {
+  min-width: 0;
+}
+
+.account-who .t-subhead {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .account-hero .avatar-xl {
+    width: 64px;
+    height: 64px;
+    font-size: var(--fs-title-3);
+  }
+}
+
+.account-stat {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+  padding: var(--space-12);
+  border-radius: var(--radius-l);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+  color: var(--text-1);
+  text-decoration: none;
+  transition: transform var(--dur-toggle) var(--ease-enter), box-shadow var(--dur-toggle) var(--ease-enter);
+}
+
+.account-stat:hover,
+.account-stat:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1px var(--primary-tint), var(--shadow-card);
+}
+
+.pw-meter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.pw-meter[hidden] { display: none; }
+
+.pw-meter-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--border-soft);
+}
+
+.pw-meter-bar {
+  display: block;
+  width: 10%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--danger);
+  transition: width var(--dur-toggle) var(--ease-enter);
+}
+
+.pw-meter[data-score="1"] .pw-meter-bar { width: 40%; background: var(--warning); }
+.pw-meter[data-score="2"] .pw-meter-bar { width: 70%; background: var(--primary); }
+.pw-meter[data-score="3"] .pw-meter-bar { width: 100%; background: var(--success); }
+
+@media (prefers-reduced-motion: reduce) {
+  .account-stat { transition: none; }
 }

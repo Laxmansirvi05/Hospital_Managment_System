@@ -4,6 +4,12 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-04
 
+### Test prices at full width, Account and privacy redesigned
+
+- Diagnostic centres, Test prices: full width with the same three-across cards as Compare medicine prices; the "About these prices" side card is gone and its wording sits under the list. Test names published in capitals read in title case, keeping abbreviations such as MCV, TSH and HbA1c as published.
+- Account and privacy: a profile card (photo or initials, name, email, member since, how you sign in, medical ID completeness), Privacy at a glance (ambulance crew sharing, emergency contacts, the AI assistant agreement, location, reminder notifications, each with its state and a link to change it), Your data (counts that open each page), and the password card now has Show passwords and a strength guide. Cards pack into columns. Built from data the page already had; no server change.
+- Tests: unit and API 138 passed, Playwright 19 passed, `pnpm check` passed, against a sample-data server. No test files changed.
+
 ### Maps fixed, Settings redesigned, layout audit of the patient pages
 
 - Fixed: every real map showed OpenStreetMap's "403 Access blocked" tiles. The map asked the browser to send no Referer, and OpenStreetMap refuses browser tile requests without one. Tiles now follow the site's policy (`strict-origin-when-cross-origin`, origin only). A browser test checks this.
