@@ -133,4 +133,32 @@ test.describe('Hospitals and doctors page refinement', () => {
     await expect(page.getByRole('link', { name: /Directions/ })).toBeVisible();
     await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-detail-desktop.png', fullPage: true });
   });
+
+  test('patient can post, edit and delete a review from a hospital detail page', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${baseURL}/search/hospitals/`);
+    const firstCard = page.locator('.facility-card').first();
+    await expect(firstCard).toBeVisible();
+    await page.goto(`${baseURL}${await firstCard.getAttribute('href')}`);
+    const reviews = page.getByRole('heading', { name: 'Ratings and reviews' }).locator('..');
+    await expect(reviews.getByText('No reviews yet.')).toBeVisible();
+
+    await reviews.getByRole('radio', { name: '5 of 5' }).click();
+    await reviews.locator('#review-body').fill('Clear reception and easy to find.');
+    await reviews.getByRole('button', { name: 'Post review' }).click();
+    await expect(page.getByText('Thank you for your review')).toBeVisible();
+    await expect(reviews.getByRole('button', { name: 'Update review' })).toBeVisible();
+    await expect(reviews.getByText('Clear reception and easy to find.')).toBeVisible();
+    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-review-desktop.png', fullPage: true });
+
+    await reviews.getByRole('radio', { name: '4 of 5' }).click();
+    await reviews.locator('#review-body').fill('Updated review after a follow-up visit.');
+    await reviews.getByRole('button', { name: 'Update review' }).click();
+    await expect(page.getByText('Review updated')).toBeVisible();
+    await expect(reviews.getByText('Updated review after a follow-up visit.')).toBeVisible();
+    await reviews.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page.getByText('Review deleted')).toBeVisible();
+    await expect(reviews.getByText('No reviews yet.')).toBeVisible();
+  });
 });
