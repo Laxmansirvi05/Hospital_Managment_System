@@ -33,6 +33,13 @@ test('patient account and care records work in sample mode at phone, tablet and 
   await page.getByRole('button', { name: 'Create account' }).click();
   await page.waitForURL(/medical-id/);
   await expect(page.getByText(/Sample data mode/)).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${baseURL}/search/medicines/`);
+  await expect(page.locator('#mode-banner')).toContainText('Listings and prices are examples only, not current provider information.');
+  mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
+  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/sample-price-warning-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${baseURL}/medical-id/`);
 
   await page.getByLabel('Full name').fill('Journey Patient');
   await page.getByLabel('Preferred language').fill('English');

@@ -90,7 +90,7 @@ export async function shell({ nav, title }) {
     const banner = document.getElementById('mode-banner');
     if (banner) {
       banner.hidden = false;
-      banner.replaceChildren(h('span', {}, h('strong', {}, 'Sample data mode. '), 'The server is not connected to the database yet, so anything you enter is cleared when it restarts.'));
+      banner.replaceChildren(h('span', {}, h('strong', {}, 'Sample data mode. '), 'The server is not connected to the database yet, so anything you enter is cleared when it restarts. Listings and prices are examples only, not current provider information.'));
     }
   }
 
