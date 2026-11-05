@@ -46,6 +46,8 @@ async function mockEndpoint(page, target, mode) {
 
 test('patient pages show a clear recovery path for empty, auth, HTTP and network states', async ({ page }) => {
   test.setTimeout(240000);
+  // Keep this sweep strictly local; discovery pages may otherwise request map tiles.
+  await page.route('https://**/*', (route) => route.abort());
   await page.setViewportSize({ width: 1280, height: 900 });
   await signUp(page);
 
@@ -78,6 +80,9 @@ test('patient pages show a clear recovery path for empty, auth, HTTP and network
         await expect(page.getByText('Search did not work', { exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
         await expect(page.locator('main').getByText(/This service could not complete|offline|connection/i)).toBeVisible();
+        if (entry.path === '/search/hospitals/' && status === 500) {
+          await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/patient-search-error-desktop.png', fullPage: true });
+        }
       } else if (entry.assistant) {
         await expect(page.locator('main').getByText(/This service could not complete|offline|connection/i).last()).toBeVisible();
         await expect(page.getByRole('button', { name: 'New conversation' })).toBeVisible();
