@@ -124,16 +124,37 @@ describe('medical ID (D-39)', () => {
 });
 
 describe('ownership', () => {
-  it('stops one patient changing another patient’s data (404, no leak)', async () => {
+  it('isolates each patient record view and blocks cross-owner reads and writes (404, no leak)', async () => {
     const a = await app.user();
     const b = await app.user();
+    await app.api('/patients/me/medical-id', { method: 'PUT', token: a.token, body: { fullName: 'Patient A Private Name', medicalNotes: 'Patient A Private Note' } });
     const c = await app.api('/patients/me/contacts', { token: a.token, body: { name: 'K', phone: '9876522222', relation: 'Friend' } });
     const r = await app.api('/patients/me/reminders', { token: a.token, body: { medicineName: 'Metformin 500 mg', dose: '1 tablet', times: ['08:00'], startDate: '2026-10-01' } });
-    const ap = await app.api('/patients/me/appointments', { token: a.token, body: { doctorName: 'Dr. Rao', place: 'Lakeview', date: '2026-11-02', time: '10:30' } });
+    const ap = await app.api('/patients/me/appointments', { token: a.token, body: { doctorName: 'Dr. Rao', place: 'Lakeview', date: '2026-11-28', time: '10:30' } });
+
+    const medicalId = await app.api('/patients/me/medical-id', { token: b.token });
+    expect(medicalId.body.fullName).not.toBe('Patient A Private Name');
+    expect(medicalId.body.medicalNotes).not.toContain('Patient A Private Note');
+    expect((await app.api('/patients/me/contacts', { token: b.token })).body.contacts).toEqual([]);
+    expect((await app.api('/patients/me/reminders', { token: b.token })).body.reminders).toEqual([]);
+    expect((await app.api('/patients/me/appointments', { token: b.token })).body.appointments).toEqual([]);
+
     expect((await app.api(`/patients/me/contacts/${c.body.id}`, { method: 'DELETE', token: b.token })).status).toBe(404);
     expect((await app.api(`/patients/me/reminders/${r.body.id}`, { method: 'PATCH', token: b.token, body: { dose: '2 tablets' } })).status).toBe(404);
+    expect((await app.api(`/patients/me/reminders/${r.body.id}/doses`, { token: b.token, body: { date: '2026-10-25', time: '08:00', status: 'taken' } })).status).toBe(404);
+    expect((await app.api(`/patients/me/reminders/${r.body.id}`, { method: 'DELETE', token: b.token })).status).toBe(404);
+    expect((await app.api(`/patients/me/appointments/${ap.body.id}`, { method: 'PATCH', token: b.token, body: { notes: 'Changed by B' } })).status).toBe(404);
     expect((await app.api(`/patients/me/appointments/${ap.body.id}`, { method: 'DELETE', token: b.token })).status).toBe(404);
-    expect((await app.api('/patients/me/reminders', { token: b.token })).body.reminders).toEqual([]);
+
+    const dashboard = await app.api('/patients/me/dashboard?date=2026-10-25', { token: b.token });
+    expect(dashboard.body.patient.contactCount).toBe(0);
+    expect(dashboard.body.appointments).toEqual([]);
+    expect(dashboard.body.counts).toMatchObject({ reminders: 0, documents: 0, appointments: 0 });
+    expect(JSON.stringify(dashboard.body)).not.toMatch(/Patient A Private|Metformin|Lakeview/);
+
+    expect((await app.api('/patients/me/contacts', { token: a.token })).body.contacts).toHaveLength(1);
+    expect((await app.api('/patients/me/reminders', { token: a.token })).body.reminders).toHaveLength(1);
+    expect((await app.api('/patients/me/appointments', { token: a.token })).body.appointments).toHaveLength(1);
   });
 });
 
