@@ -89,3 +89,15 @@ This recheck did not change the ledger or completion score. D-53's collector sti
 The phone touch-target sweep initially found 116 actionable controls below 44px across 23 public, patient, detail, legal, and emergency route states at 390px. Patient-scoped styles now raise those targets to 44px or larger; the map's visible switch hit-area pseudo-element is included in the audit measurement. The rerun reports no undersized actionable controls. The signed-in stylesheet is loaded only for patient accounts; the landing, legal and emergency adjustments live in their dedicated public stylesheets. Browser screenshots are `touch-target-home-mobile.png`, `touch-target-dashboard-mobile.png`, and `touch-target-hospitals-mobile.png` in the evidence folder. The audit and production styles are in `tests/e2e/patient-touch-targets.spec.js`, `public/css/patient-touch.css`, `public/js/shell.js`, `public/css/hero.css`, `public/css/legal.css`, and `public/css/emergency.css`.
 
 The touch-target implementation step passed `pnpm check` and the complete memory-mode test suite (`14` files, `459` tests). The focused Playwright audit also passed with zero actionable controls below 44px across the 23 route states. The audit ledger remains owner-origin untracked work, so no ledger status or completion score is claimed to have changed.
+
+## Patient discovery continuation (2026-11-06)
+
+The new memory-mode browser journey verifies provider leaving notices, source/check dates on facility and doctor details, checked dates on medicine listings, and `noopener noreferrer` on outbound links without following those links. A synthetic no-phone hospital response confirms the no-phone copy and directions remain visible with no `tel:` action. Screenshots: `discovery-provider-hospital-desktop.png`, `discovery-provider-medicine-desktop.png`, and `discovery-no-phone-fallback-mobile.png`.
+
+That browser pass found and fixed a literal `null` rendered between a hospital's doctor heading and speciality filters when the optional speciality chart was absent. The optional chart is now appended only when it exists; the no-phone journey guards against any standalone `null` text. These results provide local evidence for L-047's provider-link disclosure and L-070's no-phone fallback; the owner-origin audit ledger and its score remain unchanged.
+
+| Command | Result |
+|---|---|
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/discovery-disclosures.spec.js --workers=1` | Passed: 2 browser tests in memory mode; HTTPS requests blocked. |
+| `env -i PATH=… pnpm check` | Passed: `public/ check passed`. |
+| `env -i PATH=… NODE_ENV=test DATABASE_URL= pnpm exec vitest run tests/unit.test.js tests/api.test.js` | Passed: 2 files, 138 tests. |

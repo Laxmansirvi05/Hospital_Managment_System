@@ -50,10 +50,11 @@ function doctorsSection(all) {
     list.children[before]?.focus();
   });
   draw();
-  section.append(
-    h('h2', { class: 't-title-3', id: 'docs-h' }, `Doctors (${all.length})`),
-    bySpec.length > 2 ? hbars({ title: 'Doctors at this hospital by speciality', items: bySpec.slice(0, 8).map(([k, n]) => ({ label: k, value: n })) }) : null,
-    chips, list, more);
+  section.append(h('h2', { class: 't-title-3', id: 'docs-h' }, `Doctors (${all.length})`));
+  if (bySpec.length > 2) {
+    section.append(hbars({ title: 'Doctors at this hospital by speciality', items: bySpec.slice(0, 8).map(([k, n]) => ({ label: k, value: n })) }));
+  }
+  section.append(chips, list, more);
   return section;
 }
 
