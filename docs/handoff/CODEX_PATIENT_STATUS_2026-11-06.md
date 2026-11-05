@@ -23,7 +23,7 @@ No scored requirement row changed in the source ledger. The following audit find
 | FND-025 | Sign-in/sign-up use the poster and defer the 64,522,280-byte 4K source. Browser tests measure initial transfer below 1 MB and verify that user action requests the video. The full asset still loads if played; Range support is not established. |
 
 Patient portal journey evidence was captured in `docs/audit/evidence-codex-2026-11-06/` for dashboard, medical ID, reminders, appointments, documents, settings, account, and doctor search.
-Further screenshots in the same folder cover hospital search at desktop/tablet/mobile, a hospital detail page, assistant consent and provider fallback, and guest SOS/tracking completed and no-match states. The selected browser suites total 14 passing tests; this is not a full E2E suite run.
+Further screenshots in the same folder cover hospital search at desktop/tablet/mobile, a hospital detail page, assistant consent and provider fallback, and guest SOS/tracking completed and no-match states. The selected browser suites total 15 passing tests; this is not a full E2E suite run.
 
 ## Commands and results
 
@@ -36,6 +36,7 @@ Further screenshots in the same folder cover hospital search at desktop/tablet/m
 | `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/ambulance.spec.js --workers=1` | Passed: 4 synthetic SOS/tracking tests, with external HTTPS blocked. |
 | `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/assistant-accessibility.spec.js --workers=1` | Passed: 2 keyboard, consent, fallback and withdrawal tests, with external HTTPS blocked. |
 | `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/hospitals.spec.js --workers=1` | Passed: 4 discovery layout, filter, detail-source and contact-path tests, with external HTTPS blocked. |
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/patient-keyboard-access.spec.js --workers=1` | Passed: keyboard skip path and labelled-field sweep across public, patient, detail and synthetic emergency pages, with external HTTPS blocked. |
 | Local `curl -I` to `/search/doctors/`, `/sitemap.xml`, `/robots.txt` | All returned 200; sitemap and robots MIME types are configured in the memory-mode dev server. |
 
 ## Owner must verify on real systems
@@ -61,4 +62,5 @@ Further screenshots in the same folder cover hospital search at desktop/tablet/m
 - The current ledger and audit report are pre-existing untracked files. They were not edited, so the completion score cannot yet reflect this work.
 - Populated test-price parity and the NPPA ceiling-price collector path remain incomplete; no fixture was invented and no live source was fetched.
 - The sitemap has no URLs until the canonical domain is decided. D-80 landing scene work is also waiting for P-30 guardrails.
+- The keyboard pass added skip navigation to sign-in/sign-up and focusable main targets on home, SOS, emergency status and tracking pages. It checks skip-link focus and labelled fields; it is not a full WCAG or axe audit.
 - No owner/Claude implementation files were staged.
