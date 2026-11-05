@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4000';
 
-async function signup(page) {
-  await page.setExtraHTTPHeaders({ 'x-forwarded-for': '10.82.0.11' });
+async function signup(page, nonce) {
+  await page.setExtraHTTPHeaders({ 'x-forwarded-for': `10.82.${nonce % 250}.${Math.floor(nonce / 250) % 250}` });
   await page.goto(`${baseURL}/signup/`);
   await page.locator('input[autocomplete="name"]').fill('Keyboard Audit Patient');
   await page.locator('input[autocomplete="email"]').fill(`keyboard-audit-${Date.now()}@example.test`);
@@ -26,6 +26,7 @@ async function api(page, path, method = 'GET', body) {
 }
 
 test('patient pages expose a keyboard skip path and labelled form fields in memory mode', async ({ page }) => {
+  const nonce = Date.now();
   await page.route('https://**/*', (route) => route.abort());
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${baseURL}/signin/`);
@@ -40,7 +41,7 @@ test('patient pages expose a keyboard skip path and labelled form fields in memo
   await page.keyboard.press('Enter');
   await expect(page.locator('main#main')).toBeFocused();
 
-  await signup(page);
+  await signup(page, nonce);
   const hospitals = await api(page, '/hospitals?limit=1');
   const doctors = await api(page, '/doctors?limit=1');
   const medicines = await api(page, '/medicines?limit=1');
@@ -50,12 +51,12 @@ test('patient pages expose a keyboard skip path and labelled form fields in memo
     emergencyType: 'other', forSelf: true, conscious: true, patientCount: 1, ambulanceType: 'BLS', notes: '',
     location: { lat: 17.4435, lng: 78.4676 }, address: 'Keyboard audit demo',
   });
-  const guestEmergency = await page.evaluate(async () => {
+  const guestEmergency = await page.evaluate(async ({ guestPhone }) => {
     const response = await fetch('/api/v1/emergencies', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ emergencyType: 'other', forSelf: true, conscious: null, patientCount: 1, ambulanceType: 'BLS', notes: '',
-        location: { lat: 17.4435, lng: 78.4676 }, address: 'Keyboard audit guest demo', guestPhone: '9876543218' }) });
+        location: { lat: 17.4435, lng: 78.4676 }, address: 'Keyboard audit guest demo', guestPhone }) });
     return response.json();
-  });
+  }, { guestPhone: `9${String(nonce).slice(-9)}` });
 
   const paths = ['/', '/dashboard/', '/assistant/', '/search/hospitals/', '/search/doctors/', '/search/medicines/', '/search/diagnostics/',
     '/explore/', '/appointments/', '/reminders/', '/medical-id/', '/documents/', '/settings/', '/account/', '/sos/', '/privacy/', '/terms/'];
