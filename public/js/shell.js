@@ -102,6 +102,14 @@ export async function shell({ nav, title }) {
   );
 
   const isPatient = user.role === 'patient';
+  if (isPatient && !document.querySelector('link[href="/css/patient-touch.css"]')) {
+    const touchStyles = h('link', { rel: 'stylesheet', href: '/css/patient-touch.css' });
+    await new Promise((resolve) => {
+      touchStyles.addEventListener('load', resolve, { once: true });
+      touchStyles.addEventListener('error', resolve, { once: true });
+      document.head.append(touchStyles);
+    });
+  }
   document.getElementById('sidebar').replaceChildren(
     h('a', { class: 'brand', href: '/dashboard/' }, brandMark()),
     h('nav', { class: 'nav', 'aria-label': 'Main' },

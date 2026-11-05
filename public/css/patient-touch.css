@@ -1,0 +1,52 @@
+/* Patient-only tap areas. Loaded by the shell only for signed-in patients, so
+   these touch-size overrides do not change the shared admin interface. */
+.topbar a.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.btn {
+  min-height: 44px;
+}
+
+.btn-sm,
+.btn-text.btn-sm,
+.seg button,
+.geo-map-style {
+  min-height: 44px;
+}
+
+.dashboard-view .dash-actions .btn {
+  min-height: 44px;
+}
+
+.input,
+.select,
+.geo-map-search {
+  min-height: 44px;
+}
+
+.medical-id-sharing-toggle > input[role="switch"] {
+  min-height: 44px;
+}
+
+.medical-id-sharing-toggle > input[role="switch"]::after {
+  top: 8px;
+}
+
+.rmap-pin {
+  width: 48px;
+  min-height: 48px;
+  margin: -24px 0 0 -24px;
+}
+
+.geo-cluster {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.geo-map-control-text,
+.geo-filter {
+  min-height: 44px;
+}

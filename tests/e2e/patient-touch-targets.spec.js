@@ -55,20 +55,33 @@ test('audit patient touch target sizes across public and signed-in phone screens
   for (const path of paths) {
     await page.goto(`${baseURL}${path}`);
     await page.waitForTimeout(80);
+    if (path === '/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-home-mobile.png', fullPage: true });
+    if (path === '/dashboard/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-dashboard-mobile.png', fullPage: true });
+    if (path === '/search/hospitals/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-hospitals-mobile.png', fullPage: true });
     const found = await page.locator('a,button,input,select,textarea,[role="button"],[role="radio"],[role="tab"]').evaluateAll((elements) =>
       elements.filter((el) => {
         const style = getComputedStyle(el);
         const rect = el.getBoundingClientRect();
         const isAction = el.matches('button,input,select,textarea,[role="button"],[role="radio"],[role="tab"],a.btn,a.card-link,a.rmap-pin,a.icon-btn,.topbar a,.tabbar a,.nav a,.legal-nav a,.emergency-header a,.emergency-call');
+        let targetWidth = rect.width;
+        let targetHeight = rect.height;
+        if (el.classList.contains('switch')) {
+          const hitArea = getComputedStyle(el, '::before');
+          const edge = (name) => Number.parseFloat(hitArea.getPropertyValue(name)) || 0;
+          targetWidth -= edge('left') + edge('right');
+          targetHeight -= edge('top') + edge('bottom');
+        }
         return isAction && !el.classList.contains('visually-hidden') && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0 && rect.width > 0 && rect.height > 0
-          && Math.min(rect.width, rect.height) < 44;
+          && Math.min(targetWidth, targetHeight) < 44;
       }).map((el) => {
         const rect = el.getBoundingClientRect();
         return { text: (el.getAttribute('aria-label') || el.innerText || el.getAttribute('placeholder') || el.tagName).trim().slice(0, 70),
+          tag: el.tagName.toLowerCase(), className: typeof el.className === 'string' ? el.className : '',
           width: Math.round(rect.width), height: Math.round(rect.height) };
       }));
     if (found.length) small.push({ path, controls: found });
   }
   console.log(`SMALL_TOUCH_TARGET_SUMMARY ${JSON.stringify(small.map(({ path, controls }) => ({ path, count: controls.length, controls: controls.slice(0, 5) })))}`);
+  expect(small, 'Patient and public actionable touch areas are at least 44px in both dimensions').toEqual([]);
   expect(paths.length, 'The sweep covers public, patient, detail and emergency screens').toBeGreaterThanOrEqual(20);
 });

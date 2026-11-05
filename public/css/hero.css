@@ -207,8 +207,8 @@ body.home-body a:hover {
 
 .hero-menu-toggle {
   display: none;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 12px;
@@ -392,8 +392,8 @@ body.home-body a:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  width: 42px;
-  min-height: 42px;
+  width: 44px;
+  min-height: 44px;
   padding: 7px;
   color: var(--hero-white);
   background: transparent;

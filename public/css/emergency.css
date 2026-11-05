@@ -1,6 +1,6 @@
 .emergency-page { min-height: 100vh; background: var(--bg); color: var(--text-1); }
 .emergency-header { display: flex; justify-content: space-between; align-items: center; max-width: 880px; margin: 0 auto; padding: 16px 20px; }
-.emergency-brand { color: var(--text-1); font-size: 1.125rem; font-weight: 700; text-decoration: none; }
+.emergency-brand { display: inline-flex; align-items: center; min-height: 44px; color: var(--text-1); font-size: 1.125rem; font-weight: 700; text-decoration: none; }
 .emergency-header a:last-child { display: inline-flex; min-height: 44px; align-items: center; color: var(--primary); font-weight: 600; }
 .emergency-main { display: grid; gap: 16px; width: min(100% - 32px, 840px); margin: 8px auto 48px; }
 .emergency-call { display: flex; min-height: 100px; flex-direction: column; justify-content: center; gap: 4px; padding: 16px 24px; border-radius: 24px; background: var(--danger); color: #fff; text-decoration: none; box-shadow: var(--shadow-raised); }
