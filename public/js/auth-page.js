@@ -76,8 +76,8 @@ function videoPanel() {
   const smallScreen = window.matchMedia?.('(max-width: 720px)').matches;
   const source = video.querySelector('source');
   let mediaReady = false;
-  const loadVideo = () => {
-    if (mediaReady || reducedMotion || saveData || smallScreen) return;
+  const loadVideo = ({ userInitiated = false } = {}) => {
+    if (mediaReady || reducedMotion || smallScreen || (saveData && !userInitiated)) return;
     mediaReady = true;
     source.src = '/assets/careroute_ambulance_4K.mp4';
     video.load();
@@ -85,7 +85,7 @@ function videoPanel() {
   };
   if (!reducedMotion && !saveData && !smallScreen) {
     const schedule = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 1800));
-    schedule(loadVideo, { timeout: 3000 });
+    schedule(() => loadVideo(), { timeout: 3000 });
   }
 
   const panel = h('section', { class: 'auth-video-panel', 'aria-label': 'CareRoute introduction' });
@@ -114,7 +114,7 @@ function videoPanel() {
     updateSoundToggle();
     if (soundOn) {
       try {
-        loadVideo();
+        loadVideo({ userInitiated: true });
         await video.play();
       } catch {
         soundOn = false;

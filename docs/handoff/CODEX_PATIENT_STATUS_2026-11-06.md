@@ -4,27 +4,40 @@ Date: 2026-11-06
 
 ## Current completion
 
-No ledger rows moved in this step. The baseline ledger score is unchanged. The audit's patient-side pillars score **48.3% weighted** across the six patient pillars (discovery, health portal, authentication/security, data quality, AI assistant and emergency), using the same weighted pillar arithmetic as the audit and normalizing by their combined weight of 86:
+The audit's patient-side pillars still score **48.3% weighted** across the six patient pillars (discovery, health portal, authentication/security, data quality, AI assistant and emergency), using the same weighted pillar arithmetic as the audit and normalizing by their combined weight of 86:
 
 `(25×52.2 + 20×41.7 + 15×56.9 + 10×48.6 + 8×44.0 + 8×40.0) / 86 = 48.26%`.
 
-The corresponding scoped row score is approximately **46.8% unweighted**: the six pillars contain 79 scored rows and approximately 37.0 points from the audit's displayed pillar values. These are inherited proxy scores, not a complete product inventory or release claim. No row is upgraded based only on the baseline run.
+The corresponding scoped row score is approximately **46.8% unweighted**: the six pillars contain 79 scored rows and approximately 37.0 points from the audit's displayed pillar values. These are inherited proxy scores, not a complete product inventory or release claim. The source ledger remains unchanged because it is pre-existing untracked owner work. Its entries and score cannot be safely updated under the ownership rule.
 
 ## Ledger rows moved
 
-None. This step establishes the baseline only.
+No scored requirement row changed in the source ledger. The following audit findings were addressed or rechecked in patient-owned files:
+
+| Finding | Result and evidence |
+|---|---|
+| FND-024 | Added `/search/doctors/`, `robots.txt`, and a valid empty `sitemap.xml`; local `/favicon.svg` already exists. Browser screenshot: `docs/audit/evidence-codex-2026-11-06/doctors-search-desktop.png`. Local responses were HTTP 200. The sitemap is empty because the public domain is unresolved (Q-16/Q-18); production is unverified. |
+| FND-029 | Reconciled `docs/16-deployment-and-environments.md` and removed the stale Gemini key from `.env.example`; names now match `server/config.js`. |
+| FND-030 | Route registry and Postman both contain 104 entries after adding 15 already-registered admin routes to the shared spec/collection. Exact set equality is covered by `tests/api-contract.test.js`. P-20 reject remains explicitly proposed. |
+| FND-013 | Current route and UI use `total` with `limit`/`offset`; `docs/05-api-spec.md` contains no `nextCursor`. Existing pagination tests cover non-repeating pages. |
+| FND-025 | Sign-in/sign-up use the poster and defer the 64,522,280-byte 4K source. Browser tests measure initial transfer below 1 MB and verify that user action requests the video. The full asset still loads if played; Range support is not established. |
+
+Patient portal journey evidence was captured in `docs/audit/evidence-codex-2026-11-06/` for dashboard, medical ID, reminders, appointments, documents, settings, account, and doctor search.
 
 ## Commands and results
 
 | Command | Result |
 |---|---|
 | `pnpm check` | Passed: `public/ check passed`. |
-| `NODE_ENV=test DATABASE_URL= pnpm test` | Passed: 12 files, 374 tests. `DATABASE_URL` was explicitly empty to keep the suite in memory mode. |
+| `NODE_ENV=test DATABASE_URL= pnpm test` | Passed: 14 files, 459 tests. `DATABASE_URL` was explicitly empty to keep the suite in memory mode. |
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/patient-journeys.spec.js --workers=1` | Passed: portal CRUD and responsive journey, 1 test. External HTTPS requests were blocked. |
+| `CAREROUTE_BASE_URL=http://127.0.0.1:4403 pnpm exec playwright test tests/e2e/discovery-doctor-route.spec.js tests/e2e/auth-media.spec.js --workers=1` | Passed: 3 tests. Screenshots saved under `docs/audit/evidence-codex-2026-11-06/`; external HTTPS requests were blocked. |
+| Local `curl -I` to `/search/doctors/`, `/sitemap.xml`, `/robots.txt` | All returned 200; sitemap and robots MIME types are configured in the memory-mode dev server. |
 
 ## Owner must verify on real systems
 
 - Postgres behavior and migrations have not been exercised against any real database in this work step.
-- Production deployment, production routes, and any provider delivery remain unverified. No live database or AI/SMS/maps/Google provider was contacted.
+- Production deployment, production routes, and any provider delivery remain unverified. No live database or AI/SMS/Google provider was contacted. A first local browser capture before network blocking displayed the configured OpenStreetMap tiles; all later browser runs blocked external HTTPS requests.
 - The two pre-existing untracked emergency migration files remain untouched and unstaged because the audit records them as owner-existing uncommitted work; resolve ownership before committing them.
 
 ## Decisions needed
@@ -33,10 +46,15 @@ None. This step establishes the baseline only.
 - P-20: driver reject contract remains proposed. Treat any existing implementation as unapproved for contract expansion.
 - P-30: landing-page guardrails need owner decision before finalizing scene behavior.
 - P-05 conflicts with locked D-24 scrypt; D-24 wins and will not be changed.
+- P-18/P-22/P-28 admin work was already approved by D-83; this pass added only the missing shared contract documentation for registered admin paths and changed no admin implementation or tests.
 - Q-10 retention, Q-16 security contact/domain, Q-18 domain/Vercel plan, Q-20 map tile terms, Q-26 assistant external sources, and Q-28 collector schedule remain open. Work will not depend on these decisions.
 
 ## Blocked / constraints
 
 - Existing owner/audit modifications and untracked assets are present in the worktree. They were not staged or changed.
 - Step 1's requested migration commit conflicts with the explicit ownership rule for pre-existing owner-uncommitted files. The migration files are not included in this commit.
-- No files outside this status report were changed in this step.
+- `docs/03-architecture.md` and `docs/04-data-model.md` are already owner-modified; D-77 and migration-state text there remains for the owner to reconcile. The pre-existing `docs/00-decisions.md` still says the P-20 request is absent from Postman, which conflicts with current generated contract files; it was left untouched.
+- The current ledger and audit report are pre-existing untracked files. They were not edited, so the completion score cannot yet reflect this work.
+- Populated test-price parity and the NPPA ceiling-price collector path remain incomplete; no fixture was invented and no live source was fetched.
+- The sitemap has no URLs until the canonical domain is decided. D-80 landing scene work is also waiting for P-30 guardrails.
+- No owner/Claude implementation files were staged.

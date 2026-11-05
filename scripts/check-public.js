@@ -28,7 +28,11 @@ async function walk(dir) {
 
 const secretValues = SECRET_NAMES.map((n) => process.env[n]).filter((v) => v && v.length >= 12 && !v.startsWith('replace-'));
 const problems = [];
-for (const file of await walk('public')) {
+const publicFiles = await walk('public');
+for (const required of ['public/favicon.svg', 'public/robots.txt', 'public/sitemap.xml', 'public/search/doctors/index.html']) {
+  if (!publicFiles.includes(required)) problems.push(`${required}: required public route or metadata file is missing`);
+}
+for (const file of publicFiles) {
   // Images and video are served as opaque binary assets. Decoding them as UTF-8 can
   // produce false positives for text-only policy rules (for example an em-dash byte
   // sequence inside an MP4). Security scanning applies to source/text assets.

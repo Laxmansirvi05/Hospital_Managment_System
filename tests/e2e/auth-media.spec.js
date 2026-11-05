@@ -18,7 +18,8 @@ for (const route of ['/signin/', '/signup/']) {
     expect(videoRequests).toEqual([]);
     await expect(page.locator('.auth-video')).toHaveAttribute('preload', 'none');
     await expect(page.locator('.auth-video')).toHaveAttribute('poster', '/assets/careroute-ambulance-poster.webp');
-    const deferredVideo = await page.waitForRequest(/careroute_ambulance_4K\.mp4/, { timeout: 5000 });
-    expect(deferredVideo.url()).toContain('/assets/careroute_ambulance_4K.mp4');
+    await page.getByRole('button', { name: 'Play video sound' }).click();
+    await expect.poll(() => videoRequests.length).toBe(1);
+    expect(videoRequests[0]).toContain('/assets/careroute_ambulance_4K.mp4');
   });
 }

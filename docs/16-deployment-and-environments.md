@@ -19,7 +19,10 @@ The authoritative list and browser exposure rules are in `09-security.md` sectio
 | Scope | Variables |
 | --- | --- |
 | Browser (public by design, returned only by `/api/v1/config`) | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_MAPTILER_KEY` |
-| Server only | `ALLOW_PRIVILEGED_SIGNUP` (`true` in local and preview only, unset in production), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (D-63, both or neither; redirect URI `<site>/api/v1/auth/google/callback`), `GROQ_API_KEY`, `GROQ_MODEL`, `ASSISTANT_DAILY_LIMIT`, `OPENROUTER_API_KEY`, `OPENROUTER_MODELS`, `MAPBOX_SECRET_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER` |
+| Server runtime | `NODE_ENV`, `PORT`, `TRUST_PROXY`, `VERCEL`, `VERCEL_ENV`, `ALLOW_PRIVILEGED_SIGNUP`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GROQ_API_KEY`, `GROQ_MODEL`, `ASSISTANT_DAILY_LIMIT`, `OPENROUTER_API_KEY`, `OPENROUTER_MODELS`, `MAPBOX_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
+| Import script only | `PROD_IMPORT_DATABASE_URL` (listing-import tool; never part of normal server configuration) |
+
+These names match `server/config.js` and `.env.example`. The application does not configure Gemini. `PUBLIC_MAPTILER_KEY` is browser-visible and distinct from the server-only `MAPBOX_TOKEN` used for ETA requests.
 
 Rules:
 
@@ -34,7 +37,7 @@ Facts below were checked while writing these documents. Anything not listed here
 | Service | Known limit or condition | Effect |
 | --- | --- | --- |
 | Vercel Hobby | Cron jobs run at most once per day with hourly precision | No sub-minute scheduled work on Vercel. Offer expiry runs in the database. |
-| Vercel | WebSocket support is in public beta, Socket.IO works only with the WebSocket transport forced | Reason Supabase Realtime is used instead of Socket.IO |
+| Vercel | Version 1 emergency tracking uses short polling of the CareRoute API (D-77). | No Realtime or WebSocket connection is used for emergency tracking in version 1. |
 | Supabase Free | Projects with low activity for about a week are paused. The free plan allows 2 active projects per account. | See section 6 |
 | Twilio trial | Sends only to verified numbers, up to 5 recipients. Twilio's India page says the international route needs no DLT registration, while the domestic route needs company and sender ID registration on the operators' DLT portal. The page does not mention trial accounts, so delivery to Indian numbers on a trial is still unconfirmed. | Demo contacts are limited to verified numbers. Test one Indian number early. |
 | Mapbox | Matrix API: at most 25 input coordinates and 60 requests per minute (Mapbox documentation). The Terms of Service page has no clause restricting use with another provider's map, and requires telling end users when Directions is used in an app. The separate Product Terms were not read. | Pre-filter with PostGIS to 25 candidates or fewer. Show the Directions disclosure. Read the Product Terms before WP-5. |

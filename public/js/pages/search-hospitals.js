@@ -4,6 +4,13 @@ import { searchPage, chip, withOrigin } from '../search.js';
 import { listingRow, rating, distance, doctorPhoto, facilityCard } from '../ui.js';
 import { inr } from '../format.js';
 
+// Preserve the dedicated doctors URL while keeping the shared hospitals/doctors search UI.
+if (location.pathname === '/search/doctors/' && !new URLSearchParams(location.search).has('tab')) {
+  const url = new URL(location.href);
+  url.searchParams.set('tab', 'doctors');
+  history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
 const SPECIALITIES = ['Cardiology', 'Dermatology', 'ENT', 'Gastroenterology', 'General Medicine', 'General Surgery', 'Nephrology', 'Neonatology', 'Neurology', 'Obstetrics and Gynaecology', 'Ophthalmology', 'Orthopaedics', 'Paediatrics', 'Physiotherapy', 'Pulmonology', 'Spine Surgery', 'Urology'];
 
 function specialitySelect(params, update, key) {

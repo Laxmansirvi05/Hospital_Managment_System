@@ -275,6 +275,8 @@ describe('discovery (D-36)', () => {
     const r = await app.api('/test-prices?q=thyroid', { token: u.token });
     expect(r.status).toBe(200);
     expect(Array.isArray(r.body.tests)).toBe(true);
+    expect(r.body.total).toBe(0);
+    expect(r.body).not.toHaveProperty('nextCursor');
     expect((await app.api(`/test-prices?provider=${'x'.repeat(81)}`, { token: u.token })).status).toBe(422);
   });
   it('filters doctors by language and group, sorts by experience, and rejects an unknown sort', async () => {

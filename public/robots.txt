@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /account/
+Disallow: /admin/
+Disallow: /assistant/
+Disallow: /appointments/
+Disallow: /dashboard/
+Disallow: /documents/
+Disallow: /driver/
+Disallow: /emergency/
+Disallow: /medical-id/
+Disallow: /reminders/
+Disallow: /settings/
+Disallow: /signin/
+Disallow: /signup/
+Disallow: /sos/
+Disallow: /track/

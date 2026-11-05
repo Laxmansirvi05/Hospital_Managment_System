@@ -16,7 +16,7 @@ describe('generated API contract', () => {
     expect(names).toHaveLength(TABLE.length);
     expect(new Set(names).size).toBe(TABLE.length);
     expect(new Set(names)).toEqual(new Set(TABLE.map((route) => `${route.method} ${route.path}`)));
-    expect(spec).toContain(`Implemented route inventory (${TABLE.length} routes)`);
+    expect(spec).toContain(`Registered route inventory (${TABLE.length} entries)`);
   });
 
   it('documents every emergency, tracking, driver, and admin route with role, request, and response', () => {
@@ -28,5 +28,12 @@ describe('generated API contract', () => {
       expect(item.request.description).toContain('Success:');
       expect(spec).toContain(`| ${route.method} | \`${route.path}\` |`);
     }
+  });
+
+  it('keeps the registered driver reject route explicitly proposed under P-20', () => {
+    const reject = flatten(collection.item).find((entry) => entry.name === 'POST /driver/offers/:emergencyId/reject');
+    expect(reject.request.description).toContain('PROPOSED P-20');
+    expect(spec).toMatch(/`\/driver\/offers\/:emergencyId\/reject`[^\n]*PROPOSED P-20/);
+    expect(spec).toContain('not an approved contract');
   });
 });

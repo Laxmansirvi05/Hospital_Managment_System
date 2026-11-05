@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4000';
@@ -20,6 +21,7 @@ async function api(page, path, method = 'GET', body) {
 
 test('patient account and care records work in sample mode at phone, tablet and desktop widths', async ({ page }) => {
   test.setTimeout(180000);
+  await page.route('https://**/*', (route) => route.abort());
   await page.setExtraHTTPHeaders({ 'x-forwarded-for': `10.80.0.${Math.floor(Math.random() * 200) + 1}` });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${baseURL}/signup/`);
@@ -116,6 +118,10 @@ test('patient account and care records work in sample mode at phone, tablet and 
       await page.goto(`${baseURL}${path}`);
       await expect(page.locator('main')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      if (width === 1440) {
+        mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
+        await page.screenshot({ path: `docs/audit/evidence-codex-2026-11-06/${path.slice(1, -1)}-desktop.png`, fullPage: true });
+      }
     }
   }
 
