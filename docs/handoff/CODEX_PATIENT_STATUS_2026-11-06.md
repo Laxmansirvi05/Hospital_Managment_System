@@ -64,3 +64,14 @@ Further screenshots in the same folder cover hospital search at desktop/tablet/m
 - The sitemap has no URLs until the canonical domain is decided. D-80 landing scene work is also waiting for P-30 guardrails.
 - The keyboard pass added skip navigation to sign-in/sign-up and focusable main targets on home, SOS, emergency status and tracking pages. It checks skip-link focus and labelled fields; it is not a full WCAG or axe audit.
 - No owner/Claude implementation files were staged.
+
+## Continuation verification (2026-11-06)
+
+After the patient-side commits, the baseline was rerun in this checkout:
+
+| Command | Result |
+|---|---|
+| `pnpm check` | Passed: `public/ check passed`. |
+| `NODE_ENV=test DATABASE_URL= pnpm test` | Passed: 14 files, 459 tests. The empty database URL keeps this run on the memory/test path. |
+
+This recheck did not change the ledger or completion score. D-53's collector still covers Jan Aushadhi only; no NPPA source schema or authorized export was available, so an NPPA parser/fixture was not fabricated. `server/db/memory.js` and `server/db/postgres.js` have owner changes in the worktree and were not edited. The existing test-price parity check covers the empty memory result only; populated-price parity remains unverified. The audit ledger, audit report, and prior emergency migration files also remain untouched and unstaged as owner-origin work.
