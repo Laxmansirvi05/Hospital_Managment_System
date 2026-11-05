@@ -21,12 +21,14 @@ test.describe('Hospitals and doctors page refinement', () => {
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
+    await page.route('https://**/*', (route) => route.abort());
     await createAccount(page);
     authState = await context.storageState();
     await context.close();
   });
 
   test.beforeEach(async ({ context }) => {
+    await context.route('https://**/*', (route) => route.abort());
     await context.addCookies(authState.cookies);
   });
 
@@ -72,7 +74,7 @@ test.describe('Hospitals and doctors page refinement', () => {
     await expect(page.locator('.rmap, .geo-map').first()).toBeVisible();
 
     // Capture desktop screenshot
-    await page.screenshot({ path: 'test-results/hospitals-desktop.png', fullPage: false });
+    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-desktop.png', fullPage: false });
   });
 
   test('tablet displays 2 columns and mobile displays 1 column', async ({ page }) => {
@@ -85,7 +87,7 @@ test.describe('Hospitals and doctors page refinement', () => {
       return window.getComputedStyle(el).gridTemplateColumns.split(' ').length;
     });
     expect(tabletColumns).toBe(2);
-    await page.screenshot({ path: 'test-results/hospitals-tablet.png', fullPage: false });
+    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-tablet.png', fullPage: false });
 
     // Mobile viewport
     await page.setViewportSize({ width: 390, height: 844 });
@@ -95,7 +97,7 @@ test.describe('Hospitals and doctors page refinement', () => {
       return window.getComputedStyle(el).gridTemplateColumns.split(' ').length;
     });
     expect(mobileColumns).toBe(1);
-    await page.screenshot({ path: 'test-results/hospitals-mobile.png', fullPage: false });
+    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-mobile.png', fullPage: false });
   });
 
   test('filters, search, and tab switching continue to function correctly', async ({ page }) => {
@@ -117,5 +119,18 @@ test.describe('Hospitals and doctors page refinement', () => {
     await input.fill(searchTerm);
     await page.getByRole('button', { name: 'Search' }).click();
     await expect(page.locator('.facility-card-name').first()).toContainText(searchTerm, { timeout: 10000 });
+  });
+
+  test('hospital details show source freshness and an available contact path', async ({ page }) => {
+    await page.goto(`${baseURL}/search/hospitals/`);
+    const firstCard = page.locator('.facility-card').first();
+    await expect(firstCard).toBeVisible();
+    await page.goto(`${baseURL}${await firstCard.getAttribute('href')}`);
+    await expect(page.getByText(/Source: .*\. Checked on /)).toBeVisible();
+    const hasPhone = await page.locator('a[href^="tel:"]').count();
+    if (hasPhone) await expect(page.locator('a[href^="tel:"]').first()).toBeVisible();
+    else await expect(page.getByText(/No phone number is listed/)).toBeVisible();
+    await expect(page.getByRole('link', { name: /Directions/ })).toBeVisible();
+    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-detail-desktop.png', fullPage: true });
   });
 });
