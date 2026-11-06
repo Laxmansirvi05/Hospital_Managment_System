@@ -76,7 +76,11 @@ export function createPostgresStore(url) {
     max: 3,
     idle_timeout: 20,
     connect_timeout: 10,
-    prepare: false, // Supabase transaction pooler does not support prepared statements.
+    // DATABASE_URL must use Supabase's session pooler (port 5432). Behind the transaction pooler (6543)
+    // this driver's replies get out of step when requests overlap: every connection stalls for good,
+    // on both sides, and all requests wait. Measured 2026-11-06: 40 requests at once failed on 6543
+    // and all succeeded on 5432.
+    prepare: false,
     types: { bigint: postgres.BigInt },
     transform: { undefined: null },
   });

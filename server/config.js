@@ -90,6 +90,8 @@ export function loadConfig(env = process.env) {
 
   // P-27: without a database the local server runs on an in-memory store and says so.
   const store = v.DATABASE_URL ? 'postgres' : 'memory';
+  // See the note in db/postgres.js: overlapping requests stall behind the transaction pooler.
+  if (/\.pooler\.supabase\.com:6543\//.test(v.DATABASE_URL ?? '')) warnings.push('DATABASE_URL uses the Supabase transaction pooler (port 6543). Use the session pooler (port 5432), or requests can hang.');
   if (store === 'memory') warnings.push('DATABASE_URL is not set. Using the in-memory store with sample data. Nothing is saved after a restart.');
 
   let jwtSecret = v.JWT_SECRET;

@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-06
 
+### Production release checks found three faults
+
+- SOS failed on every real database: `create_offers` calls `open_next_offer`, which the API role could not run. Fixed by `20261106000200_open_next_offer_grant.sql`. Applied to careroute-dev. NOT yet on careroute-prod: the tool was refused, and the owner has to apply it.
+- Pages froze until a restart: when requests overlapped, this driver stalled for good behind Supabase's transaction pooler (port 6543). Measured on careroute-dev: 40 requests at once hung on 6543; 240 of 240 succeeded on the session pooler (5432). Fix: `DATABASE_URL` uses port 5432, and the server warns at start-up if it does not. NOT yet changed on Vercel or in `.env.local`: the owner has to change them.
+- A late database error could stop the server; it is now logged instead. The SOS button stays off until the page knows who is signed in, because an earlier tap lost the request with no message.
+- Full browser suite on careroute-dev through 5432: 33 passed, 11 failed, no server errors. The failures I read name sample-only records or the sample banner, or hit a patient SOS race now fixed; not every one was traced. All pass on sample data.
+
 ### Admin portal completed and committed (D-83, P-31)
 
 - The admin portal (overview, people, listings, reviews, audit log, emergency operations) is committed. Its database code ran for the first time on careroute-dev, with no failure; `admin_audit_log` is applied there, not on production.

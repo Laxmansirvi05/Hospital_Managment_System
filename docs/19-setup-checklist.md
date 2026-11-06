@@ -71,7 +71,7 @@ Created on careroute-prod and careroute-dev on 2026-10-25, first because the pro
 
 - Login, `BYPASSRLS` (the API is the only reader and every table has RLS with no policies), `NOINHERIT`. No superuser, no `CREATEROLE`, owns nothing, cannot change the schema.
 - Grants: `USAGE` on schemas `public` and `extensions`; `SELECT, INSERT, UPDATE, DELETE` on all tables in `public`; sequences; `EXECUTE` on `public.hit_rate_limit`. Default privileges give it the same on tables and sequences that `postgres` creates later, so new migrations need no extra grant unless they add a function the API calls.
-- Connection: transaction pooler, host `aws-0-ap-south-1.pooler.supabase.com`, port 6543. User `careroute_api.qbiltbhqtesdidjxpscf` on prod, `careroute_api.jelepdfgdxbkbmocrnnx` on dev.
+- Connection: session pooler, host `aws-0-ap-south-1.pooler.supabase.com`, port 5432. Do not use the transaction pooler on 6543: overlapping requests stall for good with this driver (measured 2026-11-06; note in `server/db/postgres.js`). User `careroute_api.qbiltbhqtesdidjxpscf` on prod, `careroute_api.jelepdfgdxbkbmocrnnx` on dev.
 - Each password was generated locally; only its SCRAM-SHA-256 hash was sent to the database. The prod password exists only in Vercel Production `DATABASE_URL`. The dev password exists only in `.env.local` and Vercel Preview `DATABASE_URL`. The dev `postgres` login is kept as a comment in `.env.local` (`DATABASE_URL_OWNER`) for manual admin work; the app does not read it. To rotate: `alter role careroute_api password '<new SCRAM hash>'`, then replace the Vercel value.
 - Migrations still run as `postgres` through the Supabase tools.
 - Checked on dev: a `create table` as `careroute_api` is refused (42501).

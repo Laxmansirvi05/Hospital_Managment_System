@@ -16,6 +16,9 @@ let undoTimer = null;
 let redirectTimer = null;
 
 try { currentUser = await api('/auth/me'); } catch { currentUser = null; }
+// The button stays off until this point: an earlier tap would reload the page, or stop on the hidden
+// guest phone field of a signed-in patient, and lose the request with no message.
+document.querySelector('#send-request').disabled = false;
 if (currentUser) { accountLink.href = currentUser.role === 'driver' ? '/driver/' : currentUser.role === 'admin' ? '/admin/' : '/dashboard/'; accountLink.textContent = 'Account'; document.querySelector('#guest-phone-wrap').hidden = true; }
 
 locateButton.addEventListener('click', () => {

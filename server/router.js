@@ -18,6 +18,12 @@ import { routes as admin } from './routes/admin.js';
 
 const PREFIX = '/api/v1';
 
+// A late database error with no request left to answer must not take every other patient's request
+// down with the process. It is logged the same safe way as other errors: code and frames, no message.
+process.on('unhandledRejection', (err) => {
+  log.error('unhandled rejection', { name: err?.name, code: err?.code, at: err?.stack?.split('\n').slice(1, 4).join(' | ') });
+});
+
 /**
  * @typedef {object} Route
  * @property {string} method
