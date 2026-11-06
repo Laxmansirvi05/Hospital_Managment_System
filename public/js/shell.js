@@ -110,13 +110,19 @@ export async function shell({ nav, title }) {
       document.head.append(touchStyles);
     });
   }
+  // Driver and admin accounts have no patient dashboard; the logo takes them to their own workspace.
+  const home = { admin: '/admin/', driver: '/driver/' }[user.role] || '/dashboard/';
   document.getElementById('sidebar').replaceChildren(
-    h('a', { class: 'brand', href: '/dashboard/' }, brandMark()),
+    h('a', { class: 'brand', href: home }, brandMark()),
     h('nav', { class: 'nav', 'aria-label': 'Main' },
-      NAV.map((g) => h('div', { class: 'nav-group' },
-        h('span', { class: 'nav-label' }, g.group),
-        g.items.filter((i) => isPatient || ['explore', 'hospitals', 'medicines', 'diagnostics', 'settings', 'account'].includes(i.id))
-          .map((i) => h('a', { href: i.href, 'aria-current': i.id === nav ? 'page' : false }, icon(i.icon), i.label))))),
+      // A driver or admin keeps a way back to their workspace, and sees no heading with nothing under it.
+      !isPatient && home !== '/dashboard/' ? h('div', { class: 'nav-group' }, h('a', { href: home }, icon('back'), user.role === 'admin' ? 'Admin portal' : 'Driver workspace')) : null,
+      NAV.map((g) => {
+        const items = g.items.filter((i) => isPatient || ['explore', 'hospitals', 'medicines', 'diagnostics', 'settings', 'account'].includes(i.id));
+        return items.length ? h('div', { class: 'nav-group' },
+          h('span', { class: 'nav-label' }, g.group),
+          items.map((i) => h('a', { href: i.href, 'aria-current': i.id === nav ? 'page' : false }, icon(i.icon), i.label))) : null;
+      })),
     h('div', { class: 'sidebar-foot' },
       isPatient ? h('a', { class: 'sos-key sos-key-compact', href: '/sos/', style: 'width:100%' }, icon('ambulance', 22), 'Emergency') : null,
       userCard,
@@ -124,7 +130,7 @@ export async function shell({ nav, title }) {
   );
 
   document.getElementById('topbar').replaceChildren(
-    h('a', { class: 'brand', href: '/dashboard/' }, brandMark()),
+    h('a', { class: 'brand', href: home }, brandMark()),
     h('div', { class: 'row-8' },
       isPatient ? h('a', { class: 'btn btn-danger btn-sm', href: '/sos/' }, icon('ambulance', 18), 'SOS') : null,
       h('a', { class: 'icon-btn', href: '/settings/', 'aria-label': 'Settings' }, icon('gear', 20)),

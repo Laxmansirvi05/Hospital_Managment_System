@@ -1,0 +1,40 @@
+/* Admin portal styles. Only what the shared stylesheets do not already give (D-83). Tokens only, no raw colours. */
+.admin-page { display: grid; gap: var(--space-24); max-width: 1120px; }
+.admin-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-12); align-items: flex-end; }
+.admin-toolbar .field { min-width: 160px; flex: 1 1 160px; }
+.admin-toolbar .field.grow { flex: 2 1 240px; }
+.kpi { display: grid; align-content: start; gap: var(--space-4); }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th, .admin-table td { padding: var(--space-12) var(--space-8); border-bottom: 1px solid var(--border-soft); text-align: left; vertical-align: top; }
+.admin-table th { font-size: .8125rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.admin-table th.is-end, .admin-table td.is-end { text-align: right; }
+.admin-table td .name { font-weight: 600; color: var(--text-1); overflow-wrap: anywhere; }
+.admin-table td .sub { color: var(--text-2); font-size: .875rem; overflow-wrap: anywhere; }
+.admin-empty { padding: var(--space-24) var(--space-8); text-align: center; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-16); }
+.admin-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-16); }
+.admin-form .span-2 { grid-column: 1 / -1; }
+.admin-form fieldset { grid-column: 1 / -1; border: 1px solid var(--border); border-radius: var(--radius-m); padding: var(--space-16); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-16); margin: 0; min-width: 0; }
+.admin-form legend { padding: 0 var(--space-8); font-weight: 600; }
+.admin-form textarea.input { min-height: 96px; resize: vertical; }
+.admin-actions { position: sticky; bottom: 0; display: flex; gap: var(--space-12); flex-wrap: wrap; padding: var(--space-12) 0; background: var(--bg); }
+.admin-review { display: grid; gap: var(--space-8); padding: var(--space-16); border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface); }
+.admin-review p { margin: 0; overflow-wrap: anywhere; }
+.admin-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+.admin-link:hover { text-decoration: underline; }
+.admin-radio { display: flex; gap: var(--space-16); flex-wrap: wrap; }
+.admin-radio label { display: inline-flex; gap: var(--space-8); align-items: center; font-weight: 500; }
+.admin-picker { display: grid; gap: var(--space-8); }
+.admin-picker ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); max-height: 220px; overflow: auto; }
+.admin-picker li button { width: 100%; text-align: left; }
+.admin-sample { display: inline-flex; }
+@media (max-width: 720px) {
+  .admin-form, .admin-form fieldset { grid-template-columns: minmax(0, 1fr); }
+  .admin-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
+  .admin-table tr { padding: var(--space-12) 0; border-bottom: 1px solid var(--border-soft); }
+  .admin-table td { border: 0; padding: var(--space-4) 0; text-align: left; }
+  .admin-table td.is-end { text-align: left; }
+  .admin-table td::before { content: attr(data-label); display: block; font-size: .75rem; color: var(--text-2); }
+}
+.admin-form .field { align-self: start; }

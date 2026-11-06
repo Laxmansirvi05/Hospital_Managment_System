@@ -11,6 +11,10 @@ function modeFromPath(fallback = 'signin') {
   return location.pathname.startsWith('/signup') ? 'signup' : fallback;
 }
 
+/** Where an account goes when no page asked for it: driver and admin have their own workspaces (D-29). */
+const HOME = { admin: '/admin/', driver: '/driver/' };
+const landing = (role) => (new URLSearchParams(location.search).get('next') ? safeNext() : HOME[role] || safeNext());
+
 function safeNext() {
   // The landing page lives at /, so a signed-in patient lands on the dashboard by default.
   const next = new URLSearchParams(location.search).get('next') || '/dashboard/';
@@ -317,8 +321,8 @@ function signInForm() {
     if (invalid) return;
     const restore = busy(submit, 'Signing in');
     try {
-      await api('/auth/login', { body: { email: email.value.trim(), password: password.input.value } });
-      location.replace(safeNext());
+      const signedIn = await api('/auth/login', { body: { email: email.value.trim(), password: password.input.value } });
+      location.replace(landing(signedIn?.user?.role ?? signedIn?.role));
     } catch (err) {
       restore();
       showErrors(form, err, message);
@@ -386,5 +390,5 @@ function render(mode) {
 }
 
 export function renderAuthPage(initialMode = 'signin') {
-  api('/auth/me').then(() => location.replace(initialMode === 'signup' ? '/dashboard/' : safeNext())).catch(() => render(modeFromPath(initialMode)));
+  api('/auth/me').then((me) => location.replace(HOME[me.role] || (initialMode === 'signup' ? '/dashboard/' : safeNext()))).catch(() => render(modeFromPath(initialMode)));
 }

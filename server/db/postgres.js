@@ -3,6 +3,7 @@
 import postgres from 'postgres';
 import { randomUUID } from 'node:crypto';
 import { dosesFor } from './geo.js';
+import { createPostgresAdmin } from './admin-postgres.js';
 
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
 const num = (v) => (v === null || v === undefined ? null : Number(v));
@@ -137,6 +138,7 @@ export function createPostgresStore(url) {
 
   return {
     kind: 'postgres',
+    admin: createPostgresAdmin(sql, { point }),
     async ping() { await sql`select 1`; },
     async close() { await sql.end({ timeout: 5 }); },
 

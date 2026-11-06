@@ -25,8 +25,9 @@ const emergencyContracts = {
   'POST /driver/me/release': ['', '200 {status}'],
   'GET /admin/emergencies': ['Query: status? (emergency status)', '200 {emergencies:[operational summary]}'],
   'GET /admin/emergencies/:id': ['Path: id (UUID)', '200 {emergency{id,status,emergencyType,location,createdAt,timeline}}'],
-  'GET /admin/ambulances': ['', '200 {ambulances:[id,type,status,position,isDemo]}'],
-  'GET /admin/analytics': ['', '200 {timeZone,totalRequests,noMatch,byHour}'],
+  'GET /admin/ambulances': ['Query: type? (BLS|ALS|ICU), lat?, lng?, radiusKm? (1..100, default 10). With lat and lng: available crews only, nearest first', '200 {ambulances:[id,type,status,position,isDemo,distanceKm?]}'],
+  'GET /admin/analytics': ['', '200 {timeZone,totalRequests,noMatch,averageAssignSeconds,averageArriveSeconds,byHour}'],
+  'GET /admin/data-quality': ['', '200 {staleAfterDays,kinds:[{kind,active,stale,noPhone,noSource}],possibleDuplicates:{total,groups},stale:{total,rows}}'],
 };
 const adminContracts = {
   'GET /admin/overview': ['', '200 admin overview summary'],

@@ -14,6 +14,7 @@ import { routes as account } from './routes/account.js';
 import { routes as reviews } from './routes/reviews.js';
 import { routes as assistant } from './routes/assistant.js';
 import { routes as emergencies } from './routes/emergencies.js';
+import { routes as admin } from './routes/admin.js';
 
 const PREFIX = '/api/v1';
 
@@ -43,7 +44,7 @@ export function buildTable(list) {
   return table.sort((a, b) => b.statics - a.statics || b.parts.length - a.parts.length);
 }
 
-const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews, ...assistant, ...emergencies]);
+const TABLE = buildTable([...health, ...auth, ...google, ...account, ...patients, ...files, ...discovery, ...reviews, ...assistant, ...emergencies, ...admin]);
 
 function match(table, method, pathname) {
   const parts = pathname.split('/').filter(Boolean);

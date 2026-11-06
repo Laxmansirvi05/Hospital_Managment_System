@@ -8,12 +8,16 @@ import { parse, readJson, notFound, invalid, conflict, forbidden, unauthorized }
 import { clientIp, limit } from '../limits.js';
 import { phoneSchema } from './auth.js';
 import { getEmergencyService } from '../emergency/runtime.js';
+import { distanceKm } from '../db/geo.js';
 
 const PATIENT = ['patient']; const DRIVER = ['driver']; const ADMIN = ['admin'];
 const uuid = z.string().uuid();
 const point = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).strict();
 const type = z.enum(['cardiac', 'accident', 'breathing', 'stroke', 'pregnancy', 'other']);
 const ambulanceType = z.enum(['BLS', 'ALS', 'ICU']);
+const nearbySchema = z.object({
+  type: ambulanceType.optional(), lat: z.coerce.number().min(-90).max(90).optional(), lng: z.coerce.number().min(-180).max(180).optional(), radiusKm: z.coerce.number().min(1).max(100).default(10),
+}).strict().refine((v) => (v.lat === undefined) === (v.lng === undefined), { message: 'Give latitude and longitude together', path: ['lat'] });
 const sosSchema = z.object({ emergencyType: type.default('other'), forSelf: z.boolean().default(true), conscious: z.boolean().nullable().default(null),
   patientCount: z.number().int().min(1).max(20).default(1), ambulanceType: ambulanceType.default('BLS'), notes: z.string().trim().max(500).default(''),
   location: point, address: z.string().trim().max(300).default(''), guestPhone: phoneSchema.optional() }).strict();
@@ -142,12 +146,22 @@ export const routes = [
   { method: 'GET', path: '/admin/emergencies/:id', roles: ADMIN, async handler(ctx) {
     const e = await getEmergencyService().read(uuid.parse(ctx.params.id)); if (!e) throw notFound(); return { body: { emergency: { id: e.id, status: e.status, emergencyType: e.emergencyType, location: e.location, createdAt: e.createdAt, timeline: (await getStore().emergencies.timeline(e.id)).map((event) => ({ kind: event.kind, actorRole: event.actorRole, createdAt: event.createdAt })) } } };
   } },
-  { method: 'GET', path: '/admin/ambulances', roles: ADMIN, async handler({}) {
-    await getEmergencyService().tick(); return { body: { ambulances: (await getStore().emergencies.listAmbulances()).map((a) => ({ id: a.id, type: a.type, status: a.status, position: ambulancePosition(a), isDemo: a.isDemo })) } };
+  { method: 'GET', path: '/admin/ambulances', roles: ADMIN, async handler({ query }) {
+    // F-17: with a point, only available crews inside the radius, nearest first. Without one, every crew.
+    const f = parse(nearbySchema, Object.fromEntries(['type', 'lat', 'lng', 'radiusKm'].map((k) => [k, query.get(k) ?? undefined])));
+    await getEmergencyService().tick();
+    const all = (await getStore().emergencies.listAmbulances()).filter((a) => !f.type || a.type === f.type);
+    const row = (a) => ({ id: a.id, type: a.type, status: a.status, position: ambulancePosition(a), isDemo: a.isDemo });
+    if (f.lat === undefined) return { body: { ambulances: all.map(row) } };
+    const near = all.filter((a) => a.status === 'available' && Number.isFinite(a.lat) && Number.isFinite(a.lng))
+      .map((a) => ({ a, km: distanceKm({ lat: f.lat, lng: f.lng }, { lat: a.lat, lng: a.lng }) }))
+      .filter((x) => x.km <= f.radiusKm).sort((x, y) => x.km - y.km);
+    return { body: { ambulances: near.map((x) => ({ ...row(x.a), distanceKm: Math.round(x.km * 10) / 10 })) } };
   } },
   { method: 'GET', path: '/admin/analytics', roles: ADMIN, async handler({}) {
     const all = await getEmergencyService().adminList({ limit: 10000 }); const hours = new Map();
     for (const e of all) { const key = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).format(e.createdAt); const row = hours.get(key) ?? { hour: key, requested: 0, assignedSeconds: [], arrivedSeconds: [] }; row.requested += 1; if (e.assignedAt) row.assignedSeconds.push((+e.assignedAt - +e.createdAt) / 1000); if (e.arrivedAt) row.arrivedSeconds.push((+e.arrivedAt - +e.createdAt) / 1000); hours.set(key, row); }
-    return { body: { timeZone: 'Asia/Kolkata', totalRequests: all.length, noMatch: all.filter((e) => e.status === 'no_match').length, byHour: [...hours.values()].map((x) => ({ hour: x.hour, requested: x.requested, averageAssignSeconds: x.assignedSeconds.length ? x.assignedSeconds.reduce((a, b) => a + b, 0) / x.assignedSeconds.length : null, averageArriveSeconds: x.arrivedSeconds.length ? x.arrivedSeconds.reduce((a, b) => a + b, 0) / x.arrivedSeconds.length : null })) } };
+    const average = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
+    return { body: { timeZone: 'Asia/Kolkata', totalRequests: all.length, noMatch: all.filter((e) => e.status === 'no_match').length, averageAssignSeconds: average(all.filter((e) => e.assignedAt).map((e) => (+e.assignedAt - +e.createdAt) / 1000)), averageArriveSeconds: average(all.filter((e) => e.arrivedAt).map((e) => (+e.arrivedAt - +e.createdAt) / 1000)), byHour: [...hours.values()].map((x) => ({ hour: x.hour, requested: x.requested, averageAssignSeconds: x.assignedSeconds.length ? x.assignedSeconds.reduce((a, b) => a + b, 0) / x.assignedSeconds.length : null, averageArriveSeconds: x.arrivedSeconds.length ? x.arrivedSeconds.reduce((a, b) => a + b, 0) / x.arrivedSeconds.length : null })) } };
   } },
 ];

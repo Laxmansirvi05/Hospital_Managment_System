@@ -2,7 +2,37 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-11-06
+
+### Admin portal completed and committed (D-83, P-31)
+
+- The admin portal (overview, people, listings, reviews, audit log, emergency operations) is committed. Its database code ran for the first time on careroute-dev, with no failure; `admin_audit_log` is applied there, not on production.
+- New: `scripts/create-privileged-account.js` creates driver and admin accounts as D-21 requires. Until now there was no way to make one in production.
+- New: emergency totals and average times (F-34), a search for available ambulances by type and radius (F-17), and a read-only Data quality screen (P-31).
+- Fixed: admin and driver accounts landed on the patient dashboard after sign-in; the shell showed empty headings and no way back for them; the review Report button was 24 pixels tall on phones.
+- Tests: `tests/admin-routes.test.js` and `tests/e2e/admin-portal.spec.js` extended (the second now counts seven tabs and uses later hospitals, so it no longer collides with patient journeys on a shared server); `tests/privileged-account.test.js` is new; Codex's `tests/e2e/documents-private-storage.spec.js` is committed. The full browser suite now has a documented way to run (CLAUDE.md).
+
+## 2026-11-05
+
+### Admin portal in scope (D-83)
+
+- Owner approved P-18, P-22 and P-28 and split the work: Claude builds the admin side end to end, Codex builds the patient side. D-83 records the admin scope and its privacy rules (no health data in any admin screen, no self-disable, no disabling the last admin, every admin write audited).
+- Admin API: 15 routes under `/api/v1/admin` (overview, people, listings for all four kinds, hospital picker, reviews, audit log), memory and Postgres implementations, migration `20261106000100_admin_audit.sql` (unapplied), 61 new tests. Shared contract changes are logged in `docs/handoff/CONTRACT_CHANGES.md`.
+- Admin portal screens in `public/admin/` (own shell and helpers, hash routes): overview, emergencies (moved from the old single page, which is retired), people with disable and enable, listings with add, edit, hide and show for hospitals, doctors, pharmacies and diagnostic centres, review moderation (keep or delete), and the audit log. Six Playwright journeys in `tests/e2e/admin-portal.spec.js` cover the access gate, listing add, edit and hide with patient visibility, doctors, disabling a patient, review moderation and phone widths.
+
+### Landing page in scope (D-80 to D-82)
+
+- Owner lifted D-48. The landing page is one scroll-driven route scene: an empty scene, an ambulance drives in by itself in about 2 seconds, then scrolling moves it past a hospital, a pharmacy, a test centre and a stretch of lakes and trees, with feature cards on the right (D-80).
+- Landing page only: anti-patterns 6 (glass cards) and 12 (motion tied to scroll) are allowed, in the style of the login page (D-81).
+- Desktop only for now; small screens get a static page (D-82). Plan: the Claude doc "CareRoute Landing Film: Story and Website Brief", rewritten as a route plan.
+
 ## 2026-11-04
+
+### Ambulance system: synthetic demo (D-72 to D-79)
+
+- Owner chose a clearly labelled synthetic demo and delegated the small open questions to Claude. D-72 to D-79 record: scope and demo notice, one ambulance per driver and the six emergency types, matching rules and the `no_match` state, tracking link lifetime, the 5 second undo on SOS, short polling instead of Realtime, the server-run demo crews, and demo data handling. Q-03, Q-05 to Q-09, Q-12, Q-14 and Q-21 are closed by them. Q-10 stays OPEN for real operations.
+- Database (dev only): migrations `20261104000100_emergency.sql` and `20261104000200_demo_ambulances.sql`: five tables, nine functions, pg_cron job `careroute-expire-offers` every 10 seconds, 12 demo ambulances. Production is not migrated yet.
+- Docs: `docs/20-ambulance-demo-plan.md` is new; `04`, `06` and the stale open-question references in `01`, `02`, `03`, `11` and `15` are updated to match.
 
 ### Test prices at full width, Account and privacy redesigned
 

@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { AREAS, HOSPITALS, DOCTORS, PHARMACIES, DIAGNOSTICS, MEDICINES } from './seed-data.js';
 import { distanceKm, dosesFor } from './geo.js';
+import { createMemoryAdmin } from './admin-memory.js';
 
 const clone = (v) => structuredClone(v);
 const now = () => new Date();
@@ -80,8 +81,14 @@ export function createMemoryStore(options = {}) {
   };
   const hospitals = clone(HOSPITALS);
   const doctors = clone(DOCTORS);
+  const pharmacies = clone(PHARMACIES);
+  const diagnostics = clone(DIAGNOSTICS);
+  // Hidden listings leave the public lists and wait here until an admin shows them again (D-83).
+  const hiddenListings = { hospital: [], doctor: [], pharmacy: [], diagnostic_centre: [] };
+  const adminAudit = [];
 
-  const hospitalOf = (d) => hospitals.find((h) => h.id === d.hospitalId);
+  // A hidden hospital still names its doctors' workplace, as the Postgres join does.
+  const hospitalOf = (d) => hospitals.find((h) => h.id === d.hospitalId) ?? hiddenListings.hospital.find((h) => h.id === d.hospitalId);
   const doctorView = (d) => {
     const h = hospitalOf(d);
     return {
@@ -93,6 +100,7 @@ export function createMemoryStore(options = {}) {
 
   return {
     kind: 'memory',
+    admin: createMemoryAdmin({ users, sessions, reviews, reports, lists: { hospital: hospitals, doctor: doctors, pharmacy: pharmacies, diagnostic_centre: diagnostics }, hidden: hiddenListings, audit: adminAudit }),
     async close() {},
 
     emergencies: {
@@ -402,12 +410,12 @@ export function createMemoryStore(options = {}) {
         const docs = doctors.map(doctorView);
         const fees = docs.map((d) => d.consultationFeeInr).filter((f) => f !== null && f !== undefined).sort((a, b) => a - b);
         return {
-          totals: { carePlaces: hospitals.length, doctors: docs.length, pharmacies: PHARMACIES.length, diagnosticCentres: DIAGNOSTICS.length, doctorsWithPhoto: docs.filter((d) => d.photoUrl).length, emergency: hospitals.filter((h) => h.emergencyAvailable === true).length },
+          totals: { carePlaces: hospitals.length, doctors: docs.length, pharmacies: pharmacies.length, diagnosticCentres: diagnostics.length, doctorsWithPhoto: docs.filter((d) => d.photoUrl).length, emergency: hospitals.filter((h) => h.emergencyAvailable === true).length },
           byType: count(hospitals, (h) => h.facilityType ?? 'hospital'), byArea: count(hospitals, (h) => h.area).slice(0, 12),
-          bySpeciality: count(docs, (d) => d.specialization).slice(0, 12), bySource: count(docs, (d) => d.sourcePlatform), byChain: count(PHARMACIES, (p) => p.chain ?? 'Independent'),
+          bySpeciality: count(docs, (d) => d.specialization).slice(0, 12), bySource: count(docs, (d) => d.sourcePlatform), byChain: count(pharmacies, (p) => p.chain ?? 'Independent'),
           medicines: MEDICINES.length, byMedicineGroup: count(MEDICINES.filter((x) => x.category), (x) => x.category).slice(0, 10), commonTests: [],
           fees: fees.length ? { count: fees.length, min: fees[0], median: fees[Math.floor(fees.length / 2)], max: fees.at(-1) } : null,
-          points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...PHARMACIES.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...DIAGNOSTICS.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
+          points: [...hospitals.map((h) => ({ kind: 'c', type: h.facilityType ?? 'hospital', lat: h.lat, lng: h.lng })), ...pharmacies.map((p) => ({ kind: 'p', type: null, lat: p.lat, lng: p.lng })), ...diagnostics.map((d) => ({ kind: 'd', type: null, lat: d.lat, lng: d.lng }))],
         };
       },
       async mapLocations() {
@@ -420,15 +428,15 @@ export function createMemoryStore(options = {}) {
         });
         return [
           ...hospitals.map((x) => base(x, 'c', x.facilityType ?? 'hospital')),
-          ...PHARMACIES.map((x) => base(x, 'p')),
-          ...DIAGNOSTICS.map((x) => base(x, 'd')),
+          ...pharmacies.map((x) => base(x, 'p')),
+          ...diagnostics.map((x) => base(x, 'd')),
         ].filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng));
       },
       async testPrices() { return []; },
       async areas() { return [...AREAS]; },
       async areaCentroids() {
         return AREAS.map((name) => {
-          const pts = [...hospitals, ...PHARMACIES, ...DIAGNOSTICS].filter((x) => x.area === name && Number.isFinite(x.lat));
+          const pts = [...hospitals, ...pharmacies, ...diagnostics].filter((x) => x.area === name && Number.isFinite(x.lat));
           if (!pts.length) return null;
           const avg = (k) => Math.round((pts.reduce((s, x) => s + x[k], 0) / pts.length) * 1e5) / 1e5;
           return { name, places: pts.length, lat: avg('lat'), lng: avg('lng') };
@@ -480,16 +488,16 @@ export function createMemoryStore(options = {}) {
       },
       async medicine(id) { const m = MEDICINES.find((x) => x.id === id); return m ? { ...clone(m), listings: clone(m.listings).sort((a, b) => a.priceInr - b.priceInr) } : null; },
       async pharmacies(p) {
-        return near(PHARMACIES.filter((x) => matches([x.name, x.area].join(' '), p.q) && (!p.area || x.area === p.area) && (!p.open24 || x.open24) && (!p.chain || x.chain === p.chain)), p).map(clone);
+        return near(pharmacies.filter((x) => matches([x.name, x.area].join(' '), p.q) && (!p.area || x.area === p.area) && (!p.open24 || x.open24) && (!p.chain || x.chain === p.chain)), p).map(clone);
       },
-      async pharmacy(id) { const x = PHARMACIES.find((y) => y.id === id); return x ? clone(x) : null; },
+      async pharmacy(id) { const x = pharmacies.find((y) => y.id === id); return x ? clone(x) : null; },
       async diagnostics(p) {
-        return near(DIAGNOSTICS.filter((x) =>
+        return near(diagnostics.filter((x) =>
           matches([x.name, x.area, ...x.testsListed].join(' '), p.q) &&
           (!p.area || x.area === p.area) &&
           (!p.test || x.testsListed.some((t) => t.toLowerCase().includes(p.test.toLowerCase())))), p).map(clone);
       },
-      async diagnostic(id) { const x = DIAGNOSTICS.find((y) => y.id === id); return x ? clone(x) : null; },
+      async diagnostic(id) { const x = diagnostics.find((y) => y.id === id); return x ? clone(x) : null; },
     },
   };
 }

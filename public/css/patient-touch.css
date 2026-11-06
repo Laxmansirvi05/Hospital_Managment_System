@@ -10,6 +10,13 @@
   min-height: 44px;
 }
 
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .btn-sm,
 .btn-text.btn-sm,
 .seg button,
