@@ -42,7 +42,7 @@ These are product boundaries (D-28, D-29, D-33) and earlier locked limits.
 - Languages other than English (D-05).
 - WhatsApp or any channel other than SMS (D-17).
 - Cities other than Hyderabad at launch (D-27).
-- Manual assignment of an ambulance by a person. There is no endpoint for it (see Q-07).
+- Manual assignment of an ambulance by a person. There is no endpoint for it (D-74).
 
 ## 5. Users
 
@@ -134,7 +134,7 @@ Search is one interface with a type selector: hospitals, doctors, medicines, pha
 | F-30 | Patient cancels before pickup, with a reason | Returns `status: cancelled`. |
 | F-31 | Guest raises an SOS with phone, location, emergency type and ambulance type | Returns 201 with `trackingToken`. No login needed. Kept (D-31). |
 
-Working with real ambulance operators is a goal in the vision. How it fits the demo scope is OPEN (Q-21).
+Working with real ambulance operators is a goal in the vision. D-72 settles it: the ambulance system is a synthetic demo and real operators are a later phase.
 
 ### 6.8 Platform administration (D-29)
 
@@ -171,7 +171,7 @@ Working with real ambulance operators is a goal in the vision. How it fits the d
 
 Measures that the product can count once built:
 
-- Ambulance: total requests in a period, average seconds from SOS to assignment, average time from SOS to arrival by hour of day, failed matches (see Q-06).
+- Ambulance: total requests in a period, average seconds from SOS to assignment, average time from SOS to arrival by hour of day, failed matches (`no_match`, D-74).
 - Discovery: searches by type, searches with no result, clicks out to providers (PROPOSED, needs a privacy check before any tracking is added).
 
 Numeric targets are OPEN. No target may be invented. Agree targets with the owner before the first demo.
@@ -205,7 +205,7 @@ Each assumption is a risk if wrong.
 | The assistant reads as medical advice | Harm, liability | D-33 limits, rule layer, server-side disclaimer, tests for each limit |
 | Doctor profiles are personal data of real people | Privacy and legal duties | Resolve Q-22, publish only what the source platform shows publicly |
 | False or prank SOS requests from the guest endpoint | Wasted ambulance trips | Rate limits, phone checks. See `09-security.md` |
-| Real ambulance use without partnerships and legal review | Safety harm | Resolve Q-21 before any real request is routed |
+| Real ambulance use without partnerships and legal review | Safety harm | Demo only (D-72); no real request is routed |
 | A free-tier service stops or changes | Feature loss in demo | Adapters for SMS, LLM and routing, fallbacks, runbook in `17-observability-and-runbook.md` |
 | GPS pings every 3 to 5 seconds hit serverless limits | Cost, throttling | Measure early in WP-5. See `02-trd.md` section 10 |
 | Hosted routing terms restrict how results are shown | Rework | Verify Mapbox terms before build |

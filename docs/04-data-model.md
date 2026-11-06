@@ -21,10 +21,10 @@ This is an observation, not a replacement for the proposed design above. Read-on
 | `user_role` | `patient`, `driver`, `admin` | D-29 |
 | `ambulance_type` | `BLS`, `ALS`, `ICU` | COLLECTION |
 | `ambulance_status` | `available`, `offline`, `busy` | COLLECTION |
-| `emergency_status` | `matching`, `assigned`, `en_route`, `arrived`, `picked_up`, `at_hospital`, `completed`, `cancelled`, plus a failed-match value (name OPEN, Q-06) | COLLECTION, OPEN |
-| `emergency_type` | `cardiac`, `accident`, `other`, more OPEN | COLLECTION, OPEN (Q-05) |
+| `emergency_status` | `matching`, `assigned`, `en_route`, `arrived`, `picked_up`, `at_hospital`, `completed`, `cancelled`, `no_match` | COLLECTION, D-74 |
+| `emergency_type` | `cardiac`, `accident`, `breathing`, `stroke`, `pregnancy`, `other` | D-73 |
 | `triage_urgency` | `emergency`, `urgent`, `routine` | COLLECTION |
-| `offer_state` | `open`, `accepted`, `expired`, `declined` | PROPOSED. `declined` is set by the driver's reject (D-32, P-20). |
+| `offer_state` | `queued`, `open`, `accepted`, `expired`, `declined` | D-74. `queued` is an offer waiting its turn. |
 | `listing_kind` | `hospital`, `doctor`, `pharmacy`, `diagnostic_centre`, `medicine` | PROPOSED (P-19) |
 
 ## 3. Tables
@@ -143,17 +143,19 @@ Listing columns, plus `tests_listed` (text array, only if publicly listed).
 
 A price is shown with its platform and `checked_at`. CareRoute does not sell or order (D-28).
 
+> **Implemented (dev, 2026-11-04):** `supabase/migrations/20261104000100_emergency.sql` creates `ambulances`, `emergencies`, `emergency_offers`, `emergency_events`, `emergency_feedback` and the functions in section 5 (`nearby_ambulances`, `create_offers`, `accept_emergency`, `decline_offer`, `expire_offers`, `advance_emergency`, `cancel_emergency`, `release_ambulance`, `purge_guest_emergencies`), with a pg_cron job `careroute-expire-offers` every 10 seconds. Demo crews: `20261104000200_demo_ambulances.sql`. Added columns beyond the lists below: `ambulances.is_demo`, `driver_name`, `emergencies.eta_is_estimate`, `offers_made`, `tracking_expires_at`, `is_demo`, the per-step timestamps and `closed_at`. `nearby_hospitals` and `search_listings` are not part of this migration (D-30).
+
 ### ambulances
 
 | Column | Notes |
 | --- | --- |
-| id, driver_user_id | one or many per driver is OPEN (Q-03) |
+| id, driver_user_id | one ambulance per driver, unique (D-73). Null for demo crews (D-72) |
 | registration_number | unique |
 | type, status | enums |
 | operator_name, driver_phone | |
 | location, heading_degrees, speed_kmph, last_ping_at | latest position, GiST index |
 
-An ambulance with an old `last_ping_at` is treated as not available for matching. The threshold is OPEN.
+An ambulance with a `last_ping_at` older than 90 seconds is not a candidate for matching, except demo crews (`is_demo`), which the server moves (D-74, D-78).
 
 ### emergencies
 
@@ -201,9 +203,21 @@ See `08-medical-reports.md`. Hospital sharing was removed (D-29), so `report_sha
 
 The current application stores documents and profile photos in `patient_files`, with private object storage. The implemented record has `id`, `user_id`, `purpose`, `title`, `kind`, `file_name`, `content_type`, `size_bytes`, `storage_path`, `status`, and timestamps. `20261103000200_more_document_types.sql` adds DOCX and WebP to the allowed content types in dev. This implemented storage table is distinct from the proposed report-specific model above; production still has the earlier file-type constraint until its migration is approved and applied.
 
-### admin_audit (PROPOSED, P-22)
+### admin_audit_log (implemented, P-22, D-83)
 
-Append-only record of every admin action: admin id, action, target table and id, time. Listing edits keep the previous values so a wrong change can be traced.
+Migration `supabase/migrations/20261106000100_admin_audit.sql` (applied to careroute-dev on 2026-11-06, not to production; production needs the owner's written approval).
+
+| Column | Notes |
+|---|---|
+| id | uuid primary key |
+| actor_user_id | the admin; `on delete set null`, so removing an account keeps the history |
+| action | for example `hospital.create`, `user.disable`, `review.delete` |
+| target_kind | `user`, `hospital`, `doctor`, `pharmacy`, `diagnostic_centre` or `review` |
+| target_id | text id of the thing changed |
+| summary | up to 300 characters; names the changed fields, never patient health data |
+| created_at | time of the change |
+
+Append-only: row level security is on, `anon` and `authenticated` have no access, and `careroute_api` cannot update or delete rows. Every admin write inserts its audit row inside the same transaction as the change, so a change never exists without its record. Unlike the earlier design, edits store the changed field names, not the previous values; restoring a value means editing it again. The admin screen is `#/audit` in `public/admin/`.
 
 ### sms_outbox (PROPOSED)
 
@@ -253,4 +267,4 @@ Every SMS attempt: recipient phone, template name, status, provider response cod
 - `totalRequests`: count of emergencies in range.
 - `avgAssignSeconds`: average of `assigned_at - created_at`.
 - Response time by hour: average of `arrived_at - created_at`, grouped by hour of day. Time zone for grouping is OPEN. Use one fixed zone and state it on the chart.
-- Failed matches: count of emergencies in the failed-match state (Q-06).
+- Failed matches: count of emergencies in the `no_match` state (D-74).

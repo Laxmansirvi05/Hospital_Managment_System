@@ -201,7 +201,7 @@ All server configuration is environment variables. The full matrix with scope is
 | Serverless fit for GPS pings | Each ping is one function call and one write, per driver, every 3 to 5 seconds | Measure in WP-5. If limits are hit, lower the interval only after agreeing with the owner |
 | Function count limits | A Vercel plan may cap how many functions a deployment can hold. Sources disagree on the Hobby limit. | The design uses one function with an internal router, so the cap does not matter. Confirm in WP-0. |
 | Cold starts of the single API function | One larger function loads all routes | Keep imports light, lazy load adapters, measure the SOS path against the 2 second rule |
-| Realtime authorization with a custom JWT | Supabase private channels check Postgres policies against the JWT | Open question Q-14. Decide before WP-5 |
+| Realtime authorization with a custom JWT | Supabase private channels check Postgres policies against the JWT | Decided: D-77 (short polling, no Realtime in version 1). Decide before WP-5 |
 | pg_cron interval | Offer expiry needs a schedule shorter than a minute | Verified on the hosted dev project (pg_cron 1.6.4): a 30 second schedule runs. Repeat once on production before relying on it. |
 | Mapbox matrix size limits | Mapbox documents at most 25 input coordinates per request and 60 requests per minute | Pre-filter with PostGIS to 24 ambulances or fewer plus the patient, and stay under the request rate |
 | Free Supabase project pausing | Projects with low activity pause | See `16-deployment-and-environments.md` section 6 |

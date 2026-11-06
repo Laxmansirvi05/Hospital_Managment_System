@@ -17,7 +17,7 @@ How work is planned, built, reviewed and shipped. Written to be followed by the 
 | WP-1 | Accounts and roles | 1 | none (answered: D-21 to D-25) |
 | WP-2 | Medical ID and emergency contacts | 2 | none |
 | WP-3 | Discovery I: hospitals and doctors, search, filters, detail pages, listing tables, data collection from platforms | 3 | Q-22, Q-24, Q-27, Q-28, P-19 |
-| WP-4 | Ambulances, status, pings | 4 | Q-03 |
+| WP-4 | Ambulances, status, pings | 4 | None (D-73) |
 | WP-5 | Emergency core: SOS, guest SOS, matching, offers, accept, reject, trip states, tracking, feedback, history, cancel, realtime, SMS | 5 and parts of 7 | Q-05, Q-06, Q-07, Q-08, Q-09, Q-12, Q-14, P-20 |
 | WP-6 | AI assistant: triage, discovery assistant, report explanation | 6 | Q-17, clinician review of rules, P-23. Report explanation also Q-25 and WP-9. External sources Q-26. |
 | WP-7 | Platform admin: users, listing management, audit, and if approved active cases and analytics | new | P-18, P-22 |

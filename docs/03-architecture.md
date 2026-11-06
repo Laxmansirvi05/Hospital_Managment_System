@@ -109,7 +109,7 @@ Notes:
 
 | Audience | Transport | Status |
 | --- | --- | --- |
-| Patient, driver, admin | Supabase Realtime private channel `emergency:<id>` | LOCKED transport, PROPOSED authorization (Q-14) |
+| Patient, driver, admin | Supabase Realtime private channel `emergency:<id>` | Version 1 uses short polling of the API (D-77); Realtime private channels are deferred |
 | Family link without login | Polling `GET /emergencies/{id}/track?token=...` | PROPOSED (P-10) |
 
 Driver pings arrive by `POST /ambulances/{id}/location`. The API stores the latest position and, when the ambulance is on a trip, broadcasts it to the emergency channel. Position history is kept only as long as the retention decision allows (Q-10).
@@ -118,7 +118,7 @@ The map marker moves smoothly between pings. This is interpolation of position, 
 
 ## 6. Matching, in outline
 
-The exact weights are OPEN (Q-08). The steps are fixed by the collection:
+The weights are fixed by D-74. The steps are fixed by the collection:
 
 1. Filter ambulances that are `available`, of the requested type, within a radius, using PostGIS.
 2. Ask Mapbox for road ETA from each candidate to the patient.
@@ -150,7 +150,7 @@ flowchart LR
 | Failure | User-visible behavior |
 | --- | --- |
 | Mapbox unavailable | Ranking uses straight-line distance. ETA is labelled as an estimate. |
-| No ambulance accepts | Request moves to a failed-match state (name OPEN, Q-06) and the admin view lists it (P-18). The patient is told plainly and shown the emergency number. |
+| No ambulance accepts | Request moves to the `no_match` state (D-74) and the admin view lists it (P-18). The patient is told plainly and shown the emergency number. |
 | Realtime disconnects | Client reconnects and falls back to polling until it does. |
 | SMS fails | Patient sees the tracking link and a share action. The case continues. |
 | Database unavailable | Health check fails. Pages show a clear error with the emergency number. |

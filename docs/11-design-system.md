@@ -193,7 +193,7 @@ Every component is built from tokens and covers default, hover, pressed, focus, 
 | Component | Rules |
 | --- | --- |
 | Button | Variants: primary, secondary, text, destructive. Minimum height 44. Label is a verb. Loading state keeps the width. Disabled explains why in nearby text, never by color alone. |
-| SOS button | Largest control in the product, `--danger` fill. One per screen, bottom of the phone screen. Behavior against accidental taps is OPEN (Q-12), see 8.1. |
+| SOS button | Largest control in the product, `--danger` fill. One per screen, bottom of the phone screen. Behavior against accidental taps: one tap with a 5 second undo (D-76), see 8.1. |
 | Input | Label above, never placeholder-only. Helper text below. Error text names the problem and the fix. Minimum height 44. |
 | Segmented control | For choices of 2 to 4 options such as ambulance type. |
 | Switch | For consent and sharing, always with a sentence saying what it does. |
@@ -220,7 +220,7 @@ Every component is built from tokens and covers default, hover, pressed, focus, 
 - Each component has one CSS file in `public/css/components`, wrapped in a cascade layer, styled only with tokens. Class names use the prefix `cr-`.
 - No component library and no CSS framework by default. One may be adopted when necessary under `02-trd.md` section 1.2 (D-03). If it is, every component is restyled with these tokens and the library's default look never ships (section 9, item 11).
 
-### 8.1 SOS and accidental taps (OPEN, Q-12)
+### 8.1 SOS and accidental taps (decided: option A, D-76)
 
 Options, with the trade-off. This is a decision for the owner.
 
