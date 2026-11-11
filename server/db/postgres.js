@@ -71,6 +71,20 @@ function columns(patch, map) {
   return out;
 }
 
+/** Opens the next queued offer for 30 seconds, or ends the request as no_match when none is left. */
+async function openNextOffer(tx, emergencyId) {
+  const [offer] = await tx`update public.emergency_offers o set state = 'open', offered_at = now(), expires_at = now() + interval '30 seconds'
+    where o.id = (select q.id from public.emergency_offers q where q.emergency_id = ${emergencyId} and q.state = 'queued' order by q.rank limit 1) returning o.ambulance_id, o.rank`;
+  if (offer) {
+    await tx`update public.emergencies set offers_made = offers_made + 1, updated_at = now() where id = ${emergencyId}`;
+    await tx`insert into public.emergency_events (emergency_id, kind, actor_role, data) values (${emergencyId}, 'offered', 'system', ${tx.json({ ambulance_id: offer.ambulance_id, rank: offer.rank })})`;
+    return;
+  }
+  const [ended] = await tx`update public.emergencies set status = 'no_match', closed_at = now(), updated_at = now(),
+    tracking_expires_at = least(created_at + interval '24 hours', now() + interval '2 hours') where id = ${emergencyId} and status = 'matching' returning id`;
+  if (ended) await tx`insert into public.emergency_events (emergency_id, kind, actor_role) values (${emergencyId}, 'no_match', 'system')`;
+}
+
 /**
  * Supabase's transaction pooler (port 6543) stalls this driver for good when requests overlap, and then
  * every request waits (measured 2026-11-06: 40 at once hung on 6543, all succeeded on 5432). The same
@@ -158,7 +172,9 @@ export function createPostgresStore(rawUrl) {
     emergencies: {
       async nearbyAmbulances({ point: p, type = 'BLS', radiusKm = 10, maxAgeSeconds = 90, limit = 24 }) {
         const rows = await sql`select id, type, distance_m, is_demo from public.nearby_ambulances(${point(p.lat, p.lng)}, ${type}::public.ambulance_type, ${radiusKm}, ${maxAgeSeconds}, ${limit})`;
-        return rows.map((r) => ({ id: r.id, type: r.type, distanceKm: num(r.distance_m) / 1000, isDemo: r.is_demo }));
+        // Simulated crews (is_demo) are never offered a request on a real database (D-85), even when
+        // an older seed left some behind: they would sit ahead of real drivers and never answer.
+        return rows.filter((r) => !r.is_demo).map((r) => ({ id: r.id, type: r.type, distanceKm: num(r.distance_m) / 1000, isDemo: r.is_demo }));
       },
       async createEmergency(input) {
         const id = input.id ?? randomUUID(); const p = input.location;
@@ -173,12 +189,27 @@ export function createPostgresStore(rawUrl) {
           return emergencyRow(row);
         });
       },
+      // Offers are opened with plain statements in one transaction, not through public.create_offers and
+      // public.decline_offer: those call open_next_offer, which the API role may not run on a database
+      // that predates migration 20261106000200 (found on production, 2026-11-06). Same rules as the
+      // functions: row lock, one open offer, a 30 second window, one event row per move.
       async createOffers(emergencyId, candidates, etaIsEstimate = true) {
-        const payload = candidates.slice(0, 5).map((c) => ({ ambulance_id: c.ambulanceId, eta_seconds: c.etaSeconds ?? null }));
-        const [row] = await sql`select * from public.create_offers(${emergencyId}, ${json(payload)}, ${etaIsEstimate})`;
-        if (!row?.id) return null;
-        const [mapped] = await sql`${emergencySelect} where e.id = ${emergencyId}`;
-        return emergencyRow(mapped);
+        return sql.begin(async (tx) => {
+          const [locked] = await tx`select id from public.emergencies where id = ${emergencyId} and status = 'matching' for update`;
+          if (!locked) return null;
+          const [existing] = await tx`select 1 as found from public.emergency_offers where emergency_id = ${emergencyId} limit 1`;
+          if (!existing) {
+            await tx`update public.emergencies set eta_is_estimate = ${etaIsEstimate} where id = ${emergencyId}`;
+            let rank = 0;
+            for (const c of candidates.slice(0, 5)) {
+              rank += 1;
+              await tx`insert into public.emergency_offers (emergency_id, ambulance_id, rank, eta_seconds, state) values (${emergencyId}, ${c.ambulanceId}, ${rank}, ${c.etaSeconds ?? null}, 'queued')`;
+            }
+            await openNextOffer(tx, emergencyId);
+          }
+          const [row] = await tx`${emergencySelect} where e.id = ${emergencyId}`;
+          return emergencyRow(row);
+        });
       },
       async acceptEmergency(emergencyId, ambulanceId) {
         const [result] = await sql`select * from public.accept_emergency(${emergencyId}, ${ambulanceId})`;
@@ -187,10 +218,16 @@ export function createPostgresStore(rawUrl) {
         return emergencyRow(row) || null;
       },
       async declineOffer(emergencyId, ambulanceId) {
-        const [result] = await sql`select * from public.decline_offer(${emergencyId}, ${ambulanceId})`;
-        if (!result?.id) return null;
-        const [row] = await sql`${emergencySelect} where e.id = ${emergencyId}`;
-        return emergencyRow(row) || null;
+        return sql.begin(async (tx) => {
+          const [locked] = await tx`select id from public.emergencies where id = ${emergencyId} and status = 'matching' for update`;
+          if (!locked) return null;
+          const [declined] = await tx`update public.emergency_offers set state = 'declined' where emergency_id = ${emergencyId} and ambulance_id = ${ambulanceId} and state = 'open' returning id`;
+          if (!declined) return null;
+          await tx`insert into public.emergency_events (emergency_id, kind, actor_role, data) values (${emergencyId}, 'declined', 'driver', ${json({ ambulance_id: ambulanceId })})`;
+          await openNextOffer(tx, emergencyId);
+          const [row] = await tx`${emergencySelect} where e.id = ${emergencyId}`;
+          return emergencyRow(row) || null;
+        });
       },
       async expireOffers() { const [row] = await sql`select public.expire_offers() as count`; return row.count; },
       async advanceEmergency(emergencyId, ambulanceId, to) {
@@ -225,7 +262,7 @@ export function createPostgresStore(rawUrl) {
       async listAdmin({ status = null, limit = 100 } = {}) {
         return (await sql`${emergencySelect} where (${status}::text is null or e.status::text = ${status}) order by e.created_at desc limit ${limit}`).map(emergencyRow);
       },
-      async listAmbulances() { return (await sql`${ambulanceSelect} order by a.registration_number`).map(ambulanceRow); },
+      async listAmbulances() { return (await sql`${ambulanceSelect} where not a.is_demo order by a.registration_number`).map(ambulanceRow); },
       async ambulanceByDriver(driverUserId) { const [row] = await sql`${ambulanceSelect} where a.driver_user_id = ${driverUserId}`; return ambulanceRow(row) || null; },
       async setAmbulanceStatus(id, status) { const [row] = await sql`update public.ambulances set status = ${status}::public.ambulance_status, updated_at = now() where id = ${id} returning *, extensions.st_y(location::extensions.geometry) as lat, extensions.st_x(location::extensions.geometry) as lng`; return ambulanceRow(row) || null; },
       async updateAmbulanceLocation(id, { lat, lng, heading = null, speed = null }) {
