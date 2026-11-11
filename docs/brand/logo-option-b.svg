@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" role="img" aria-label="CareRoute">
-  <!-- Option B: a route that bends into a C and ends at a cross: the way from where you are to care. -->
-  <path d="M104 34A46 46 0 1 0 104 106" fill="none" stroke="#0066CC" stroke-width="16" stroke-linecap="round"/>
-  <path d="M104 34A46 46 0 1 0 104 106" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 10" stroke-linecap="round"/>
-  <circle cx="104" cy="106" r="9" fill="#0B1F33"/>
-  <path d="M96 16h12v11h11v12h-11v11H96V39H85V27h11z" fill="#D7263D"/>
-  <text x="140" y="88" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="58" font-weight="700" fill="#0B1F33">Care<tspan fill="#0066CC">Route</tspan></text>
-  <text x="142" y="118" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" fill="#4A5868">Healthcare, closer to you.</text>
-</svg>

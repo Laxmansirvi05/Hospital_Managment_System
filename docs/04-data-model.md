@@ -37,8 +37,7 @@ This is an observation, not a replacement for the proposed design above. Read-on
 | name | 1 to 100 characters |
 | email | lower case, unique |
 | phone | E.164, for example `+919876500000`. Optional since 2026-10-27 (D-63): sign-up does not ask for it |
-| password_hash | `scrypt$N$r$p$salt$hash` (D-24). Empty for a Google account until the patient sets a password (D-63) |
-| google_sub | Google's account id from the ID token, unique, empty unless the patient used Google (D-63). A check requires a password or a Google id |
+| password_hash | `scrypt$N$r$p$salt$hash` (D-24). |
 | assistant_consent_at | Timestamp of the patient's assistant provider consent (D-67). NULL means no consent. Present in dev only as of 2026-11-04. |
 | role | `user_role`, default `patient` |
 | disabled_at | set when the admin disables the account (P-22) |

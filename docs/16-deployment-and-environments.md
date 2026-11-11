@@ -19,7 +19,7 @@ The authoritative list and browser exposure rules are in `09-security.md` sectio
 | Scope | Variables |
 | --- | --- |
 | Browser (public by design, returned only by `/api/v1/config`) | `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_MAPTILER_KEY` |
-| Server runtime | `NODE_ENV`, `PORT`, `TRUST_PROXY`, `VERCEL`, `VERCEL_ENV`, `ALLOW_PRIVILEGED_SIGNUP`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GROQ_API_KEY`, `GROQ_MODEL`, `ASSISTANT_DAILY_LIMIT`, `OPENROUTER_API_KEY`, `OPENROUTER_MODELS`, `MAPBOX_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
+| Server runtime | `NODE_ENV`, `PORT`, `TRUST_PROXY`, `VERCEL`, `VERCEL_ENV`, `ALLOW_PRIVILEGED_SIGNUP`, `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `TRACKING_TOKEN_PEPPER`, `GROQ_API_KEY`, `GROQ_MODEL`, `ASSISTANT_DAILY_LIMIT`, `OPENROUTER_API_KEY`, `OPENROUTER_MODELS`, `MAPBOX_TOKEN`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
 | Import script only | `PROD_IMPORT_DATABASE_URL` (listing-import tool; never part of normal server configuration) |
 
 These names match `server/config.js` and `.env.example`. The application does not configure Gemini. `PUBLIC_MAPTILER_KEY` is browser-visible and distinct from the server-only `MAPBOX_TOKEN` used for ETA requests.
