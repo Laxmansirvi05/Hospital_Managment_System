@@ -2,6 +2,15 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-11-12
+
+### Driver approval, password reset, admin account, database cleanup (D-87 to D-89)
+
+- New drivers are `pending` until an admin approves them in the admin portal (Driver requests, with who, phone and vehicle). A pending or rejected driver can sign in and see their state but cannot go online or get requests. Rejecting gives a reason; withdrawing an approval takes the driver offline.
+- Password reset without email: ask on the sign-in page, an admin issues a one-time link in People, the link sets a new password and ends every session. Starting passwords can be marked for change; the admin portal shows a banner until it is.
+- Migrations applied to careroute-dev and careroute-prod: open_next_offer grant, remove Google sign-in, driver approval and password resets, foreign key indexes. Production cleanup: simulated crews and a test account deleted, old sessions and rate rows removed, admin account created. The security advisor shows only the intended RLS notes.
+- Tests: 487 unit and API tests and 51 browser tests pass; the three-role journeys also pass against careroute-dev. New: `tests/approval-and-reset.test.js`, `tests/e2e/three-roles.spec.js`; `tests/e2e/driver-journey.spec.js` now has an admin approve the drivers; `tests/e2e/admin-portal.spec.js` counts eight sections; `tests/helpers.js` approves test drivers.
+
 ## 2026-11-11
 
 ### Google sign-in removed, driver sign-up, two-account ambulance journey, cleanup (D-84 to D-86)

@@ -110,3 +110,39 @@ export function select({ id, label, options, value = '' }) {
   return h('select', { class: 'select', id, 'aria-label': label, value },
     options.map(([v, text]) => h('option', { value: v, selected: v === value }, text)));
 }
+
+/** Asks for one line of text with Cancel and a confirm button. Resolves with the text, or null when cancelled. */
+export function promptDialog({ title, text, label, confirm, maxlength = 300, danger = false }) {
+  return new Promise((resolve) => {
+    const input = h('input', { class: 'input', type: 'text', maxlength, autocomplete: 'off' });
+    const dlg = h('dialog', { class: 'sheet', 'aria-labelledby': 'pd-title' },
+      h('form', { method: 'dialog', class: 'sheet-body' },
+        h('h2', { class: 't-title-2', id: 'pd-title' }, title),
+        text ? h('p', { class: 't-subhead muted' }, text) : null,
+        field({ id: 'pd-input', label, input }),
+        h('div', { class: 'row', style: 'justify-content:flex-end' },
+          h('button', { class: 'btn btn-secondary', value: 'no' }, 'Cancel'),
+          h('button', { class: `btn ${danger ? 'btn-danger' : 'btn-primary'}`, value: 'yes' }, confirm))));
+    dlg.addEventListener('close', () => { resolve(dlg.returnValue === 'yes' ? input.value.trim() : null); dlg.remove(); });
+    document.body.append(dlg); dlg.showModal();
+  });
+}
+
+/** Shows a value the admin must hand over once, with a Copy button. */
+export function linkDialog({ title, text, value }) {
+  return new Promise((resolve) => {
+    const box = h('input', { class: 'input', type: 'text', readonly: true, value, 'aria-label': 'Reset link', onfocus: (e) => e.target.select() });
+    const copy = h('button', { class: 'btn btn-secondary', type: 'button' }, 'Copy link');
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(value); copy.textContent = 'Copied'; } catch { box.select(); copy.textContent = 'Press Ctrl+C to copy'; }
+    });
+    const dlg = h('dialog', { class: 'sheet', 'aria-labelledby': 'ld-title' },
+      h('form', { method: 'dialog', class: 'sheet-body' },
+        h('h2', { class: 't-title-2', id: 'ld-title' }, title),
+        text ? h('p', { class: 't-subhead muted' }, text) : null,
+        box,
+        h('div', { class: 'row', style: 'justify-content:flex-end' }, copy, h('button', { class: 'btn btn-primary', value: 'done' }, 'Done'))));
+    dlg.addEventListener('close', () => { resolve(); dlg.remove(); });
+    document.body.append(dlg); dlg.showModal(); box.select();
+  });
+}

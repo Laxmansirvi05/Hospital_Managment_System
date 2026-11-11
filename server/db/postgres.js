@@ -8,7 +8,8 @@ import { createPostgresAdmin } from './admin-postgres.js';
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
-const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, assistantConsentAt: r.assistant_consent_at, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
+const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, assistantConsentAt: r.assistant_consent_at, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at,
+  driverApproval: r.driver_approval ?? null, driverReviewNote: r.driver_review_note ?? null, passwordChangeRequired: Boolean(r.password_change_required) };
 const convRow = (r) => r && { id: r.id, userId: r.user_id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at };
 const msgRow = (r) => r && { id: r.id, conversationId: r.conversation_id, userId: r.user_id, role: r.role, content: r.content, payload: r.payload || {}, createdAt: r.created_at };
 const sessionRow = (r) => r && { id: r.id, userId: r.user_id, createdAt: r.created_at, refreshHash: r.refresh_hash, previousRefreshHash: r.previous_refresh_hash, expiresAt: r.expires_at, revokedAt: r.revoked_at };
@@ -293,7 +294,7 @@ export function createPostgresStore(rawUrl) {
         const refused = Symbol('refused');
         try {
           return await sql.begin(async (tx) => {
-            const [user] = await tx`insert into public.users (name, email, phone, password_hash, role) values (${name}, ${email}, ${phone}, ${passwordHash}, 'driver') on conflict do nothing returning *`;
+            const [user] = await tx`insert into public.users (name, email, phone, password_hash, role, driver_approval) values (${name}, ${email}, ${phone}, ${passwordHash}, 'driver', 'pending') on conflict do nothing returning *`;
             if (!user) throw Object.assign(new Error('email'), { [refused]: 'email' });
             const [ambulance] = await tx`insert into public.ambulances (driver_user_id, registration_number, type, status, operator_name, driver_name, driver_phone)
               values (${user.id}, ${vehicle.registrationNumber}, ${vehicle.type}::public.ambulance_type, 'offline', 'Independent driver', ${name.split(/\s+/)[0].slice(0, 100)}, ${phone})
@@ -309,8 +310,8 @@ export function createPostgresStore(rawUrl) {
     },
 
     users: {
-      async create({ name, email, phone = null, passwordHash = null, role }) {
-        const rows = await sql`insert into public.users (name, email, phone, password_hash, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${role})
+      async create({ name, email, phone = null, passwordHash = null, role, passwordChangeRequired = false }) {
+        const rows = await sql`insert into public.users (name, email, phone, password_hash, role, password_change_required) values (${name}, ${email}, ${phone}, ${passwordHash}, ${role}, ${passwordChangeRequired})
           on conflict do nothing returning *`;
         return userRow(rows[0]) || null;
       },
@@ -321,7 +322,7 @@ export function createPostgresStore(rawUrl) {
       },
       async byId(id) { return userRow((await sql`select * from public.users where id = ${id}`)[0]) || null; },
       async list() { return (await sql`select * from public.users order by created_at`).map(userRow); },
-      async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, updated_at = now() where id = ${id}`; },
+      async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, password_change_required = false, updated_at = now() where id = ${id}`; },
       // D-45: every patient table references users with on delete cascade.
       async remove(id) {
         await sql.begin(async (tx) => {
@@ -333,6 +334,20 @@ export function createPostgresStore(rawUrl) {
       async setDisabled(id, disabled) {
         return userRow((await sql`update public.users set disabled_at = ${disabled ? sql`now()` : null}, updated_at = now() where id = ${id} returning *`)[0]) || null;
       },
+    },
+
+    passwordResets: {
+      /** A person asks for a reset. One open request per account; asking again refreshes it. */
+      async request(userId) {
+        await sql`insert into public.password_resets (user_id) values (${userId}) on conflict (user_id) where used_at is null do update set requested_at = now()`;
+      },
+      /** The open, unexpired reset for a link's hash, or null. */
+      async byTokenHash(hash) {
+        const [r] = await sql`select id, user_id, expires_at from public.password_resets where token_hash = ${hash} and used_at is null and expires_at > now()`;
+        return r ? { id: r.id, userId: r.user_id, expiresAt: r.expires_at } : null;
+      },
+      /** Marks the link used. False when it was already used (two people racing on one link). */
+      async consume(id) { return (await sql`update public.password_resets set used_at = now() where id = ${id} and used_at is null returning id`).length === 1; },
     },
 
     sessions: {

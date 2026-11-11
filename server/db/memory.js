@@ -86,6 +86,7 @@ export function createMemoryStore(options = {}) {
   // Hidden listings leave the public lists and wait here until an admin shows them again (D-83).
   const hiddenListings = { hospital: [], doctor: [], pharmacy: [], diagnostic_centre: [] };
   const adminAudit = [];
+  const resets = [];
 
   // A hidden hospital still names its doctors' workplace, as the Postgres join does.
   const hospitalOf = (d) => hospitals.find((h) => h.id === d.hospitalId) ?? hiddenListings.hospital.find((h) => h.id === d.hospitalId);
@@ -100,7 +101,7 @@ export function createMemoryStore(options = {}) {
 
   return {
     kind: 'memory',
-    admin: createMemoryAdmin({ users, sessions, reviews, reports, lists: { hospital: hospitals, doctor: doctors, pharmacy: pharmacies, diagnostic_centre: diagnostics }, hidden: hiddenListings, audit: adminAudit }),
+    admin: createMemoryAdmin({ users, sessions, reviews, reports, lists: { hospital: hospitals, doctor: doctors, pharmacy: pharmacies, diagnostic_centre: diagnostics }, hidden: hiddenListings, audit: adminAudit, resets, ambulances }),
     async close() {},
 
     emergencies: {
@@ -227,7 +228,7 @@ export function createMemoryStore(options = {}) {
       async register({ name, email, phone, passwordHash, vehicle }) {
         for (const u of users.values()) if (u.email === email) return { conflict: 'email' };
         for (const a of ambulances.values()) if (a.registrationNumber === vehicle.registrationNumber) return { conflict: 'vehicle' };
-        const user = { id: randomUUID(), name, email, phone, passwordHash, role: 'driver', createdAt: now(), disabledAt: null };
+        const user = { id: randomUUID(), name, email, phone, passwordHash, role: 'driver', createdAt: now(), disabledAt: null, driverApproval: 'pending', driverReviewNote: null, passwordChangeRequired: false };
         users.set(user.id, user);
         const id = randomUUID();
         ambulances.set(id, { id, driverUserId: user.id, registrationNumber: vehicle.registrationNumber, type: vehicle.type, status: 'offline', operatorName: 'Independent driver',
@@ -236,10 +237,16 @@ export function createMemoryStore(options = {}) {
       },
     },
 
+    passwordResets: {
+      async request(userId) { const open = resets.find((r) => r.userId === userId && !r.usedAt); if (open) open.requestedAt = now(); else resets.push({ id: randomUUID(), userId, requestedAt: now(), tokenHash: null, issuedBy: null, issuedAt: null, expiresAt: null, usedAt: null }); },
+      async byTokenHash(hash) { const r = resets.find((x) => x.tokenHash === hash && !x.usedAt && +x.expiresAt > +now()); return r ? { id: r.id, userId: r.userId, expiresAt: r.expiresAt } : null; },
+      async consume(id) { const r = resets.find((x) => x.id === id && !x.usedAt); if (!r) return false; r.usedAt = now(); return true; },
+    },
+
     users: {
-      async create({ name, email, phone = null, passwordHash = null, role }) {
+      async create({ name, email, phone = null, passwordHash = null, role, passwordChangeRequired = false }) {
         for (const u of users.values()) if (u.email === email) return null;
-        const user = { id: randomUUID(), name, email, phone, passwordHash, role, createdAt: now(), disabledAt: null };
+        const user = { id: randomUUID(), name, email, phone, passwordHash, role, createdAt: now(), disabledAt: null, driverApproval: null, driverReviewNote: null, passwordChangeRequired };
         users.set(user.id, user);
         return clone(user);
       },
@@ -247,7 +254,7 @@ export function createMemoryStore(options = {}) {
       async setAssistantConsent(id, at) { const u = users.get(id); if (!u) return null; u.assistantConsentAt = at; return clone(u); },
       async byId(id) { return users.has(id) ? clone(users.get(id)) : null; },
       async list() { return [...users.values()].map(clone).sort((a, b) => a.createdAt - b.createdAt); },
-      async setPassword(id, passwordHash) { const u = users.get(id); if (u) u.passwordHash = passwordHash; },
+      async setPassword(id, passwordHash) { const u = users.get(id); if (u) { u.passwordHash = passwordHash; u.passwordChangeRequired = false; } },
       // D-45: removing the user removes everything tied to them, as the database cascade does.
       async remove(id) {
         // A driver's one ambulance goes with the account (D-73); emergencies keep their history.

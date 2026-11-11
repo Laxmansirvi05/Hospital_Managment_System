@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { getConfig } from '../config.js';
 import { getStore } from '../db/index.js';
-import { parse, readJson, conflict, forbidden, unauthorized } from '../http.js';
+import { parse, readJson, conflict, forbidden, unauthorized, HttpError } from '../http.js';
 import { limit, clientIp } from '../limits.js';
-import { hashPassword, verifyPassword, dummyVerify } from '../auth/crypto.js';
+import { hashPassword, verifyPassword, dummyVerify, hashToken } from '../auth/crypto.js';
 import { startSession, refreshSession, refreshSessionId, clearCookies } from '../auth/session.js';
 
 export const ROLES = ['patient', 'driver', 'admin'];
@@ -35,7 +35,11 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({ email, password: z.string().min(1, 'Enter your password').max(128) }).strict();
 
-const publicUser = (u) => ({ id: u.id, role: u.role, name: u.name });
+const publicUser = (u) => ({ id: u.id, role: u.role, name: u.name, ...(u.role === 'driver' ? { approval: u.driverApproval } : {}) });
+
+const forgotSchema = z.object({ email }).strict();
+const resetSchema = z.object({ token: z.string().min(20).max(200), password }).strict();
+const NIL_SESSION = '00000000-0000-0000-0000-000000000000';
 
 export const routes = [
   {
@@ -79,7 +83,36 @@ export const routes = [
   {
     method: 'GET', path: '/auth/me', roles: ROLES,
     async handler({ user }) {
-      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt } };
+      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt, ...(user.role === 'driver' ? { driverApproval: user.driverApproval, driverReviewNote: user.driverReviewNote ?? null } : {}), passwordChangeRequired: Boolean(user.passwordChangeRequired) } };
+    },
+  },
+  {
+    // No email is sent: asking records a request that an admin sees (D-88). The answer is the same
+    // whether or not the address has an account, so it cannot be used to find out who is registered.
+    method: 'POST', path: '/auth/forgot', roles: 'public',
+    async handler({ req }) {
+      await limit('forgot-ip', clientIp(req), 10, 3600);
+      const body = parse(forgotSchema, await readJson(req));
+      await limit('forgot-email', body.email, 3, 3600);
+      const user = await getStore().users.byEmail(body.email);
+      if (user && !user.disabledAt) await getStore().passwordResets.request(user.id);
+      return { status: 202, body: { status: 'requested' } };
+    },
+  },
+  {
+    // The link an admin issued: one use, short life, only its hash is stored. A new password ends every session.
+    method: 'POST', path: '/auth/reset', roles: 'public',
+    async handler({ req }) {
+      await limit('reset-ip', clientIp(req), 20, 3600);
+      const body = parse(resetSchema, await readJson(req));
+      const store = getStore();
+      const gone = () => new HttpError(400, 'reset_invalid', 'This link has expired or was already used. Ask an admin for a new one.');
+      const found = await store.passwordResets.byTokenHash(hashToken(body.token, getConfig().pepper));
+      if (!found) throw gone();
+      if (!(await store.passwordResets.consume(found.id))) throw gone();
+      await store.users.setPassword(found.userId, await hashPassword(body.password));
+      await store.sessions.revokeOthers(found.userId, NIL_SESSION);
+      return { status: 204 };
     },
   },
   {

@@ -71,7 +71,9 @@ export function createPostgresAdmin(sql, { point }) {
       const [r] = await sql`select count(*) filter (where status = 'visible')::int as visible, count(*) filter (where status = 'hidden')::int as hidden,
         count(*) filter (where status = 'visible' and exists (select 1 from public.review_reports x where x.review_id = reviews.id))::int as reported from public.reviews`;
       const [a] = await sql`select count(*)::int as n from public.admin_audit_log`;
-      return { users: { total: u.total, patients: u.patients, drivers: u.drivers, admins: u.admins, disabled: u.disabled }, listings, reviews: { visible: r.visible, hidden: r.hidden, reported: r.reported }, auditEntries: a.n };
+      const [dp] = await sql`select count(*)::int as n from public.users where driver_approval = 'pending'`;
+      const [pr] = await sql`select count(*)::int as n from public.password_resets where used_at is null and (expires_at is null or expires_at > now())`;
+      return { drivers: { pending: dp.n }, passwordResets: { open: pr.n }, users: { total: u.total, patients: u.patients, drivers: u.drivers, admins: u.admins, disabled: u.disabled }, listings, reviews: { visible: r.visible, hidden: r.hidden, reported: r.reported }, auditEntries: a.n };
     },
 
     async listUsers({ q, role, status, limit = 25, offset = 0 } = {}) {
@@ -264,6 +266,46 @@ export function createPostgresAdmin(sql, { point }) {
 
     /** An audit row for a change made outside an admin session, such as the account script (D-21). */
     async recordAudit(entry) { await audit(sql, entry); },
+
+    /** Drivers waiting for a decision, or already decided, with what an admin needs to check them: who and which vehicle. */
+    async listDriverRequests({ status = 'pending', limit = 25, offset = 0 } = {}) {
+      const rows = await sql`select u.id, u.name, u.email, u.phone, u.created_at, u.driver_approval, u.driver_review_note, u.driver_reviewed_at, a.registration_number, a.type::text as vehicle_type,
+          count(*) over()::int as total_count
+        from public.users u left join public.ambulances a on a.driver_user_id = u.id
+        where u.role = 'driver' and (${status}::text = 'all' or u.driver_approval = ${status}::text)
+        order by u.created_at, u.id limit ${limit} offset ${offset}`;
+      return withTotal(rows, (r) => ({ id: r.id, name: r.name, email: r.email, phone: r.phone, createdAt: r.created_at, status: r.driver_approval, note: r.driver_review_note ?? null, reviewedAt: r.driver_reviewed_at ?? null, registrationNumber: r.registration_number ?? null, vehicleType: r.vehicle_type ?? null }));
+    },
+    async reviewDriver(id, actorId, decision, note) {
+      return sql.begin(async (tx) => {
+        const [u] = await tx`select id, role, driver_approval from public.users where id = ${id} for update`;
+        if (!u) return { ok: false, reason: 'not_found' };
+        if (u.role !== 'driver') return { ok: false, reason: 'not_driver' };
+        const next = decision === 'approve' ? 'approved' : 'rejected';
+        if (u.driver_approval === next) return { ok: false, reason: 'already' };
+        await tx`update public.users set driver_approval = ${next}, driver_review_note = ${note || null}, driver_reviewed_at = now(), driver_reviewed_by = ${actorId}, updated_at = now() where id = ${id}`;
+        // A driver who is turned down, or later withdrawn, is taken off the road at once.
+        if (next === 'rejected') await tx`update public.ambulances set status = 'offline', updated_at = now() where driver_user_id = ${id} and status = 'available'`;
+        await audit(tx, { actorId, action: `driver.${decision}`, targetKind: 'user', targetId: id, summary: `${decision === 'approve' ? 'Approved' : 'Rejected'} a driver account` });
+        return { ok: true };
+      });
+    },
+
+    /** People who asked for a password reset, and links already issued that nobody has used. */
+    async listResetRequests() {
+      const rows = await sql`select r.id, r.user_id, r.requested_at, r.issued_at, r.expires_at, u.name, u.email, u.role from public.password_resets r join public.users u on u.id = r.user_id where r.used_at is null order by r.requested_at desc limit 100`;
+      return rows.map((r) => ({ id: r.id, userId: r.user_id, name: r.name, email: r.email, role: r.role, requestedAt: r.requested_at, issuedAt: r.issued_at, expiresAt: r.expires_at }));
+    },
+    async issueReset(userId, actorId, tokenHash, expiresAt) {
+      return sql.begin(async (tx) => {
+        const [u] = await tx`select id, role from public.users where id = ${userId} for update`;
+        if (!u) return { ok: false, reason: 'not_found' };
+        await tx`insert into public.password_resets (user_id, token_hash, issued_by, issued_at, expires_at) values (${userId}, ${tokenHash}, ${actorId}, now(), ${expiresAt})
+          on conflict (user_id) where used_at is null do update set token_hash = excluded.token_hash, issued_by = excluded.issued_by, issued_at = now(), expires_at = excluded.expires_at`;
+        await audit(tx, { actorId, action: 'user.reset_link', targetKind: 'user', targetId: userId, summary: `Issued a password reset link for a ${u.role} account` });
+        return { ok: true };
+      });
+    },
 
     async listAudit({ action, targetKind, limit = 25, offset = 0 } = {}) {
       const rows = await sql`select a.*, u.name as actor_name, count(*) over()::int as total_count from public.admin_audit_log a left join public.users u on u.id = a.actor_user_id

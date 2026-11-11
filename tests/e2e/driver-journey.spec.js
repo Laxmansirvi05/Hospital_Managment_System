@@ -1,6 +1,7 @@
 // The patient and driver journey through the real pages, with two separate browsers signed in at once:
 // a driver signs up on the sign-in page and goes online, a patient books an ambulance, the driver is
-// alerted, accepts and drives the trip, and a second driver never sees the request (D-84).
+// alerted, accepts and drives the trip, and a second driver never sees the request (D-84). A new
+// driver is approved by an admin in the admin portal first (D-87).
 import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4402';
@@ -31,6 +32,27 @@ async function signUpDriver(page, n) {
   await page.getByRole('button', { name: 'Create driver account' }).click();
   await page.waitForURL(/\/driver\//);
   await expect(page.getByRole('heading', { name: 'Driver workspace' })).toBeVisible();
+  // Until an admin approves, the driver can only wait.
+  await expect(page.getByRole('heading', { name: 'Waiting for approval' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Go online' })).toBeHidden();
+}
+
+/** An admin account made through the API (this sample server allows it), signed in through the page. */
+async function adminPage(browser) {
+  const { context, page } = await person(browser, HERE);
+  const email = `admin-${stamp()}@example.test`;
+  const made = await page.request.post(`${baseURL}/api/v1/auth/register`, { headers: { 'x-careroute-csrf': '1' }, data: { name: 'Test Admin', email, password: 'long enough password', role: 'admin' } });
+  expect(made.status()).toBe(201);
+  await page.goto(`${baseURL}/admin/#/drivers`);
+  await expect(page.getByRole('heading', { name: 'Driver requests' })).toBeVisible();
+  return { context, page };
+}
+
+async function approve(admin, name) {
+  await admin.page.reload();
+  await admin.page.getByRole('button', { name: `Approve ${name}` }).click();
+  await admin.page.getByRole('dialog').getByRole('button', { name: 'Approve driver' }).click();
+  await expect(admin.page.getByRole('button', { name: `Approve ${name}` })).toHaveCount(0);
 }
 
 test('the sign-in page has a Patient or Driver switch and no Google', async ({ page }) => {
@@ -59,6 +81,12 @@ test('a driver signs up, goes online and is alerted; the patient follows the tri
   try {
     await signUpDriver(driver.page, 1);
     await signUpDriver(other.page, 2);
+    const admin = await adminPage(browser);
+    await approve(admin, 'Test Driver 1');
+    await approve(admin, 'Test Driver 2');
+    await admin.context.close();
+    // The waiting pages notice the approval by themselves.
+    for (const d of [driver, other]) await expect(d.page.getByRole('button', { name: 'Go online' })).toBeVisible({ timeout: 20000 });
 
     // Both go online. The second is a few kilometres away, so the request is offered to the first.
     for (const d of [driver, other]) {

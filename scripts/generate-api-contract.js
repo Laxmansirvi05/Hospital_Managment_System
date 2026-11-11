@@ -14,7 +14,7 @@ const emergencyContracts = {
   'POST /emergencies/:id/feedback': ['Path: id (UUID); Body: rating (1..5), comment?', '201 {feedback{rating,comment,createdAt}}'],
   'GET /track/:token': ['Path: token (one-time tracking token)', '200 {status,ambulance{lat,lng,heading}|null,etaSeconds,etaIsEstimate,demo}'],
   'POST /track/:token/cancel': ['Path: token (one-time tracking token)', '200 {status}'],
-  'GET /driver/me': ['', '200 {ambulance{id,type,registrationNumber,status,position}}'],
+  'GET /driver/me': ['', '200 {approval{status pending|approved|rejected,note},ambulance{id,type,registrationNumber,status,position}}. Every other driver route answers 403 driver_not_approved until an admin approves the driver'],
   'PUT /driver/me/status': ['Body: status (available|offline)', '200 {status}'],
   'PUT /driver/me/location': ['Body: lat, lng, heading?, speed?', '200 {status,position}'],
   'GET /driver/offers': ['', '200 {offer|null}; offer has emergencyId, emergencyType, conscious, patientCount, distanceKm, secondsRemaining only: no place, address, notes or medical ID before accepting'],
@@ -44,6 +44,11 @@ const adminContracts = {
   'GET /admin/reviews': ['Query: status? (hidden|reported|all), limit? (1..100), offset?', '200 {total,reviews:[moderation summary]}'],
   'POST /admin/reviews/:id/restore': ['Path: id (UUID)', '204 empty'],
   'DELETE /admin/reviews/:id': ['Path: id (UUID)', '204 empty'],
+  'GET /admin/driver-requests': ['Query: status? (pending|approved|rejected|all, default pending), limit? (1..100), offset?', '200 {total,requests:[{id,name,email,phone,createdAt,status,note,reviewedAt,registrationNumber,vehicleType}]}'],
+  'POST /admin/drivers/:id/approve': ['Path: id (UUID)', '204 empty; the driver can go online'],
+  'POST /admin/drivers/:id/reject': ['Path: id (UUID); Body: note? (up to 300 characters)', '204 empty; an available driver is taken offline'],
+  'GET /admin/password-resets': ['', '200 {requests:[{id,userId,name,email,role,requestedAt,issuedAt,expiresAt}]}'],
+  'POST /admin/users/:id/reset-link': ['Path: id (UUID)', '201 {link,expiresAt}; the link works once for two hours and is shown only here'],
   'GET /admin/audit': ['Query: action?, targetKind? (user|hospital|doctor|pharmacy|diagnostic_centre|review), limit? (1..100), offset?', '200 {total,entries:[audit entry]}'],
 };
 

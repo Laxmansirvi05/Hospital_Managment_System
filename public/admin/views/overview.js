@@ -6,8 +6,14 @@ const kpi = (label, value, href, note) => h(href ? 'a' : 'div', { class: `card k
 export async function render(page) {
   const o = await api('/admin/overview');
   const listingCards = Object.entries(o.listings).map(([kind, c]) => kpi(KIND_LABEL[kind], c.active, `#/listings?kind=${kind}`, c.hidden ? `${c.hidden} hidden` : 'None hidden'));
+  const waiting = (o.drivers?.pending ?? 0) + (o.passwordResets?.open ?? 0);
   page.append(
     pageHead({ title: 'Overview', sub: 'What is on CareRoute right now. Everything you change here is written to the audit log.' }),
+    h('section', { class: 'stack-12', 'aria-labelledby': 'ov-wait' },
+      h('h2', { class: 't-title-2', id: 'ov-wait' }, 'Waiting for you'),
+      h('div', { class: 'admin-grid' },
+        kpi('Driver requests', o.drivers?.pending ?? 0, '#/drivers', o.drivers?.pending ? 'Check and approve' : 'Nobody waiting'),
+        kpi('Password reset requests', o.passwordResets?.open ?? 0, '#/users', o.passwordResets?.open ? 'Issue a reset link' : 'Nobody waiting'))),
     h('section', { class: 'stack-12', 'aria-labelledby': 'ov-people' },
       h('h2', { class: 't-title-2', id: 'ov-people' }, 'People'),
       h('div', { class: 'admin-grid' },

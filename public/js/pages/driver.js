@@ -65,6 +65,10 @@ async function start() {
     tripTitle, tripFacts, mapBox, h('div', { class: 'row-8' }, nextStep, mapsLink, release));
   let map = null;
 
+  const approvalTitle = h('h2', { class: 't-title-3', id: 'driver-approval-h' });
+  const approvalText = h('p', { class: 't-subhead' });
+  const approvalCard = h('section', { class: 'card stack-8 driver-approval', role: 'status', 'aria-labelledby': 'driver-approval-h', hidden: true }, approvalTitle, approvalText);
+
   const errorLine = h('p', { class: 'form-error', role: 'alert', hidden: true });
   const fail = (err) => { errorLine.hidden = false; errorLine.replaceChildren(icon('alert', 18), h('span', {}, err.message || 'Something went wrong. Try again.')); };
   const clearFail = () => { errorLine.hidden = true; };
@@ -72,6 +76,7 @@ async function start() {
   main.replaceChildren(h('div', { class: 'page driver-page' },
     pageHead({ art: 'ambulance', title: 'Driver workspace', sub: 'Go online to receive ambulance requests near you. Keep this page open while you are online.' }),
     errorLine,
+    approvalCard,
     h('section', { class: 'card stack-12', 'aria-labelledby': 'driver-vehicle-h' },
       h('div', { class: 'spread' }, h('h2', { class: 't-title-3', id: 'driver-vehicle-h' }, 'Your ambulance'), statusChip),
       vehicleLine, waiting, goButton, locationLine, areaRow),
@@ -256,11 +261,27 @@ async function start() {
   }
   function hideTrip() { tripCard.hidden = true; state.trip = null; map = null; mapBox.replaceChildren(); }
 
+  // An admin checks every new driver (D-87). Until then the driver can sign in and see this, nothing more.
+  function paintApproval(approval) {
+    const status = approval?.status;
+    approvalCard.hidden = status === 'approved';
+    if (status === 'pending') {
+      approvalTitle.textContent = 'Waiting for approval';
+      approvalText.textContent = 'An admin is checking your details and your vehicle. This page updates by itself when you are approved, then you can go online.';
+    } else if (status === 'rejected') {
+      approvalTitle.textContent = 'Your account was not approved';
+      approvalText.textContent = approval.note ? `The admin wrote: ${approval.note}` : 'An admin did not approve this driver account. Contact the CareRoute team if you think this is a mistake.';
+    }
+  }
+
   async function refresh() {
     try {
-      const [me, offers, trip] = await Promise.all([api('/driver/me'), api('/driver/offers'), api('/driver/trips/active')]);
+      const me = await api('/driver/me');
       state.ambulance = me.ambulance;
+      paintApproval(me.approval);
       paintVehicle();
+      if (me.approval?.status !== 'approved') { goButton.hidden = true; waiting.textContent = ''; hideOffer(); hideTrip(); clearFail(); return; }
+      const [offers, trip] = await Promise.all([api('/driver/offers'), api('/driver/trips/active')]);
       if (trip.emergency) { hideOffer(); showTrip(trip.emergency); } else if (state.trip?.status === 'completed') { /* stay on the finished trip until released */ } else hideTrip();
       if (!trip.emergency && offers.offer && state.ambulance.status === 'available') showOffer(offers.offer); else if (!trip.emergency) hideOffer();
       clearFail();

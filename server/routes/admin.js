@@ -6,6 +6,9 @@ import { getStore } from '../db/index.js';
 import { LISTING_KINDS } from '../db/admin-kinds.js';
 import { parse, readJson, notFound, invalid, conflict, forbidden } from '../http.js';
 import { limit } from '../limits.js';
+import { getConfig } from '../config.js';
+import { randomBytes } from 'node:crypto';
+import { hashToken } from '../auth/crypto.js';
 
 const ADMIN = ['admin'];
 const uuid = z.string().uuid();
@@ -88,6 +91,7 @@ const REASONS = {
   self: () => forbidden('cannot_disable_self', 'You cannot disable your own account.'),
   last_admin: () => conflict('last_admin', 'This is the last active admin account.'),
   already: () => conflict('no_change', 'Nothing to change.'),
+  not_driver: () => notFound(),
   hospital_missing: () => invalid('hospitalId', 'Choose a hospital that exists.'),
 };
 function check(result) {
@@ -188,6 +192,38 @@ export const routes = [
 
   // Read only. Listing facts, no people; the 180 day line is P-31 until the owner settles it.
   { method: 'GET', path: '/admin/data-quality', roles: ADMIN, async handler() { return { body: await getStore().admin.dataQuality({ staleAfterDays: 180 }) }; } },
+
+  // Drivers sign up as pending; an admin checks the person and the vehicle, then approves or rejects (D-87).
+  { method: 'GET', path: '/admin/driver-requests', roles: ADMIN, async handler({ query }) {
+    const f = parse(z.object({ status: z.enum(['pending', 'approved', 'rejected', 'all']).default('pending') }).extend(paging.shape),
+      { status: q(query, 'status'), limit: q(query, 'limit'), offset: q(query, 'offset') });
+    const { total, rows } = await getStore().admin.listDriverRequests(f);
+    return { body: { total, requests: rows } };
+  } },
+  { method: 'POST', path: '/admin/drivers/:id/approve', roles: ADMIN, async handler({ params, user }) {
+    await writeGate(user);
+    check(await getStore().admin.reviewDriver(idOf(params), user.id, 'approve', null));
+    return { status: 204 };
+  } },
+  { method: 'POST', path: '/admin/drivers/:id/reject', roles: ADMIN, async handler({ params, user, req }) {
+    await writeGate(user);
+    const body = parse(z.object({ note: z.string().trim().max(300).optional() }).strict(), await readJson(req));
+    check(await getStore().admin.reviewDriver(idOf(params), user.id, 'reject', body.note));
+    return { status: 204 };
+  } },
+
+  // Password reset (D-88): people ask, an admin issues a one-time link and hands it over.
+  { method: 'GET', path: '/admin/password-resets', roles: ADMIN, async handler() {
+    return { body: { requests: await getStore().admin.listResetRequests() } };
+  } },
+  { method: 'POST', path: '/admin/users/:id/reset-link', roles: ADMIN, async handler({ params, user, req, url }) {
+    await writeGate(user);
+    const token = randomBytes(32).toString('base64url');
+    const expiresAt = new Date(Date.now() + 2 * 3600 * 1000);
+    check(await getStore().admin.issueReset(idOf(params), user.id, hashToken(token, getConfig().pepper), expiresAt));
+    const proto = req.headers['x-forwarded-proto'] || url.protocol.replace(':', '');
+    return { status: 201, body: { link: `${proto}://${req.headers.host}/reset/?token=${token}`, expiresAt } };
+  } },
 
   { method: 'GET', path: '/admin/audit', roles: ADMIN, async handler({ query }) {
     const f = parse(z.object({ action: z.string().trim().max(60).optional(), targetKind: z.enum(['user', ...LISTING_KINDS, 'review']).optional() }).extend(paging.shape),

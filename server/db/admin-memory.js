@@ -19,7 +19,7 @@ const FIELDS = {
 };
 
 export function createMemoryAdmin(ctx) {
-  const { users, sessions, reviews, reports, lists, hidden, audit } = ctx;
+  const { users, sessions, reviews, reports, lists, hidden, audit, resets, ambulances } = ctx;
 
   const findIn = (kind, id) => {
     const live = lists[kind].find((x) => x.id === id);
@@ -79,6 +79,8 @@ export function createMemoryAdmin(ctx) {
         users: { total: people.length, patients: people.filter((u) => u.role === 'patient').length, drivers: people.filter((u) => u.role === 'driver').length, admins: people.filter((u) => u.role === 'admin').length, disabled: people.filter((u) => u.disabledAt).length },
         listings: listingCounts,
         reviews: { visible: reviews.filter((r) => r.status === 'visible').length, hidden: reviews.filter((r) => r.status === 'hidden').length, reported: reviews.filter((r) => r.status === 'visible' && reportCount(r.id) > 0).length },
+        drivers: { pending: [...users.values()].filter((u) => u.driverApproval === 'pending').length },
+        passwordResets: { open: resets.filter((r) => !r.usedAt && !(r.expiresAt && +r.expiresAt < Date.now())).length },
         auditEntries: audit.length,
       };
     },
@@ -211,6 +213,44 @@ export function createMemoryAdmin(ctx) {
 
     /** An audit row for a change made outside an admin session, such as the account script (D-21). */
     async recordAudit(entry) { addAudit(entry); },
+
+    /** Drivers waiting for a decision, or already decided, with what an admin needs to check them: who and which vehicle. */
+    async listDriverRequests({ status = 'pending', limit, offset } = {}) {
+      const vehicleOf = (id) => [...ambulances.values()].find((a) => a.driverUserId === id);
+      const rows = [...users.values()].filter((u) => u.role === 'driver' && (status === 'all' || u.driverApproval === status))
+        .sort((a, b) => +a.createdAt - +b.createdAt)
+        .map((u) => { const v = vehicleOf(u.id); return { id: u.id, name: u.name, email: u.email, phone: u.phone, createdAt: u.createdAt, status: u.driverApproval, note: u.driverReviewNote ?? null, reviewedAt: u.driverReviewedAt ?? null, registrationNumber: v?.registrationNumber ?? null, vehicleType: v?.type ?? null }; });
+      return page(rows, { limit, offset });
+    },
+    async reviewDriver(id, actorId, decision, note) {
+      const u = users.get(id);
+      if (!u) return { ok: false, reason: 'not_found' };
+      if (u.role !== 'driver') return { ok: false, reason: 'not_driver' };
+      const next = decision === 'approve' ? 'approved' : 'rejected';
+      if (u.driverApproval === next) return { ok: false, reason: 'already' };
+      Object.assign(u, { driverApproval: next, driverReviewNote: note || null, driverReviewedAt: new Date() });
+      // A driver who is turned down, or later withdrawn, is taken off the road at once.
+      if (next === 'rejected') for (const a of ambulances.values()) if (a.driverUserId === id && a.status === 'available') a.status = 'offline';
+      addAudit({ actorId, action: `driver.${decision}`, targetKind: 'user', targetId: id, summary: `${decision === 'approve' ? 'Approved' : 'Rejected'} a driver account` });
+      return { ok: true };
+    },
+
+    /** People who asked for a password reset, and links already issued that nobody has used. */
+    async listResetRequests() {
+      return resets.filter((r) => !r.usedAt).sort((a, b) => +b.requestedAt - +a.requestedAt).map((r) => {
+        const u = users.get(r.userId);
+        return { id: r.id, userId: r.userId, name: u?.name ?? 'Removed account', email: u?.email ?? '', role: u?.role ?? 'patient', requestedAt: r.requestedAt, issuedAt: r.issuedAt, expiresAt: r.expiresAt };
+      });
+    },
+    async issueReset(userId, actorId, tokenHash, expiresAt) {
+      const u = users.get(userId);
+      if (!u) return { ok: false, reason: 'not_found' };
+      let open = resets.find((r) => r.userId === userId && !r.usedAt);
+      if (!open) { open = { id: randomUUID(), userId, requestedAt: new Date(), usedAt: null }; resets.push(open); }
+      Object.assign(open, { tokenHash, issuedBy: actorId, issuedAt: new Date(), expiresAt });
+      addAudit({ actorId, action: 'user.reset_link', targetKind: 'user', targetId: userId, summary: `Issued a password reset link for a ${u.role} account` });
+      return { ok: true };
+    },
 
     async listAudit({ action, targetKind, limit, offset } = {}) {
       const rows = audit.filter((a) => (!action || a.action === action) && (!targetKind || a.targetKind === targetKind))

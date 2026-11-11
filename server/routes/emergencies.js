@@ -35,6 +35,11 @@ async function optionalUser(req) {
   if (session?.viaCookie && req.headers['x-careroute-csrf'] !== '1') throw forbidden('csrf_failed', 'Missing request header.');
   return session?.user ?? null;
 }
+/** A driver works only after an admin has checked the person and the vehicle (D-87). */
+function requireApprovedDriver(user) {
+  requireRole(user, 'driver');
+  if (user.driverApproval !== 'approved') throw forbidden('driver_not_approved', user.driverApproval === 'rejected' ? 'This driver account was not approved.' : 'An admin has not approved this driver account yet.');
+}
 function requireRole(user, role) { if (!user) throw unauthorized(); if (user.role !== role) throw forbidden('role_not_allowed', 'Your account cannot do this.'); }
 async function patientOwned(ctx) {
   const id = uuid.parse(ctx.params.id);
@@ -96,21 +101,21 @@ export const routes = [
   { method: 'GET', path: '/driver/me', roles: DRIVER, async handler({ user }) {
     requireRole(user, 'driver');
     await getEmergencyService().driverOffers(user.id); const ambulance = await getStore().emergencies.ambulanceByDriver(user.id); if (!ambulance) throw notFound();
-    return { body: { ambulance: { id: ambulance.id, type: ambulance.type, registrationNumber: ambulance.registrationNumber, status: ambulance.status, position: ambulancePosition(ambulance) } } };
+    return { body: { approval: { status: user.driverApproval, note: user.driverReviewNote ?? null }, ambulance: { id: ambulance.id, type: ambulance.type, registrationNumber: ambulance.registrationNumber, status: ambulance.status, position: ambulancePosition(ambulance) } } };
   } },
   { method: 'PUT', path: '/driver/me/status', roles: DRIVER, async handler(ctx) {
-    requireRole(ctx.user, 'driver');
+    requireApprovedDriver(ctx.user, 'driver');
     const body = parse(statusBody, await readJson(ctx.req)); const ambulance = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!ambulance) throw notFound();
     const updated = await getStore().emergencies.setAmbulanceStatus(ambulance.id, body.status); return { body: { status: updated.status } };
   } },
   { method: 'PUT', path: '/driver/me/location', roles: DRIVER, async handler(ctx) {
-    requireRole(ctx.user, 'driver');
+    requireApprovedDriver(ctx.user, 'driver');
     const body = parse(locationBody, await readJson(ctx.req)); const ambulance = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!ambulance) throw notFound();
     await limit('driver-ping', ambulance.id, 40, 60);
     const updated = await getStore().emergencies.updateAmbulanceLocation(ambulance.id, body); return { body: { status: 'ok', position: ambulancePosition(updated) } };
   } },
   { method: 'GET', path: '/driver/offers', roles: DRIVER, async handler({ user }) {
-    requireRole(user, 'driver');
+    requireApprovedDriver(user, 'driver');
     const { ambulance, offer } = await getEmergencyService().driverOffers(user.id); if (!ambulance) throw notFound(); if (!offer) return { body: { offer: null } };
     // Before the driver accepts, an offer says only what is needed to decide: what kind of emergency, how many
     // people and how far away. The exact place, address, notes and any shared medical ID come with the trip
@@ -121,17 +126,17 @@ export const routes = [
       secondsRemaining: Math.max(0, Math.ceil((+offer.expiresAt - Date.now()) / 1000)) } } };
   } },
   { method: 'POST', path: '/driver/offers/:emergencyId/accept', roles: DRIVER, async handler(ctx) {
-    requireRole(ctx.user, 'driver');
+    requireApprovedDriver(ctx.user, 'driver');
     const ambulance = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!ambulance) throw notFound(); const id = uuid.parse(ctx.params.emergencyId);
     const e = await getStore().emergencies.acceptEmergency(id, ambulance.id); if (!e) throw conflict('offer_unavailable', 'This offer is no longer available.'); return { body: { emergency: publicSummary(e) } };
   } },
   { method: 'POST', path: '/driver/offers/:emergencyId/reject', roles: DRIVER, async handler(ctx) {
-    requireRole(ctx.user, 'driver');
+    requireApprovedDriver(ctx.user, 'driver');
     const ambulance = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!ambulance) throw notFound(); const id = uuid.parse(ctx.params.emergencyId);
     const e = await getStore().emergencies.declineOffer(id, ambulance.id); if (!e) throw conflict('offer_unavailable', 'This offer is no longer available.'); return { body: { status: e.status } };
   } },
   { method: 'GET', path: '/driver/trips/active', roles: DRIVER, async handler({ user }) {
-    requireRole(user, 'driver');
+    requireApprovedDriver(user, 'driver');
     await getEmergencyService().tick(); const a = await getStore().emergencies.ambulanceByDriver(user.id); if (!a) throw notFound(); const e = await getStore().emergencies.activeForAmbulance(a.id);
     if (!e) return { body: { emergency: null } };
     const profile = e.patientUserId ? await getStore().profiles.get(e.patientUserId) : null;
@@ -139,12 +144,12 @@ export const routes = [
       ...(profile?.shareWithCrew ? { medicalId: { fullName: profile.fullName, bloodGroup: profile.bloodGroup, allergies: profile.allergies, conditions: profile.conditions, currentMedicines: profile.currentMedicines } } : {}) } } };
   } },
   { method: 'POST', path: '/driver/trips/:emergencyId/status', roles: DRIVER, async handler(ctx) {
-    requireRole(ctx.user, 'driver');
+    requireApprovedDriver(ctx.user, 'driver');
     const body = parse(statusSchema, await readJson(ctx.req)); const a = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!a) throw notFound(); const id = uuid.parse(ctx.params.emergencyId);
     const e = await getStore().emergencies.advanceEmergency(id, a.id, body.status); if (!e) throw conflict('invalid_transition', 'Only the next trip step is allowed.'); return { body: { emergency: publicSummary(e) } };
   } },
   { method: 'POST', path: '/driver/me/release', roles: DRIVER, async handler({ user }) {
-    requireRole(user, 'driver');
+    requireApprovedDriver(user, 'driver');
     const a = await getStore().emergencies.ambulanceByDriver(user.id); if (!a) throw notFound(); if (!(await getStore().emergencies.releaseAmbulance(a.id))) throw conflict('cannot_release', 'Finish the active trip before releasing the ambulance.'); return { body: { status: 'available' } };
   } },
   { method: 'GET', path: '/admin/emergencies', roles: ADMIN, async handler({ query }) {

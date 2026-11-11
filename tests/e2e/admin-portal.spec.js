@@ -188,14 +188,14 @@ test.describe('Admin portal', () => {
   test('fits a phone screen without sideways scrolling', async ({ page }) => {
     await register(page, 'admin', 'phone');
     await page.setViewportSize({ width: 375, height: 812 });
-    for (const view of ['overview', 'users', 'listings', 'listings/new/doctor', 'quality', 'reviews', 'audit', 'emergencies']) {
+    for (const view of ['overview', 'users', 'listings', 'listings/new/doctor', 'quality', 'drivers', 'reviews', 'audit', 'emergencies']) {
       await page.goto(`${baseURL}/admin/#/${view}`);
       await page.reload();
       await expect(page.locator('h1').first()).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, `${view} overflows by ${overflow}px`).toBeLessThanOrEqual(0);
     }
-    await expect(page.locator('#tabbar a')).toHaveCount(7);
+    await expect(page.locator('#tabbar a')).toHaveCount(8);
     // Every tab stays fully on screen, so the last one is not cut off.
     for (const box of await page.locator('#tabbar a').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right))) expect(box).toBeLessThanOrEqual(375);
   });

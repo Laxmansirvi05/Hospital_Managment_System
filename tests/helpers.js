@@ -51,6 +51,8 @@ export async function startApp({ allowPrivilegedSignup = true, ai = false } = {}
     const vehicle = role === 'driver' ? { vehicle: { registrationNumber: `TS09TST${String(n).padStart(4, '0')}`, type: 'BLS' } } : {};
     const r = await api('/auth/register', { body: { name: `${role} ${n}`, email, phone: `98765${String(n).padStart(5, '0')}`, password: 'correct horse', role, ...vehicle }, headers: { 'x-forwarded-for': `10.0.${Math.floor(n / 250)}.${n % 250}` } });
     if (r.status !== 201) throw new Error(`register failed ${r.status} ${JSON.stringify(r.body)}`);
+    // Most tests are about what a working driver does, so the driver starts approved; the approval flow has its own tests.
+    if (role === 'driver') await store.admin.reviewDriver(r.body.user.id, null, 'approve', null);
     return { token: r.body.token, id: r.body.user.id, email, cookies: r.headers.getSetCookie() };
   }
 

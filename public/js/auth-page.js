@@ -262,16 +262,40 @@ function signInForm() {
   const email = h('input', { class: 'input', type: 'email', autocomplete: 'email', required: true, inputmode: 'email' });
   const password = passwordField({ id: 'password', label: 'Password', autocomplete: 'current-password' });
   const message = formMessage();
-  const forgot = h('button', { class: 'auth-link', type: 'button' }, 'Forgot password?');
+  const forgot = h('button', { class: 'auth-link', type: 'button', 'aria-expanded': 'false' }, 'Forgot password?');
+  // No email is sent (D-88): the request goes to an admin, who gives the person a one-time link.
+  const forgotEmail = h('input', { class: 'input', type: 'email', autocomplete: 'email', inputmode: 'email' });
+  const forgotSend = h('button', { class: 'auth-link', type: 'button' }, 'Ask an admin for a reset link');
+  const forgotBox = h('div', { class: 'auth-forgot stack-8', hidden: true },
+    field({ id: 'forgot-email', label: 'Your account email', input: forgotEmail, hint: 'There is no email service yet. An admin sees your request and gives you a one-time link.' }),
+    forgotSend);
   const submit = primaryButton('Sign in');
   const form = h('form', { class: 'auth-form', novalidate: true },
     message,
     field({ id: 'email', label: 'Email address', input: email }),
     password.wrap,
     h('div', { class: 'auth-form-row' }, forgot),
+    forgotBox,
     submit);
 
-  forgot.addEventListener('click', () => setMessage(message, 'Password reset is not configured for this deployment. After signing in, you can change your password from Account and privacy.', 'info'));
+  forgot.addEventListener('click', () => {
+    forgotBox.hidden = !forgotBox.hidden;
+    forgot.setAttribute('aria-expanded', String(!forgotBox.hidden));
+    if (!forgotBox.hidden) { forgotEmail.value ||= email.value; forgotEmail.focus(); }
+  });
+  forgotSend.addEventListener('click', async () => {
+    setMessage(message, '');
+    if (!forgotEmail.value.trim() || !forgotEmail.validity.valid) { localError(form, 'forgot-email', 'Enter the email of your account.'); return; }
+    localError(form, 'forgot-email', '');
+    forgotSend.disabled = true;
+    try {
+      await api('/auth/forgot', { body: { email: forgotEmail.value.trim() } });
+      forgotBox.hidden = true;
+      setMessage(message, 'Request sent. If this email has an account, an admin will contact you with a one-time link to choose a new password.', 'info');
+    } catch (err) {
+      showErrors(form, err, message);
+    } finally { forgotSend.disabled = false; }
+  });
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     setMessage(message, '');
@@ -385,3 +409,5 @@ function render(mode) {
 export function renderAuthPage(initialMode = 'signin') {
   api('/auth/me').then((me) => location.replace(HOME[me.role] || (initialMode === 'signup' ? '/dashboard/' : safeNext()))).catch(() => render(modeFromPath(initialMode)));
 }
+
+export { videoPanel, passwordField, primaryButton, formMessage, setMessage, localError };

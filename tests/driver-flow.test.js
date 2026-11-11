@@ -18,6 +18,7 @@ async function onlineDriver(n, where) {
   const r = await register(driverBody(n));
   expect(r.status).toBe(201);
   const token = r.body.token;
+  await app.store.admin.reviewDriver(r.body.user.id, null, 'approve', null);
   expect((await app.api('/driver/me/location', { method: 'PUT', token, body: where })).status).toBe(200);
   expect((await app.api('/driver/me/status', { method: 'PUT', token, body: { status: 'available' } })).status).toBe(200);
   return { token, id: r.body.user.id };
