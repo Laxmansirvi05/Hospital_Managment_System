@@ -32,7 +32,7 @@ The driver reject handler is registered but remains **PROPOSED under P-20 and is
 | POST | `/admin/users/:id/enable` | admin | Path: id (UUID) | 200 {user:user summary} |
 | POST | `/admin/reviews/:id/restore` | admin | Path: id (UUID) | 204 empty |
 | POST | `/auth/sessions/revoke-others` | patient|driver|admin | none | 204 empty |
-| POST | `/patients/me/delete-account` | patient | password?, confirm="DELETE" | 204 empty; clears cookies |
+| POST | `/patients/me/delete-account` | patient|driver | password, confirm="DELETE" | 204 empty; clears cookies |
 | GET | `/patients/me/medical-id` | patient | none | 200 {fullName,phone,dateOfBirth,age,gender,preferredLanguage,address,bloodGroup,heightCm,weightKg,allergies,conditions,currentMedicines,pastSurgeries,disabilities,organDonor,medicalNotes,insurance,primaryDoctor,shareWithCrew,hasPhoto,completeness} |
 | PUT | `/patients/me/medical-id` | patient | Any subset of fullName, dateOfBirth, gender, preferredLanguage, address{line1,line2,landmark,area,city,pinCode}, bloodGroup, heightCm, weightKg, allergies[], conditions[], currentMedicines[], pastSurgeries[], disabilities[], organDonor, medicalNotes, insurance{provider,policyNumber}, primaryDoctor{name,phone}, shareWithCrew | 200 same medical-ID fields |
 | GET | `/patients/me/contacts` | patient | none | 200 {contacts:[{id,name,phone,relation}]} |

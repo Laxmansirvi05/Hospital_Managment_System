@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { getStore } from '../db/index.js';
 import { getStorage } from '../adapters/storage.js';
-import { parse, readJson, unauthorized, HttpError } from '../http.js';
+import { parse, readJson, unauthorized, conflict, HttpError } from '../http.js';
 import { hashPassword, verifyPassword } from '../auth/crypto.js';
 import { clearCookies } from '../auth/session.js';
 import { limit } from '../limits.js';
@@ -47,11 +47,15 @@ export const routes = [
     },
   },
   {
-    method: 'POST', path: '/patients/me/delete-account', roles: ['patient'],
+    method: 'POST', path: '/patients/me/delete-account', roles: ['patient', 'driver'],
     async handler({ req, user, sessionId }) {
       const body = parse(deleteSchema, await readJson(req));
       await checkPassword(user, body.password);
       const store = getStore();
+      if (user.role === 'driver') {
+        const ambulance = await store.emergencies.ambulanceByDriver(user.id);
+        if (ambulance && (await store.emergencies.activeForAmbulance(ambulance.id))) throw conflict('trip_active', 'Finish your current trip before deleting your account.');
+      }
       // Files first: if storage fails, stop, so no file is left behind without an owner.
       for (const f of await store.files.all(user.id)) {
         try {

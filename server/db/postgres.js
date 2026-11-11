@@ -283,7 +283,13 @@ export function createPostgresStore(rawUrl) {
       async list() { return (await sql`select * from public.users order by created_at`).map(userRow); },
       async setPassword(id, passwordHash) { await sql`update public.users set password_hash = ${passwordHash}, updated_at = now() where id = ${id}`; },
       // D-45: every patient table references users with on delete cascade.
-      async remove(id) { await sql`delete from public.users where id = ${id}`; },
+      async remove(id) {
+        await sql.begin(async (tx) => {
+          // A driver's one ambulance goes with the account (D-73); emergencies keep their history.
+          await tx`delete from public.ambulances where driver_user_id = ${id} and not is_demo`;
+          await tx`delete from public.users where id = ${id}`;
+        });
+      },
       async setDisabled(id, disabled) {
         return userRow((await sql`update public.users set disabled_at = ${disabled ? sql`now()` : null}, updated_at = now() where id = ${id} returning *`)[0]) || null;
       },

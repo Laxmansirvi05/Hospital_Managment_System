@@ -250,6 +250,8 @@ export function createMemoryStore(options = {}) {
       async setPassword(id, passwordHash) { const u = users.get(id); if (u) u.passwordHash = passwordHash; },
       // D-45: removing the user removes everything tied to them, as the database cascade does.
       async remove(id) {
+        // A driver's one ambulance goes with the account (D-73); emergencies keep their history.
+        for (const [aid, a] of ambulances) if (a.driverUserId === id && !a.isDemo) { ambulances.delete(aid); for (const e of emergencies.values()) if (e.ambulanceId === aid) e.ambulanceId = null; }
         users.delete(id);
         profiles.delete(id);
         for (const [sid, s] of sessions) if (s.userId === id) sessions.delete(sid);

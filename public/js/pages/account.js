@@ -160,6 +160,7 @@ function dataCard(d, assistant) {
 
 // The cards that need the patient's data wait for it; a failure leaves them out, not the page.
 const isPatient = user.role === 'patient';
+const canDelete = user.role === 'patient' || user.role === 'driver';
 const [dash, assistant] = isPatient
   ? await Promise.all([api('/patients/me/dashboard').catch(() => null), api('/patients/me/assistant').catch(() => null)])
   : [null, null];
@@ -174,4 +175,4 @@ main.replaceChildren(h('div', { class: 'page' },
     isPatient ? dataCard(dash, assistant) : null,
     passwordCard(),
     devicesCard(),
-    isPatient ? deleteCard() : null)));
+    canDelete ? deleteCard() : null)));

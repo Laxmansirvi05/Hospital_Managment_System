@@ -343,7 +343,7 @@
                 "delete-account"
               ]
             },
-            "description": "Role: patient. Request: password?, confirm=\"DELETE\". Success: 204 empty; clears cookies",
+            "description": "Role: patient|driver. Request: password, confirm=\"DELETE\". Success: 204 empty; clears cookies",
             "auth": {
               "type": "bearer",
               "bearer": [

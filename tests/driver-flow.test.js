@@ -131,4 +131,23 @@ describe('a request goes only to the driver it was offered to', () => {
     expect((await app.api('/emergencies', { token: driver.body.token, body: SOS })).status).toBe(403);
     expect((await app.api('/driver/me')).status).toBe(401);
   });
+
+  it('lets a driver delete the account with the ambulance, but not during a trip', async () => {
+    const d = await onlineDriver(50, { lat: 17.7, lng: 78.8 });
+    const wrong = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'nope nope', confirm: 'DELETE' } });
+    expect(wrong.status).toBe(401);
+    const guest = await app.api('/emergencies', { body: { ...SOS, location: { lat: 17.7, lng: 78.8 }, guestPhone: '+919876500779' }, headers: from() });
+    const id = guest.body.emergency.id;
+    expect((await app.api(`/driver/offers/${id}/accept`, { method: 'POST', token: d.token, body: {} })).status).toBe(200);
+    const busy = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'correct horse', confirm: 'DELETE' } });
+    expect(busy.status).toBe(409);
+    expect(busy.body.error.code).toBe('trip_active');
+    await app.api(`/emergencies/${id}/cancel`, { method: 'POST', token: d.token, body: {} });
+    await app.api(`/track/${guest.body.trackingToken}/cancel`, { method: 'POST', body: {} });
+    await app.api('/driver/me/release', { method: 'POST', token: d.token, body: {} });
+    const gone = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'correct horse', confirm: 'DELETE' } });
+    expect(gone.status).toBe(204);
+    expect((await app.store.emergencies.listAmbulances()).some((a) => a.registrationNumber === 'TS10FL' + String(50).padStart(4, '0'))).toBe(false);
+    expect(await app.store.users.byId(d.id)).toBeNull();
+  });
 });
