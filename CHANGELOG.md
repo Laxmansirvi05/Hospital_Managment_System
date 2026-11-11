@@ -2,6 +2,21 @@
 
 Every change to a LOCKED decision, the API contract or a document's meaning is recorded here, newest first.
 
+## 2026-11-11
+
+### Google sign-in removed, driver sign-up, two-account ambulance journey, cleanup (D-84 to D-86)
+
+- Removed Google sign-in everywhere (routes, adapter, config, store methods, page, styles, tests, privacy wording, Vercel keys, `.env.local` lines). Migration `20261111000100_remove_google_sign_in.sql` drops its column; it is written, not applied to any database.
+- The sign-in page has a Patient or Driver switch at its top for sign in and create account. A driver signs up with a mobile number and a vehicle; the account and its one ambulance are created together. Drivers can delete their own account (not during a trip or while a request waits).
+- Driver workspace rewritten: go online, live location (or a chosen area when location is blocked), alert on a request (sound, browser notice, flashing tab title), accept or decline, walk the trip, delete account. Works while the page is open; there is no push service.
+- Offers show a driver only the kind of emergency, people, consciousness and distance until the driver accepts; the place, address, notes and any shared medical ID come with the trip. Location pings are rate limited.
+- The emergency page asks for the device location when it opens and will not send a request without a place (it used to send the ambulance to a default point in central Hyderabad). Guests choose an area when location is blocked; `/areas/centroids` is public for that.
+- No simulated ambulances on a real database: they are never offered a request or listed. Offer creation and decline run as plain transactions, so SOS works on production without migration `20261106000200` (kept, still worth applying). Database addresses on Supabase's transaction pooler (6543) are switched to the session pooler (5432) in code.
+- Removed from the repository: audit reports, handoffs, brand drafts, the prototype, nine unused images, the sample seed and its generator.
+- New scripts: `set-account-password.js` (accounts that cannot sign in), `check-websites.js` (clears listing websites whose domain no longer exists; 63 cleared on careroute-dev).
+- Data check: 88 of 2,096 Jan Aushadhi prices had changed since the last load; careroute-dev is refreshed. Production is not.
+- Tests: 470 unit and API passed; 47 browser tests passed on sample data; the two-browser driver journey also passed against careroute-dev through the real server and against production with throwaway accounts that were deleted. Test files: `tests/driver-flow.test.js`, `tests/e2e/driver-journey.spec.js` (new); `tests/api.test.js`, `tests/helpers.js`, `tests/adapter-parity.test.js`, `tests/admin-postgres.test.js`, `tests/admin-routes.test.js`, `tests/privileged-account.test.js`, `tests/e2e/ambulance.spec.js` (changed for the removed or changed behaviour); `tests/e2e/auth-google-memory.spec.js` and its fake endpoint (deleted with the feature).
+
 ## 2026-11-06
 
 ### Production release checks found three faults

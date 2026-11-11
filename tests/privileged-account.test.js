@@ -36,3 +36,17 @@ describe('createPrivilegedAccount', () => {
     await expect(createPrivilegedAccount(createMemoryStore(), values)).rejects.toThrow();
   });
 });
+
+describe('setAccountPassword', () => {
+  it('sets a new password, ends every session and refuses an unknown email', async () => {
+    const { setAccountPassword } = await import('../scripts/set-account-password.js');
+    const store = createMemoryStore();
+    const user = await store.users.create({ name: 'No Password', email: 'stuck@example.test', phone: null, role: 'patient', passwordHash: null });
+    await store.sessions.create({ userId: user.id, refreshHash: 'a'.repeat(64), expiresAt: new Date(Date.now() + 3600000) });
+    await setAccountPassword(store, { email: 'Stuck@Example.test', password: 'a long enough password' });
+    const after = await store.users.byEmail('stuck@example.test');
+    expect(await verifyPassword('a long enough password', after.passwordHash)).toBe(true);
+    await expect(setAccountPassword(store, { email: 'nobody@example.test', password: 'a long enough password' })).rejects.toThrow(/No account/);
+    await expect(setAccountPassword(store, { email: 'stuck@example.test', password: 'short' })).rejects.toThrow();
+  });
+});
