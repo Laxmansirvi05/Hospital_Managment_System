@@ -100,8 +100,11 @@ export function sessionPoolerUrl(url) {
 export function createPostgresStore(rawUrl) {
   const url = sessionPoolerUrl(rawUrl);
   const sql = postgres(url, {
-    max: 3,
-    idle_timeout: 20,
+    // The session pooler gives each client connection its own database slot, and there are only about
+    // fifteen. Every serverless instance holds its own pool, so each keeps one connection and gives it
+    // back quickly; a deploy once used all the slots and sign-ups failed for ten seconds (2026-11-11).
+    max: 1,
+    idle_timeout: 8,
     connect_timeout: 10,
     prepare: false,
     types: { bigint: postgres.BigInt },
