@@ -19,7 +19,7 @@ Security is a locked requirement (D-14). The security agent in `.claude/agents/s
 
 | Threat | Control | Test |
 | --- | --- | --- |
-| Anyone registers as driver or admin | Only `patient` self-registers in production (D-21). `driver` and `admin` accounts are created by the server-side script. | Register with each privileged role without the flag, expect 403 |
+| Anyone registers as driver or admin | `patient` and `driver` self-register (D-84). `admin` accounts are created by the server-side script (D-21). An offer shows a driver only the kind of emergency, the number of people and the distance until the driver accepts; the exact place, address, notes and shared medical ID come with the trip. OPEN: a driver account is not verified, so an owner decision on admin approval is pending. | Register with each privileged role without the flag, expect 403 |
 | Reading or changing another user's data (IDOR) | Ownership check on every read and write, section 5 | IDOR matrix test, one case per resource |
 | Admin account taken over | Admin accounts created only by script, admin actions written to `admin_audit`, admin sessions short (PROPOSED). A second factor for admins is OPEN. | Audit row test, role test |
 | Tampered or malicious listing link | Admin input validated with Zod, links limited to `https` and `http`, phone numbers normalized, outbound links open with `rel="noopener noreferrer"`, every edit audited | Link validation test, XSS payload test |

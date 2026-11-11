@@ -74,10 +74,11 @@ describe('a request goes only to the driver it was offered to', () => {
     const id = guest.body.emergency.id;
 
     const offer = (await app.api('/driver/offers', { token: near.token })).body.offer;
-    expect(offer).toMatchObject({ emergencyId: id, emergencyType: 'cardiac', address: 'Test Road, Begumpet' });
+    expect(offer).toMatchObject({ emergencyId: id, emergencyType: 'cardiac', patientCount: 1 });
     expect(offer.secondsRemaining).toBeGreaterThan(0);
-    // Nothing about the patient's identity is in an offer from a guest.
-    expect(JSON.stringify(offer)).not.toMatch(/919876500777|guestPhone|trackingToken/);
+    // Before accepting, an offer carries no place, address, notes, medical ID or contact (D-84).
+    expect(Object.keys(offer).sort()).toEqual(['conscious', 'distanceKm', 'emergencyId', 'emergencyType', 'patientCount', 'secondsRemaining']);
+    expect(JSON.stringify(offer)).not.toMatch(/Test Road|test note|17\.58|78\.62|919876500777|guestPhone|trackingToken/);
 
     // The other driver sees nothing, and cannot accept or decline it by guessing the id.
     expect((await app.api('/driver/offers', { token: far.token })).body.offer).toBeNull();
@@ -94,7 +95,8 @@ describe('a request goes only to the driver it was offered to', () => {
     expect((await app.api(`/driver/trips/${id}/status`, { method: 'POST', token: far.token, body: { status: 'en_route' } })).status).toBe(409);
 
     const trip = (await app.api('/driver/trips/active', { token: near.token })).body.emergency;
-    expect(trip).toMatchObject({ id, status: 'assigned', address: 'Test Road, Begumpet' });
+    // The exact place comes with the trip, after accepting.
+    expect(trip).toMatchObject({ id, status: 'assigned', address: 'Test Road, Begumpet', notes: 'test note only', location: at });
 
     // The guest follows the trip with the link only they hold: first name and position, no phone.
     const token = guest.body.trackingToken;
@@ -142,12 +144,21 @@ describe('a request goes only to the driver it was offered to', () => {
     const busy = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'correct horse', confirm: 'DELETE' } });
     expect(busy.status).toBe(409);
     expect(busy.body.error.code).toBe('trip_active');
-    await app.api(`/emergencies/${id}/cancel`, { method: 'POST', token: d.token, body: {} });
     await app.api(`/track/${guest.body.trackingToken}/cancel`, { method: 'POST', body: {} });
     await app.api('/driver/me/release', { method: 'POST', token: d.token, body: {} });
     const gone = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'correct horse', confirm: 'DELETE' } });
     expect(gone.status).toBe(204);
     expect((await app.store.emergencies.listAmbulances()).some((a) => a.registrationNumber === 'TS10FL' + String(50).padStart(4, '0'))).toBe(false);
     expect(await app.store.users.byId(d.id)).toBeNull();
+  });
+
+  it('does not let a driver delete the account while a request waits for their answer', async () => {
+    const d = await onlineDriver(60, { lat: 17.8, lng: 78.9 });
+    await app.api('/emergencies', { body: { ...SOS, location: { lat: 17.8, lng: 78.9 }, guestPhone: '+919876500780' }, headers: from() });
+    expect((await app.api('/driver/offers', { token: d.token })).body.offer).not.toBeNull();
+    const blocked = await app.api('/patients/me/delete-account', { token: d.token, body: { password: 'correct horse', confirm: 'DELETE' } });
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error.code).toBe('offer_open');
+    expect((await app.api('/driver/me', { token: d.token })).status).toBe(200);
   });
 });

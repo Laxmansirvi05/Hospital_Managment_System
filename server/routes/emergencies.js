@@ -106,14 +106,19 @@ export const routes = [
   { method: 'PUT', path: '/driver/me/location', roles: DRIVER, async handler(ctx) {
     requireRole(ctx.user, 'driver');
     const body = parse(locationBody, await readJson(ctx.req)); const ambulance = await getStore().emergencies.ambulanceByDriver(ctx.user.id); if (!ambulance) throw notFound();
+    await limit('driver-ping', ambulance.id, 40, 60);
     const updated = await getStore().emergencies.updateAmbulanceLocation(ambulance.id, body); return { body: { status: 'ok', position: ambulancePosition(updated) } };
   } },
   { method: 'GET', path: '/driver/offers', roles: DRIVER, async handler({ user }) {
     requireRole(user, 'driver');
     const { ambulance, offer } = await getEmergencyService().driverOffers(user.id); if (!ambulance) throw notFound(); if (!offer) return { body: { offer: null } };
-    const e = await getStore().emergencies.getById(offer.emergencyId); const profile = e.patientUserId ? await getStore().profiles.get(e.patientUserId) : null;
-    return { body: { offer: { emergencyId: e.id, emergencyType: e.emergencyType, location: e.location, address: e.address, conscious: e.conscious, patientCount: e.patientCount,
-      notes: e.notes, secondsRemaining: Math.max(0, Math.ceil((+offer.expiresAt - Date.now()) / 1000)), ...(profile?.shareWithCrew ? { medicalId: { fullName: profile.fullName, bloodGroup: profile.bloodGroup, allergies: profile.allergies, conditions: profile.conditions, currentMedicines: profile.currentMedicines } } : {}) } } };
+    // Before the driver accepts, an offer says only what is needed to decide: what kind of emergency, how many
+    // people and how far away. The exact place, address, notes and any shared medical ID come with the trip
+    // after accepting, so a driver account made to browse requests learns nothing about the patient (D-84).
+    const e = await getStore().emergencies.getById(offer.emergencyId);
+    const away = Number.isFinite(ambulance.lat) && Number.isFinite(ambulance.lng) && e.location ? Math.round(distanceKm({ lat: ambulance.lat, lng: ambulance.lng }, e.location) * 10) / 10 : null;
+    return { body: { offer: { emergencyId: e.id, emergencyType: e.emergencyType, conscious: e.conscious, patientCount: e.patientCount, distanceKm: away,
+      secondsRemaining: Math.max(0, Math.ceil((+offer.expiresAt - Date.now()) / 1000)) } } };
   } },
   { method: 'POST', path: '/driver/offers/:emergencyId/accept', roles: DRIVER, async handler(ctx) {
     requireRole(ctx.user, 'driver');
@@ -128,7 +133,10 @@ export const routes = [
   { method: 'GET', path: '/driver/trips/active', roles: DRIVER, async handler({ user }) {
     requireRole(user, 'driver');
     await getEmergencyService().tick(); const a = await getStore().emergencies.ambulanceByDriver(user.id); if (!a) throw notFound(); const e = await getStore().emergencies.activeForAmbulance(a.id);
-    return { body: { emergency: e ? { ...publicSummary(e), location: e.location, address: e.address } : null } };
+    if (!e) return { body: { emergency: null } };
+    const profile = e.patientUserId ? await getStore().profiles.get(e.patientUserId) : null;
+    return { body: { emergency: { ...publicSummary(e), location: e.location, address: e.address, conscious: e.conscious, notes: e.notes,
+      ...(profile?.shareWithCrew ? { medicalId: { fullName: profile.fullName, bloodGroup: profile.bloodGroup, allergies: profile.allergies, conditions: profile.conditions, currentMedicines: profile.currentMedicines } } : {}) } } };
   } },
   { method: 'POST', path: '/driver/trips/:emergencyId/status', roles: DRIVER, async handler(ctx) {
     requireRole(ctx.user, 'driver');

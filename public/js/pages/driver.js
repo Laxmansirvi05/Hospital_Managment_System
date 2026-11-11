@@ -214,9 +214,8 @@ async function start() {
       dim('Situation', TYPE_WORDS[offer.emergencyType] || offer.emergencyType),
       dim('People', String(offer.patientCount)),
       dim('Conscious', offer.conscious === null ? 'Not sure' : offer.conscious ? 'Yes' : 'No'),
-      dim('Pickup', offer.address || `${offer.location.lat.toFixed(4)}, ${offer.location.lng.toFixed(4)}`),
-      offer.notes ? dim('Notes', offer.notes) : null,
-      offer.medicalId ? dim('Shared medical ID', [offer.medicalId.fullName, offer.medicalId.bloodGroup].filter(Boolean).join(', ')) : null].filter(Boolean));
+      dim('Distance from you', Number.isFinite(offer.distanceKm) ? `${offer.distanceKm} km` : 'Not known'),
+      h('p', { class: 't-footnote muted' }, 'The exact place, address and notes appear after you accept.')].filter(Boolean));
   }
   let countdownTimer = null;
   function showOffer(offer) {
@@ -239,7 +238,12 @@ async function start() {
     state.trip = trip;
     tripCard.hidden = false;
     tripTitle.textContent = STATUS_WORDS[trip.status] || 'Current trip';
-    tripFacts.replaceChildren(dim('Pickup', trip.address || `${trip.location.lat.toFixed(4)}, ${trip.location.lng.toFixed(4)}`), dim('People', String(trip.patientCount ?? 1)));
+    const id = trip.medicalId;
+    tripFacts.replaceChildren(...[
+      dim('Pickup', trip.address || `${trip.location.lat.toFixed(4)}, ${trip.location.lng.toFixed(4)}`), dim('People', String(trip.patientCount ?? 1)),
+      dim('Conscious', trip.conscious === null || trip.conscious === undefined ? 'Not sure' : trip.conscious ? 'Yes' : 'No'),
+      trip.notes ? dim('Notes', trip.notes) : null,
+      id ? dim('Medical ID shared by the patient', [id.fullName, id.bloodGroup && `Blood group ${id.bloodGroup}`, id.allergies?.length && `Allergies: ${id.allergies.join(', ')}`, id.conditions?.length && `Conditions: ${id.conditions.join(', ')}`].filter(Boolean).join('. ')) : null].filter(Boolean));
     const pins = [{ ...trip.location, label: 'Patient', kind: 'hospital' }];
     const origin = state.last ? { ...state.last, label: 'You' } : null;
     if (!map) { map = createRealMap({ pins, origin, height: 260, label: 'Map of the pickup' }); mapBox.replaceChildren(map); } else map.update({ pins, origin });

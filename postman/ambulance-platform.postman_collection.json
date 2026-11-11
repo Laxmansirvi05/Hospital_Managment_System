@@ -2480,7 +2480,7 @@
                 "active"
               ]
             },
-            "description": "Role: driver. Request: none. Success: 200 {emergency|null}",
+            "description": "Role: driver. Request: none. Success: 200 {emergency|null}; adds location, address, conscious, notes and, only when shareWithCrew is true, medicalId",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2573,7 +2573,7 @@
                 "offers"
               ]
             },
-            "description": "Role: driver. Request: none. Success: 200 {offer|null}; medicalId is present only when shareWithCrew is true",
+            "description": "Role: driver. Request: none. Success: 200 {offer|null}; offer has emergencyId, emergencyType, conscious, patientCount, distanceKm, secondsRemaining only: no place, address, notes or medical ID before accepting",
             "auth": {
               "type": "bearer",
               "bearer": [

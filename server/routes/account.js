@@ -55,6 +55,8 @@ export const routes = [
       if (user.role === 'driver') {
         const ambulance = await store.emergencies.ambulanceByDriver(user.id);
         if (ambulance && (await store.emergencies.activeForAmbulance(ambulance.id))) throw conflict('trip_active', 'Finish your current trip before deleting your account.');
+        // An open offer would vanish with the ambulance and leave that patient waiting with nothing to close the request.
+        if (ambulance && (await store.emergencies.openOfferForAmbulance(ambulance.id))) throw conflict('offer_open', 'A request is waiting for your answer. Accept or decline it, then try again.');
       }
       // Files first: if storage fails, stop, so no file is left behind without an owner.
       for (const f of await store.files.all(user.id)) {

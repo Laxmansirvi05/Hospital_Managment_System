@@ -50,7 +50,7 @@ The driver reject handler is registered but remains **PROPOSED under P-20 and is
 | GET | `/patients/me/assistant` | patient | none | 200 {consent,conversations,disclaimer} |
 | PUT | `/driver/me/status` | driver | Body: status (available|offline) | 200 {status} |
 | PUT | `/driver/me/location` | driver | Body: lat, lng, heading?, speed? | 200 {status,position} |
-| GET | `/driver/trips/active` | driver |  | 200 {emergency|null} |
+| GET | `/driver/trips/active` | driver |  | 200 {emergency|null}; adds location, address, conscious, notes and, only when shareWithCrew is true, medicalId |
 | POST | `/driver/me/release` | driver |  | 200 {status} |
 | GET | `/admin/listings/:kind/:id` | admin | Path: kind (hospital|doctor|pharmacy|diagnostic_centre), id (UUID) | 200 {listing} |
 | PATCH | `/admin/listings/:kind/:id` | admin | Path: kind (hospital|doctor|pharmacy|diagnostic_centre), id (UUID); JSON object with one or more valid listing fields | 200 {listing} |
@@ -77,7 +77,7 @@ The driver reject handler is registered but remains **PROPOSED under P-20 and is
 | DELETE | `/assistant/conversations` | patient | none | 204 empty |
 | GET | `/emergencies/active` | patient |  | 200 {emergency|null} |
 | GET | `/driver/me` | driver |  | 200 {ambulance{id,type,registrationNumber,status,position}} |
-| GET | `/driver/offers` | driver |  | 200 {offer|null}; medicalId is present only when shareWithCrew is true |
+| GET | `/driver/offers` | driver |  | 200 {offer|null}; offer has emergencyId, emergencyType, conscious, patientCount, distanceKm, secondsRemaining only: no place, address, notes or medical ID before accepting |
 | GET | `/admin/emergencies` | admin | Query: status? (emergency status) | 200 {emergencies:[operational summary]} |
 | GET | `/admin/ambulances` | admin | Query: type? (BLS|ALS|ICU), lat?, lng?, radiusKm? (1..100, default 10). With lat and lng: available crews only, nearest first | 200 {ambulances:[id,type,status,position,isDemo,distanceKm?]} |
 | GET | `/admin/analytics` | admin |  | 200 {timeZone,totalRequests,noMatch,averageAssignSeconds,averageArriveSeconds,byHour} |

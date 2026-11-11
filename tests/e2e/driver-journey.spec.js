@@ -85,12 +85,15 @@ test('a driver signs up, goes online and is alerted; the patient follows the tri
     // The first driver is alerted with the request, and the second is not.
     const alert = driver.page.getByRole('alert').filter({ hasText: 'New ambulance request' });
     await expect(alert).toBeVisible({ timeout: 20000 });
-    await expect(alert).toContainText('Test Road, near the junction');
+    // Only coarse details before accepting; the address comes with the trip.
+    await expect(alert).toContainText('Distance from you');
+    await expect(alert).not.toContainText('Test Road');
     await expect(driver.page).toHaveTitle(/New request/);
     await expect(other.page.getByRole('alert').filter({ hasText: 'New ambulance request' })).toHaveCount(0);
     await driver.page.screenshot({ path: 'test-results/evidence/driver-offer.png' });
     await alert.getByRole('button', { name: 'Accept' }).click();
     await expect(driver.page.getByRole('heading', { name: 'Request accepted' })).toBeVisible({ timeout: 15000 });
+    await expect(driver.page.getByText('Test Road, near the junction')).toBeVisible();
 
     // The patient sees the crew accepted, then every step.
     await patient.page.waitForURL(/\/emergency\//, { timeout: 20000 });
