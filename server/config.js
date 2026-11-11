@@ -25,9 +25,6 @@ const schema = z.object({
   TWILIO_ACCOUNT_SID: optionalReal(z.string().regex(/^AC[0-9a-fA-F]{32}$/)),
   TWILIO_AUTH_TOKEN: optionalReal(z.string().min(16)),
   TWILIO_FROM: optionalReal(z.string().regex(/^\+[1-9][0-9]{7,14}$/)),
-  // Sign in with Google (D-63): an OAuth web client from Google Cloud. Both or neither.
-  GOOGLE_CLIENT_ID: optionalReal(z.string().regex(/^[\w-]+\.apps\.googleusercontent\.com$/, 'must be a Google OAuth web client id')),
-  GOOGLE_CLIENT_SECRET: optionalReal(real(z.string().min(10))),
   // The assistant's model providers, in order (D-66). Free plans only (D-47).
   GROQ_API_KEY: optionalReal(z.string().min(20)),
   GROQ_MODEL: z.string().min(3).max(100).default('openai/gpt-oss-120b'),
@@ -52,7 +49,6 @@ const schema = z.object({
  * @property {boolean} allowPrivilegedSignup
  * @property {boolean} trustProxy
  * @property {{ url: string, serviceKey: string } | null} storage
- * @property {{ clientId: string, clientSecret: string } | null} google
  * @property {{ name: string, url: string, key: string, model: string, files: boolean }[]} aiProviders
  * @property {number} assistantDailyLimit
  * @property {Record<string, string|boolean>} publicValues
@@ -90,8 +86,6 @@ export function loadConfig(env = process.env) {
 
   // P-27: without a database the local server runs on an in-memory store and says so.
   const store = v.DATABASE_URL ? 'postgres' : 'memory';
-  // See the note in db/postgres.js: overlapping requests stall behind the transaction pooler.
-  if (/\.pooler\.supabase\.com:6543\//.test(v.DATABASE_URL ?? '')) warnings.push('DATABASE_URL uses the Supabase transaction pooler (port 6543). Use the session pooler (port 5432), or requests can hang.');
   if (store === 'memory') warnings.push('DATABASE_URL is not set. Using the in-memory store with sample data. Nothing is saved after a restart.');
 
   let jwtSecret = v.JWT_SECRET;
@@ -108,12 +102,6 @@ export function loadConfig(env = process.env) {
   const storage = v.SUPABASE_URL && v.SUPABASE_SERVICE_ROLE_KEY ? { url: v.SUPABASE_URL, serviceKey: v.SUPABASE_SERVICE_ROLE_KEY } : null;
   if (!storage) warnings.push('Supabase Storage keys are not set. Uploaded files are kept in memory only.');
 
-  if (Boolean(v.GOOGLE_CLIENT_ID) !== Boolean(v.GOOGLE_CLIENT_SECRET)) {
-    throw new Error('Set both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, or neither');
-  }
-  const google = v.GOOGLE_CLIENT_ID ? { clientId: v.GOOGLE_CLIENT_ID, clientSecret: v.GOOGLE_CLIENT_SECRET } : null;
-  if (!google) warnings.push('Google sign-in is off: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set.');
-
   // D-66: Groq first, then OpenRouter. Only providers with a key take part.
   const aiProviders = [
     v.GROQ_API_KEY && { name: 'Groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: v.GROQ_API_KEY, model: v.GROQ_MODEL, files: false },
@@ -126,8 +114,6 @@ export function loadConfig(env = process.env) {
   if (v.PUBLIC_SUPABASE_URL) publicValues.supabaseUrl = v.PUBLIC_SUPABASE_URL;
   if (v.PUBLIC_SUPABASE_ANON_KEY) publicValues.supabaseAnonKey = v.PUBLIC_SUPABASE_ANON_KEY;
   if (v.PUBLIC_MAPTILER_KEY) publicValues.maptilerKey = v.PUBLIC_MAPTILER_KEY;
-  // Only whether the button works; the client id stays on the server, which builds the redirect.
-  if (google) publicValues.googleSignIn = true;
 
   return Object.freeze({
     env: v.NODE_ENV,
@@ -140,7 +126,6 @@ export function loadConfig(env = process.env) {
     // Only behind a proxy that overwrites X-Forwarded-For (Vercel) is that header a real client address.
     trustProxy: v.TRUST_PROXY === 'true' || v.VERCEL === '1',
     storage,
-    google,
     aiProviders,
     assistantDailyLimit: v.ASSISTANT_DAILY_LIMIT,
     mapboxToken: v.MAPBOX_TOKEN,

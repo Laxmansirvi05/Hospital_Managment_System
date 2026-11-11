@@ -84,11 +84,10 @@ describe('admin Postgres store: users', () => {
   });
 
   it('selects only safe columns for the user list result', async () => {
-    const { admin } = store(() => [{ id: TARGET, name: 'A', email: 'a@x.test', role: 'patient', created_at: new Date(), disabled_at: null, password_hash: 'scrypt$secret', google_sub: null, phone: '+911234567890', total_count: 1 }]);
+    const { admin } = store(() => [{ id: TARGET, name: 'A', email: 'a@x.test', role: 'patient', created_at: new Date(), disabled_at: null, password_hash: 'scrypt$secret', phone: '+911234567890', total_count: 1 }]);
     const { rows } = await admin.listUsers({});
-    expect(Object.keys(rows[0]).sort()).toEqual(['createdAt', 'disabledAt', 'email', 'id', 'name', 'role', 'signIn']);
+    expect(Object.keys(rows[0]).sort()).toEqual(['createdAt', 'disabledAt', 'email', 'id', 'name', 'role']);
     expect(JSON.stringify(rows)).not.toMatch(/scrypt|\+91/);
-    expect(rows[0].signIn).toEqual({ password: true, google: false });
   });
 });
 

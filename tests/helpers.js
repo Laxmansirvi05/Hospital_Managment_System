@@ -7,12 +7,10 @@ import { createMemoryStore } from '../server/db/memory.js';
 import { memoryStorage, setStorageForTests } from '../server/adapters/storage.js';
 import { handle } from '../server/router.js';
 
-export async function startApp({ allowPrivilegedSignup = true, google = false, ai = false } = {}) {
-  // With google: true the Google client is set, and the token exchange is a fake the test installs.
-  const googleEnv = google ? { GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'test-secret-value' } : {};
+export async function startApp({ allowPrivilegedSignup = true, ai = false } = {}) {
   // With ai: true both model providers are configured; the test installs a fake in their place.
   const aiEnv = ai ? { GROQ_API_KEY: 'test-groq-key-not-real-0000', OPENROUTER_API_KEY: 'test-openrouter-key-not-real-0000' } : {};
-  const config = loadConfig({ NODE_ENV: 'test', ALLOW_PRIVILEGED_SIGNUP: allowPrivilegedSignup ? 'true' : 'false', TRUST_PROXY: 'true', JWT_SECRET: 'x'.repeat(40), TRACKING_TOKEN_PEPPER: 'y'.repeat(40), ...googleEnv, ...aiEnv });
+  const config = loadConfig({ NODE_ENV: 'test', ALLOW_PRIVILEGED_SIGNUP: allowPrivilegedSignup ? 'true' : 'false', TRUST_PROXY: 'true', JWT_SECRET: 'x'.repeat(40), TRACKING_TOKEN_PEPPER: 'y'.repeat(40), ...aiEnv });
   const store = createMemoryStore();
   const storage = memoryStorage();
   // Config, store and storage are module singletons; activate() puts this app's back after another app replaced them.
@@ -49,7 +47,9 @@ export async function startApp({ allowPrivilegedSignup = true, google = false, a
     n += 1;
     const email = `${role}${n}@test.example`;
     // Each test user arrives from its own address behind the trusted proxy, so per-IP limits apply per user.
-    const r = await api('/auth/register', { body: { name: `${role} ${n}`, email, phone: `98765${String(n).padStart(5, '0')}`, password: 'correct horse', role }, headers: { 'x-forwarded-for': `10.0.${Math.floor(n / 250)}.${n % 250}` } });
+    // A driver signs up with a vehicle, which becomes their one ambulance.
+    const vehicle = role === 'driver' ? { vehicle: { registrationNumber: `TS09TST${String(n).padStart(4, '0')}`, type: 'BLS' } } : {};
+    const r = await api('/auth/register', { body: { name: `${role} ${n}`, email, phone: `98765${String(n).padStart(5, '0')}`, password: 'correct horse', role, ...vehicle }, headers: { 'x-forwarded-for': `10.0.${Math.floor(n / 250)}.${n % 250}` } });
     if (r.status !== 201) throw new Error(`register failed ${r.status} ${JSON.stringify(r.body)}`);
     return { token: r.body.token, id: r.body.user.id, email, cookies: r.headers.getSetCookie() };
   }

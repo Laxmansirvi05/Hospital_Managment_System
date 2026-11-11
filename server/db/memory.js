@@ -222,25 +222,28 @@ export function createMemoryStore(options = {}) {
       async insertEvent(id, kind, actorRole = 'system', data = {}) { if (!emergencies.has(id)) return null; return clone(addEmergencyEvent(id, kind, actorRole, data)); },
     },
 
+    drivers: {
+      /** A driver account and its one ambulance (D-73), created together or not at all. */
+      async register({ name, email, phone, passwordHash, vehicle }) {
+        for (const u of users.values()) if (u.email === email) return { conflict: 'email' };
+        for (const a of ambulances.values()) if (a.registrationNumber === vehicle.registrationNumber) return { conflict: 'vehicle' };
+        const user = { id: randomUUID(), name, email, phone, passwordHash, role: 'driver', createdAt: now(), disabledAt: null };
+        users.set(user.id, user);
+        const id = randomUUID();
+        ambulances.set(id, { id, driverUserId: user.id, registrationNumber: vehicle.registrationNumber, type: vehicle.type, status: 'offline', operatorName: 'Independent driver',
+          driverName: name.split(/\s+/)[0], driverPhone: phone, isDemo: false, lat: null, lng: null, heading: null, speedKmph: null, lastPingAt: null, createdAt: emergencyNow(), updatedAt: emergencyNow() });
+        return { user: clone(user) };
+      },
+    },
+
     users: {
-      async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
-        for (const u of users.values()) if (u.email === email || (googleSub && u.googleSub === googleSub)) return null;
-        const user = { id: randomUUID(), name, email, phone, passwordHash, googleSub, role, createdAt: now(), disabledAt: null };
+      async create({ name, email, phone = null, passwordHash = null, role }) {
+        for (const u of users.values()) if (u.email === email) return null;
+        const user = { id: randomUUID(), name, email, phone, passwordHash, role, createdAt: now(), disabledAt: null };
         users.set(user.id, user);
         return clone(user);
       },
       async byEmail(email) { for (const u of users.values()) if (u.email === email) return clone(u); return null; },
-      async byGoogleSub(sub) { for (const u of users.values()) if (u.googleSub === sub) return clone(u); return null; },
-      async linkGoogle(id, sub) {
-        const u = users.get(id);
-        if (!u || u.googleSub) return null;
-        for (const o of users.values()) if (o.googleSub === sub) return null;
-        // As in Postgres: the unproven password and every session go when Google proves the email.
-        u.googleSub = sub;
-        u.passwordHash = null;
-        for (const s of sessions.values()) if (s.userId === id && !s.revokedAt) Object.assign(s, { revokedAt: now(), revokedReason: 'google_link' });
-        return clone(u);
-      },
       async setAssistantConsent(id, at) { const u = users.get(id); if (!u) return null; u.assistantConsentAt = at; return clone(u); },
       async byId(id) { return users.has(id) ? clone(users.get(id)) : null; },
       async list() { return [...users.values()].map(clone).sort((a, b) => a.createdAt - b.createdAt); },

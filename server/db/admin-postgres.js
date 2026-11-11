@@ -30,7 +30,7 @@ export function createPostgresAdmin(sql, { point }) {
   const like = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const withTotal = (rows, map) => ({ total: rows[0]?.total_count ?? 0, rows: rows.map(map) });
 
-  const userOut = (r) => r && ({ id: r.id, name: r.name, email: r.email, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at ?? null, signIn: { password: !!r.password_hash, google: !!r.google_sub } });
+  const userOut = (r) => r && ({ id: r.id, name: r.name, email: r.email, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at ?? null });
 
   /** One listing as the admin sees it, in any state (active or hidden). */
   async function read(tx, kind, id) {

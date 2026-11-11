@@ -3,7 +3,9 @@ import { runDemoCrew, DEMO_CREW_TIMING } from './demo-crew.js';
 /** Coordinates application workflows while leaving lifecycle decisions in the data adapter. */
 export function createEmergencyService({ store, eta = async (point, candidates) => candidates.map((c) => ({ ...c, etaSeconds: Math.ceil(c.distanceKm * 1.4 / 30 * 3600), etaIsEstimate: true })), sms = null, now = () => new Date(), timing = DEMO_CREW_TIMING }) {
   const db = store.emergencies;
-  const tick = () => runDemoCrew(store, { now, timing });
+  // Simulated crews exist only in the in-memory sample store. A real database has real drivers, so
+  // nothing here may touch it (owner, 2026-11-11: no fake ambulances in production).
+  const tick = store.kind === 'memory' ? () => runDemoCrew(store, { now, timing }) : async () => 0;
   return {
     async create(input) {
       const emergency = await db.createEmergency(input);

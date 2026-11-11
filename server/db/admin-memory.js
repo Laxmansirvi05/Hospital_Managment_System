@@ -87,12 +87,12 @@ export function createMemoryAdmin(ctx) {
       const rows = [...users.values()]
         .filter((u) => matches(`${u.name} ${u.email}`, q) && (!role || u.role === role) && (!status || (status === 'disabled') === !!u.disabledAt))
         .sort((a, b) => +b.createdAt - +a.createdAt)
-        .map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, disabledAt: u.disabledAt ?? null, signIn: { password: !!u.passwordHash, google: !!u.googleSub } }));
+        .map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, disabledAt: u.disabledAt ?? null }));
       return page(rows, { limit, offset });
     },
     async getUser(id) {
       const u = users.get(id);
-      return u ? { id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, disabledAt: u.disabledAt ?? null, signIn: { password: !!u.passwordHash, google: !!u.googleSub } } : null;
+      return u ? { id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt, disabledAt: u.disabledAt ?? null } : null;
     },
     /** Disables an account and ends its sessions. Refuses to lock out the last active admin or the acting admin. */
     async disableUser(id, actorId) {

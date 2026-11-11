@@ -15,14 +15,23 @@ export const phoneSchema = z.string().trim().transform((v) => v.replace(/[\s-]/g
 const email = z.string().trim().toLowerCase().email('Enter a valid email address').max(254);
 const password = z.string().min(8, 'Use at least 8 characters').max(128, 'Use at most 128 characters');
 
+// An Indian registration plate such as TS09UB1234, typed with or without spaces or hyphens.
+const registration = z.string().trim().transform((v) => v.replace(/[\s-]/g, '').toUpperCase()).refine((v) => /^[A-Z0-9]{4,20}$/.test(v), 'Enter the vehicle registration number, for example TS09UB1234');
+
 const registerSchema = z.object({
   name: z.string().trim().min(1, 'Enter your name').max(100),
   email,
-  // The sign-up form asks for name, email and password; a phone can be added later (owner, 2026-10-27).
+  // Patients add a phone later (owner, 2026-10-27). A driver needs one now, so a patient can be told who is coming.
   phone: phoneSchema.optional(),
   password,
   role: z.enum(ROLES).default('patient'),
-}).strict();
+  vehicle: z.object({ registrationNumber: registration, type: z.enum(['BLS', 'ALS', 'ICU']) }).strict().optional(),
+}).strict().superRefine((v, ctx) => {
+  if (v.role === 'driver') {
+    if (!v.phone) ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Enter your mobile number' });
+    if (!v.vehicle) ctx.addIssue({ code: 'custom', path: ['vehicle', 'registrationNumber'], message: 'Enter the vehicle registration number' });
+  } else if (v.vehicle) ctx.addIssue({ code: 'custom', path: ['vehicle'], message: 'Only a driver account has a vehicle' });
+});
 
 const loginSchema = z.object({ email, password: z.string().min(1, 'Enter your password').max(128) }).strict();
 
@@ -34,12 +43,19 @@ export const routes = [
     async handler({ req }) {
       await limit('register-ip', clientIp(req), 10, 3600);
       const body = parse(registerSchema, await readJson(req));
-      if (body.role !== 'patient' && !getConfig().allowPrivilegedSignup) {
-        throw forbidden('role_not_allowed', 'Only patients can sign up. Driver and admin accounts are created by the CareRoute team.');
+      // Patients and drivers sign up here (owner, 2026-11-11, D-84). Admin accounts come from the account script (D-21).
+      if (body.role === 'admin' && !getConfig().allowPrivilegedSignup) {
+        throw forbidden('role_not_allowed', 'Only patients and drivers can sign up. Admin accounts are created by the CareRoute team.');
       }
-      const user = await getStore().users.create({
-        name: body.name, email: body.email, phone: body.phone ?? null, role: body.role, passwordHash: await hashPassword(body.password),
-      });
+      const passwordHash = await hashPassword(body.password);
+      let user;
+      if (body.role === 'driver') {
+        const made = await getStore().drivers.register({ name: body.name, email: body.email, phone: body.phone, passwordHash, vehicle: body.vehicle });
+        if (made.conflict === 'vehicle') throw conflict('vehicle_taken', 'A driver account already uses this registration number.');
+        user = made.user;
+      } else {
+        user = await getStore().users.create({ name: body.name, email: body.email, phone: body.phone ?? null, role: body.role, passwordHash });
+      }
       if (!user) throw conflict('email_taken', 'An account with this email already exists. Sign in instead.');
       const { token, cookies } = await startSession(req, user);
       return { status: 201, body: { token, user: publicUser(user) }, headers: { 'Set-Cookie': cookies } };
@@ -52,7 +68,7 @@ export const routes = [
       const body = parse(loginSchema, await readJson(req));
       await limit('login-account', body.email, 10, 900);
       const user = await getStore().users.byEmail(body.email);
-      // A Google-only account has no password: it gets the same answer, after the same work, as an unknown email.
+      // An unknown email gets the same answer, after the same work, as a wrong password.
       const ok = user?.passwordHash ? await verifyPassword(body.password, user.passwordHash) : await dummyVerify(body.password);
       if (!user || !ok) throw unauthorized('invalid_credentials', 'The email or password is not right.');
       if (user.disabledAt) throw forbidden('account_disabled', 'This account is disabled.');
@@ -63,7 +79,7 @@ export const routes = [
   {
     method: 'GET', path: '/auth/me', roles: ROLES,
     async handler({ user }) {
-      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt, hasPassword: Boolean(user.passwordHash), google: Boolean(user.googleSub) } };
+      return { body: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, createdAt: user.createdAt } };
     },
   },
   {

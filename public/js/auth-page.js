@@ -4,6 +4,8 @@ import { field, showErrors, busy } from './ui.js';
 
 const main = document.getElementById('main');
 let authMode = 'signin';
+// Who is signing in or creating an account: a patient, or an ambulance driver (owner, 2026-11-11).
+let authRole = new URLSearchParams(location.search).get('role') === 'driver' ? 'driver' : 'patient';
 let modeTransitioning = false;
 let modeTransitionTimer = 0;
 
@@ -170,8 +172,8 @@ function modeView(mode, onModeChange) {
         type: 'button',
         onclick: () => onModeChange(mode === 'signup' ? 'signin' : 'signup'),
       }, mode === 'signup' ? 'Sign in' : 'Create an account')),
-    mode === 'signup' ? null : h('p', { class: 'auth-emergency' }, icon('ambulance', 18), h('span', {}, 'In an emergency, call ', h('a', { href: 'tel:112', class: 'strong' }, '112'), '. You do not need to sign in.')),
-    mode === 'signup' ? null : h('p', { class: 'auth-footnote' }, 'Your account keeps your care journey organized. Medical details remain private and are only shared when you choose.'));
+    mode === 'signup' || authRole === 'driver' ? null : h('p', { class: 'auth-emergency' }, icon('ambulance', 18), h('span', {}, 'In an emergency, call ', h('a', { href: 'tel:112', class: 'strong' }, '112'), '. You do not need to sign in.')),
+    mode === 'signup' || authRole === 'driver' ? null : h('p', { class: 'auth-footnote' }, 'Your account keeps your care journey organized. Medical details remain private and are only shared when you choose.'));
 }
 
 function updateModeTabs(switcher, mode) {
@@ -231,47 +233,6 @@ function primaryButton(label) {
   return h('button', { class: 'auth-liquid-button', type: 'submit' }, h('span', { class: 'auth-liquid-button-content' }, label));
 }
 
-// Whether this deployment has Google sign-in (D-63); asked once per page.
-const googleEnabled = api('/config').then((c) => c.googleSignIn === true, () => false);
-
-const GOOGLE_REASONS = {
-  cancelled: 'Google sign-in was cancelled.',
-  expired: 'That Google sign-in took too long or was opened in another tab. Try again.',
-  failed: 'Google could not confirm your account just now. Try again.',
-  not_patient: 'This email belongs to a staff account. Sign in with its password.',
-  linked_elsewhere: 'This email is already linked to a different Google account.',
-  disabled: 'This account is disabled.',
-  unavailable: 'Google sign-in is not set up for this site yet.',
-  try_again: 'Something went wrong. Try again.',
-};
-
-function googleAuthBlock() {
-  const status = h('p', { class: 'auth-provider-status', id: 'google-auth-status' }, 'Google sign-in is unavailable until an OAuth provider is configured for this deployment.');
-  const button = h('button', {
-    class: 'auth-google-button',
-    type: 'button',
-    disabled: true,
-    'aria-describedby': 'google-auth-status',
-    title: 'Google sign-in is not configured',
-  }, h('span', { class: 'google-mark', 'aria-hidden': 'true' }, 'G'), 'Continue with Google');
-  googleEnabled.then((on) => {
-    if (!on) return;
-    button.disabled = false;
-    button.removeAttribute('title');
-    button.removeAttribute('aria-describedby');
-    status.hidden = true;
-  });
-  // A full-page visit: the server sends the browser on to Google and back again.
-  button.addEventListener('click', () => {
-    const next = new URLSearchParams(location.search).get('next');
-    location.assign(`/api/v1/auth/google/start${next ? `?next=${encodeURIComponent(safeNext())}` : ''}`);
-  });
-  return h('div', { class: 'auth-google-block' },
-    h('div', { class: 'auth-divider', 'aria-hidden': 'true' }, h('span', {}, 'OR')),
-    button,
-    status);
-}
-
 function setMessage(messageEl, message, kind = 'error') {
   messageEl.className = `form-error auth-form-message${kind === 'info' ? ' auth-form-message-info' : ''}`;
   messageEl.hidden = !message;
@@ -308,11 +269,8 @@ function signInForm() {
     field({ id: 'email', label: 'Email address', input: email }),
     password.wrap,
     h('div', { class: 'auth-form-row' }, forgot),
-    submit,
-    googleAuthBlock());
+    submit);
 
-  const reason = GOOGLE_REASONS[new URLSearchParams(location.search).get('google')];
-  if (reason) setMessage(message, reason);
   forgot.addEventListener('click', () => setMessage(message, 'Password reset is not configured for this deployment. After signing in, you can change your password from Account and privacy.', 'info'));
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -328,24 +286,32 @@ function signInForm() {
       showErrors(form, err, message);
     }
   });
-  return { heading: 'Welcome back', subheading: 'Sign in to continue with CareRoute.', form };
+  return authRole === 'driver'
+    ? { heading: 'Driver sign in', subheading: 'Sign in to receive ambulance requests.', form }
+    : { heading: 'Welcome back', subheading: 'Sign in to continue with CareRoute.', form };
 }
 
 function signUpForm() {
+  const driver = authRole === 'driver';
   const name = h('input', { class: 'input', autocomplete: 'name', required: true, maxlength: 100 });
   const email = h('input', { class: 'input', type: 'email', autocomplete: 'email', required: true, inputmode: 'email' });
+  const phone = h('input', { class: 'input', type: 'tel', autocomplete: 'tel', required: true, inputmode: 'tel', placeholder: '98765 43210' });
+  const registration = h('input', { class: 'input', autocomplete: 'off', required: true, maxlength: 24, placeholder: 'TS09UB1234', style: 'text-transform:uppercase' });
+  const type = h('select', { class: 'select' }, [['BLS', 'Basic life support (BLS)'], ['ALS', 'Advanced life support (ALS)'], ['ICU', 'Intensive care (ICU)']].map(([v, t]) => h('option', { value: v }, t)));
   const password = passwordField({ id: 'password', label: 'Password', autocomplete: 'new-password', hint: 'At least 8 characters.' });
   const terms = termsField();
   const message = formMessage();
-  const submit = primaryButton('Create account');
+  const submit = primaryButton(driver ? 'Create driver account' : 'Create account');
   const form = h('form', { class: 'auth-form', novalidate: true },
     message,
     field({ id: 'name', label: 'Full name', input: name }),
     field({ id: 'email', label: 'Email address', input: email }),
+    driver ? field({ id: 'phone', label: 'Mobile number', input: phone, hint: 'Patients see your first name and this number when you accept a request.' }) : null,
+    driver ? field({ id: 'registrationNumber', label: 'Vehicle registration number', input: registration }) : null,
+    driver ? field({ id: 'type', label: 'Ambulance type', input: type }) : null,
     password.wrap,
     terms.wrap,
-    submit,
-    googleAuthBlock());
+    submit);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -353,19 +319,27 @@ function signUpForm() {
     let invalid = false;
     invalid = localError(form, 'name', name.value.trim() ? '' : 'Enter your full name.') || invalid;
     invalid = validateEmail(form, 'email') || invalid;
+    if (driver) {
+      invalid = localError(form, 'phone', phone.value.trim() ? '' : 'Enter your mobile number.') || invalid;
+      invalid = localError(form, 'registrationNumber', registration.value.trim() ? '' : 'Enter the vehicle registration number.') || invalid;
+    }
     invalid = localError(form, 'password', password.input.value.length >= 8 ? '' : 'Use at least 8 characters.') || invalid;
     invalid = localError(form, 'terms', terms.checkbox.checked ? '' : 'Agree to the Terms and Privacy Policy to continue.') || invalid;
     if (invalid) return;
     const restore = busy(submit, 'Creating account');
     try {
-      await api('/auth/register', { body: { name: name.value.trim(), email: email.value.trim(), password: password.input.value } });
-      location.replace('/medical-id/?welcome=1');
+      const body = { name: name.value.trim(), email: email.value.trim(), password: password.input.value };
+      if (driver) Object.assign(body, { role: 'driver', phone: phone.value.trim(), vehicle: { registrationNumber: registration.value.trim(), type: type.value } });
+      await api('/auth/register', { body });
+      location.replace(driver ? '/driver/' : '/medical-id/?welcome=1');
     } catch (err) {
       restore();
       showErrors(form, err, message);
     }
   });
-  return { heading: 'Create your account', subheading: 'Your healthcare companion starts here.', form };
+  return driver
+    ? { heading: 'Create a driver account', subheading: 'Register your ambulance and receive requests from patients.', form }
+    : { heading: 'Create your account', subheading: 'Your healthcare companion starts here.', form };
 }
 
 function render(mode) {
@@ -379,12 +353,27 @@ function render(mode) {
     modeTab('signin', authMode, setMode),
     modeTab('signup', authMode, setMode),
   );
+  // The role switch sits above everything else; changing it rebuilds the current form for that role.
+  const roleSwitcher = h('div', { class: `auth-mode-switch auth-role-switch${authRole === 'driver' ? ' is-signup' : ''}`, role: 'group', 'aria-label': 'I am a' },
+    h('span', { class: 'auth-mode-indicator', 'aria-hidden': 'true' }));
+  for (const [role, label] of [['patient', 'Patient'], ['driver', 'Driver']]) {
+    const button = h('button', { class: `auth-mode-tab${role === authRole ? ' is-active' : ''}`, type: 'button', 'aria-pressed': String(role === authRole), 'data-role': role }, label);
+    button.addEventListener('click', () => {
+      if (role === authRole || modeTransitioning) return;
+      authRole = role;
+      roleSwitcher.classList.toggle('is-signup', role === 'driver');
+      roleSwitcher.querySelectorAll('.auth-mode-tab').forEach((t) => { t.classList.toggle('is-active', t.dataset.role === role); t.setAttribute('aria-pressed', String(t.dataset.role === role)); });
+      modeStage.replaceChildren(modeView(authMode, setMode));
+    });
+    roleSwitcher.append(button);
+  }
   main.replaceChildren(
     h('section', { class: 'auth-screen' },
       videoPanel(),
       h('section', { class: 'auth-panel', 'aria-label': authMode === 'signup' ? 'Create account' : 'Sign in' },
         h('div', { class: 'auth-panel-inner' },
           h('div', { class: 'auth-panel-brand' }, brandMark()),
+          roleSwitcher,
           modeSwitcher,
           modeStage))));
 }

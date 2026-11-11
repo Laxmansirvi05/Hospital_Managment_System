@@ -44,7 +44,7 @@ describe('admin overview and users', () => {
     const all = await app.api('/admin/users', as(admin));
     expect(all.status).toBe(200);
     expect(all.body.total).toBe(4);
-    for (const u of all.body.users) expect(Object.keys(u).sort()).toEqual(['createdAt', 'disabledAt', 'email', 'id', 'name', 'role', 'signIn']);
+    for (const u of all.body.users) expect(Object.keys(u).sort()).toEqual(['createdAt', 'disabledAt', 'email', 'id', 'name', 'role']);
     const text = JSON.stringify(all.body);
     expect(text).not.toMatch(/scrypt|passwordHash|phone|98765/);
     expect((await app.api('/admin/users?role=driver', as(admin))).body.users.map((u) => u.id)).toEqual([driver.id]);

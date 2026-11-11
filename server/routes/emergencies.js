@@ -128,7 +128,7 @@ export const routes = [
   { method: 'GET', path: '/driver/trips/active', roles: DRIVER, async handler({ user }) {
     requireRole(user, 'driver');
     await getEmergencyService().tick(); const a = await getStore().emergencies.ambulanceByDriver(user.id); if (!a) throw notFound(); const e = await getStore().emergencies.activeForAmbulance(a.id);
-    return { body: { emergency: e ? { ...publicSummary(e), location: e.location } : null } };
+    return { body: { emergency: e ? { ...publicSummary(e), location: e.location, address: e.address } : null } };
   } },
   { method: 'POST', path: '/driver/trips/:emergencyId/status', roles: DRIVER, async handler(ctx) {
     requireRole(ctx.user, 'driver');

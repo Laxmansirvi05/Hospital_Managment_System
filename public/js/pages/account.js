@@ -8,14 +8,12 @@ import { notificationState } from '../notify.js';
 
 const { main, user } = await shell({ nav: 'account', title: 'Account and privacy' });
 
-// A Google account without a password proves itself with a recent Google sign-in instead (D-63).
-const viaGoogleOnly = user.google && !user.hasPassword;
 
 function passwordCard() {
   const current = h('input', { class: 'input', type: 'password', autocomplete: 'current-password' });
   const next = h('input', { class: 'input', type: 'password', autocomplete: 'new-password', minlength: 8 });
   const message = h('p', { class: 'form-error', role: 'alert', hidden: true });
-  const save = h('button', { class: 'btn btn-primary', type: 'submit' }, viaGoogleOnly ? 'Set password' : 'Change password');
+  const save = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Change password');
   const show = h('button', { class: 'btn btn-text btn-sm', type: 'button', 'aria-pressed': 'false' }, icon('eye', 16), 'Show passwords');
   show.addEventListener('click', () => {
     const on = current.type === 'password';
@@ -37,12 +35,10 @@ function passwordCard() {
     verdict.textContent = ['Too short', 'Fair', 'Good', 'Strong'][score];
   });
   const form = h('form', { class: 'card form-section', novalidate: true },
-    h('div', { class: 'stack-4' }, h('div', { class: 'settings-head' }, iconTile('shield', 44), h('h2', { class: 't-title-2' }, 'Password')), h('p', { class: 't-subhead muted' }, viaGoogleOnly
-      ? 'You sign in with Google. Set a password to also sign in with your email. For your safety this works within 15 minutes of signing in with Google.'
-      : 'Changing it signs you out on every other device.')),
+    h('div', { class: 'stack-4' }, h('div', { class: 'settings-head' }, iconTile('shield', 44), h('h2', { class: 't-title-2' }, 'Password')), h('p', { class: 't-subhead muted' }, 'Changing it signs you out on every other device.')),
     message,
     h('div', { class: 'form-grid' },
-      viaGoogleOnly ? null : field({ id: 'currentPassword', label: 'Current password', input: current }),
+      field({ id: 'currentPassword', label: 'Current password', input: current }),
       field({ id: 'newPassword', label: 'New password', input: next, hint: 'At least 8 characters. A longer phrase is stronger than a short mix.' })),
     meter,
     h('div', { class: 'row-8' }, save, show));
@@ -50,7 +46,7 @@ function passwordCard() {
     e.preventDefault();
     const restore = busy(save);
     try {
-      await api('/auth/password', { body: viaGoogleOnly ? { newPassword: next.value } : { currentPassword: current.value, newPassword: next.value } });
+      await api('/auth/password', { body: { currentPassword: current.value, newPassword: next.value } });
       form.reset();
       message.hidden = true;
       toast('Password changed. Other devices are signed out.');
@@ -89,10 +85,10 @@ function deleteCard() {
     h('div', { class: 'stack-4' },
       h('div', { class: 'settings-head' }, iconTile('document', 44), h('h2', { class: 't-title-2' }, 'Delete account')),
       h('p', { class: 't-subhead muted' }, 'This permanently deletes your account and everything in it: medical ID, photo, contacts, reminders, appointments, documents and reviews. It cannot be undone.'),
-      viaGoogleOnly ? h('p', { class: 't-subhead muted' }, 'You sign in with Google, so this works within 15 minutes of signing in with Google.') : null),
+    ),
     message,
     h('div', { class: 'form-grid' },
-      viaGoogleOnly ? null : field({ id: 'password', label: 'Your password', input: password }),
+      field({ id: 'password', label: 'Your password', input: password }),
       field({ id: 'confirm', label: 'Type DELETE to confirm', input: confirmText })),
     h('div', { class: 'row' }, go));
   form.addEventListener('submit', async (e) => {
@@ -100,7 +96,7 @@ function deleteCard() {
     if (!(await confirmDialog({ title: 'Delete your account for good?', text: 'All your data will be removed now. You can create a new account later, but nothing will come back.', confirm: 'Delete everything' }))) return;
     const restore = busy(go, 'Deleting');
     try {
-      await api('/patients/me/delete-account', { body: viaGoogleOnly ? { confirm: confirmText.value.trim() } : { password: password.value, confirm: confirmText.value.trim() } });
+      await api('/patients/me/delete-account', { body: { password: password.value, confirm: confirmText.value.trim() } });
       location.replace('/signin/');
     } catch (err) {
       restore();
@@ -116,13 +112,12 @@ const since = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-I
 function profileCard(d, photoUrl) {
   const p = d?.patient;
   const pct = p ? p.completeness : null;
-  const method = (on, label) => h('span', { class: `tag ${on ? 'tag-success' : ''}` }, icon(on ? 'check' : 'minus', 14), label);
   return h('section', { class: 'card account-hero', 'aria-label': 'Your account' },
     h('span', { class: 'avatar avatar-xl', 'aria-hidden': 'true' }, photoUrl ? h('img', { src: photoUrl, alt: '' }) : initials(user.name)),
     h('div', { class: 'stack-8 account-who' },
       h('h2', { class: 't-title-2' }, user.name),
       h('p', { class: 't-subhead muted' }, [user.email, since ? `Member since ${since}` : null].filter(Boolean).join(' · ')),
-      h('div', { class: 'row-8' }, method(user.hasPassword, 'Email and password'), method(user.google, 'Google'))),
+      h('div', { class: 'row-8' }, h('span', { class: 'tag tag-success' }, icon('check', 14), user.role === 'driver' ? 'Driver account' : 'Patient account'))),
     pct !== null ? h('a', { class: 'account-ready card-link', href: '/medical-id/' },
       h('span', { class: 't-footnote muted' }, 'Medical ID'),
       h('span', { class: 't-title-2 num' }, `${pct}%`),

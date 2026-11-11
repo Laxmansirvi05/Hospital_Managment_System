@@ -28,12 +28,11 @@ describe('memory/Postgres listing adapter contract', () => {
     expect(await createMemoryStore().listings.testPrices({ limit: 10 })).toEqual([]);
   });
 
-  it('returns null for duplicate email and Google identities in memory', async () => {
+  it('returns null for a duplicate email in memory', async () => {
     const users = createMemoryStore().users;
-    const first = await users.create({ name: 'A', email: 'a@example.test', googleSub: 'google-a', role: 'patient' });
+    await users.create({ name: 'A', email: 'a@example.test', role: 'patient' });
 
-    expect(await users.create({ name: 'B', email: 'a@example.test', googleSub: 'google-b', role: 'patient' })).toBeNull();
-    expect(await users.create({ name: 'C', email: 'c@example.test', googleSub: first.googleSub, role: 'patient' })).toBeNull();
+    expect(await users.create({ name: 'B', email: 'a@example.test', role: 'patient' })).toBeNull();
   });
 
   it('uses an untargeted Postgres conflict clause for all unique user keys', () => {

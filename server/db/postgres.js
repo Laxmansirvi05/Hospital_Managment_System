@@ -8,7 +8,7 @@ import { createPostgresAdmin } from './admin-postgres.js';
 const day = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d);
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 
-const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, googleSub: r.google_sub, assistantConsentAt: r.assistant_consent_at, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
+const userRow = (r) => r && { id: r.id, name: r.name, email: r.email, phone: r.phone, passwordHash: r.password_hash, assistantConsentAt: r.assistant_consent_at, role: r.role, createdAt: r.created_at, disabledAt: r.disabled_at };
 const convRow = (r) => r && { id: r.id, userId: r.user_id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at };
 const msgRow = (r) => r && { id: r.id, conversationId: r.conversation_id, userId: r.user_id, role: r.role, content: r.content, payload: r.payload || {}, createdAt: r.created_at };
 const sessionRow = (r) => r && { id: r.id, userId: r.user_id, createdAt: r.created_at, refreshHash: r.refresh_hash, previousRefreshHash: r.previous_refresh_hash, expiresAt: r.expires_at, revokedAt: r.revoked_at };
@@ -71,15 +71,24 @@ function columns(patch, map) {
   return out;
 }
 
-export function createPostgresStore(url) {
+/**
+ * Supabase's transaction pooler (port 6543) stalls this driver for good when requests overlap, and then
+ * every request waits (measured 2026-11-06: 40 at once hung on 6543, all succeeded on 5432). The same
+ * credentials work on the session pooler, so a 6543 address is switched to 5432 here, whatever the
+ * environment variable says.
+ */
+export function sessionPoolerUrl(url) {
+  const u = new URL(url);
+  if (u.hostname.endsWith('.pooler.supabase.com') && u.port === '6543') u.port = '5432';
+  return u.toString();
+}
+
+export function createPostgresStore(rawUrl) {
+  const url = sessionPoolerUrl(rawUrl);
   const sql = postgres(url, {
     max: 3,
     idle_timeout: 20,
     connect_timeout: 10,
-    // DATABASE_URL must use Supabase's session pooler (port 5432). Behind the transaction pooler (6543)
-    // this driver's replies get out of step when requests overlap: every connection stalls for good,
-    // on both sides, and all requests wait. Measured 2026-11-06: 40 requests at once failed on 6543
-    // and all succeeded on 5432.
     prepare: false,
     types: { bigint: postgres.BigInt },
     transform: { undefined: null },
@@ -238,26 +247,34 @@ export function createPostgresStore(url) {
       },
     },
 
+    drivers: {
+      /** A driver account and its one ambulance (D-73), created together or not at all. */
+      async register({ name, email, phone, passwordHash, vehicle }) {
+        const refused = Symbol('refused');
+        try {
+          return await sql.begin(async (tx) => {
+            const [user] = await tx`insert into public.users (name, email, phone, password_hash, role) values (${name}, ${email}, ${phone}, ${passwordHash}, 'driver') on conflict do nothing returning *`;
+            if (!user) throw Object.assign(new Error('email'), { [refused]: 'email' });
+            const [ambulance] = await tx`insert into public.ambulances (driver_user_id, registration_number, type, status, operator_name, driver_name, driver_phone)
+              values (${user.id}, ${vehicle.registrationNumber}, ${vehicle.type}::public.ambulance_type, 'offline', 'Independent driver', ${name.split(/\s+/)[0].slice(0, 100)}, ${phone})
+              on conflict do nothing returning id`;
+            if (!ambulance) throw Object.assign(new Error('vehicle'), { [refused]: 'vehicle' });
+            return { user: userRow(user) };
+          });
+        } catch (err) {
+          if (err?.[refused]) return { conflict: err[refused] };
+          throw err;
+        }
+      },
+    },
+
     users: {
-      async create({ name, email, phone = null, passwordHash = null, googleSub = null, role }) {
-        const rows = await sql`insert into public.users (name, email, phone, password_hash, google_sub, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${googleSub}, ${role})
+      async create({ name, email, phone = null, passwordHash = null, role }) {
+        const rows = await sql`insert into public.users (name, email, phone, password_hash, role) values (${name}, ${email}, ${phone}, ${passwordHash}, ${role})
           on conflict do nothing returning *`;
         return userRow(rows[0]) || null;
       },
       async byEmail(email) { return userRow((await sql`select * from public.users where email = ${email}`)[0]) || null; },
-      async byGoogleSub(sub) { return userRow((await sql`select * from public.users where google_sub = ${sub}`)[0]) || null; },
-      /**
-       * Links Google to an existing account once; never moves a link from another Google account.
-       * Google has proved who owns the email and CareRoute never did, so the password and every
-       * session go: someone who registered the address first cannot keep a way in.
-       */
-      async linkGoogle(id, sub) {
-        return sql.begin(async (tx) => {
-          const row = (await tx`update public.users set google_sub = ${sub}, password_hash = null, updated_at = now() where id = ${id} and google_sub is null returning *`)[0];
-          if (row) await tx`update public.sessions set revoked_at = now(), revoked_reason = 'google_link' where user_id = ${id} and revoked_at is null`;
-          return userRow(row) || null;
-        });
-      },
       /** D-67: when the patient agreed to send health facts to the assistant's models, or null. */
       async setAssistantConsent(id, at) {
         return userRow((await sql`update public.users set assistant_consent_at = ${at}, updated_at = now() where id = ${id} returning *`)[0]) || null;

@@ -23,7 +23,6 @@ export async function render(page, { me, announce }) {
         columns: [
           { label: 'Person', cell: (u) => h('div', {}, h('div', { class: 'name' }, u.name), h('div', { class: 'sub' }, u.email)) },
           { label: 'Role', cell: (u) => tag(ROLE_LABEL[u.role]) },
-          { label: 'Sign-in', cell: (u) => h('span', { class: 'sub' }, [u.signIn.password && 'Password', u.signIn.google && 'Google'].filter(Boolean).join(' and ') || 'None') },
           { label: 'Joined', cell: (u) => h('span', { class: 'sub' }, when(u.createdAt)) },
           { label: 'Status', cell: (u) => (u.disabledAt ? tag('Disabled', 'danger') : tag('Active', 'success')) },
           { label: 'Action', align: 'end', cell: (u) => action(u) },
