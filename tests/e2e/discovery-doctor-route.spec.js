@@ -21,6 +21,6 @@ test('the dedicated doctors search route opens the doctor tab in memory mode', a
   await expect(page.getByRole('tab', { name: 'Doctors' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('heading', { name: 'Hospitals and doctors' })).toBeVisible();
 
-  mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/doctors-search-desktop.png', fullPage: true });
+  mkdirSync('test-results/evidence', { recursive: true });
+  await page.screenshot({ path: 'test-results/evidence/doctors-search-desktop.png', fullPage: true });
 });

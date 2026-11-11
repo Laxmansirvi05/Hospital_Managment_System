@@ -74,7 +74,7 @@ test.describe('Hospitals and doctors page refinement', () => {
     await expect(page.locator('.rmap, .geo-map').first()).toBeVisible();
 
     // Capture desktop screenshot
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-desktop.png', fullPage: false });
+    await page.screenshot({ path: 'test-results/evidence/hospital-search-desktop.png', fullPage: false });
   });
 
   test('tablet displays 2 columns and mobile displays 1 column', async ({ page }) => {
@@ -87,7 +87,7 @@ test.describe('Hospitals and doctors page refinement', () => {
       return window.getComputedStyle(el).gridTemplateColumns.split(' ').length;
     });
     expect(tabletColumns).toBe(2);
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-tablet.png', fullPage: false });
+    await page.screenshot({ path: 'test-results/evidence/hospital-search-tablet.png', fullPage: false });
 
     // Mobile viewport
     await page.setViewportSize({ width: 390, height: 844 });
@@ -97,7 +97,7 @@ test.describe('Hospitals and doctors page refinement', () => {
       return window.getComputedStyle(el).gridTemplateColumns.split(' ').length;
     });
     expect(mobileColumns).toBe(1);
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-search-mobile.png', fullPage: false });
+    await page.screenshot({ path: 'test-results/evidence/hospital-search-mobile.png', fullPage: false });
   });
 
   test('filters, search, and tab switching continue to function correctly', async ({ page }) => {
@@ -131,7 +131,7 @@ test.describe('Hospitals and doctors page refinement', () => {
     if (hasPhone) await expect(page.locator('a[href^="tel:"]').first()).toBeVisible();
     else await expect(page.getByText(/No phone number is listed/)).toBeVisible();
     await expect(page.getByRole('link', { name: /Directions/ })).toBeVisible();
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-detail-desktop.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/evidence/hospital-detail-desktop.png', fullPage: true });
   });
 
   test('patient can post, edit and delete a review from a hospital detail page', async ({ page }) => {
@@ -149,7 +149,7 @@ test.describe('Hospitals and doctors page refinement', () => {
     await expect(page.getByText('Thank you for your review')).toBeVisible();
     await expect(reviews.getByRole('button', { name: 'Update review' })).toBeVisible();
     await expect(reviews.getByText('Clear reception and easy to find.')).toBeVisible();
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/hospital-review-desktop.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/evidence/hospital-review-desktop.png', fullPage: true });
 
     await reviews.getByRole('radio', { name: '4 of 5' }).click();
     await reviews.locator('#review-body').fill('Updated review after a follow-up visit.');

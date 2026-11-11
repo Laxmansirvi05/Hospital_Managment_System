@@ -116,9 +116,10 @@ export async function shell({ nav, title }) {
     h('a', { class: 'brand', href: home }, brandMark()),
     h('nav', { class: 'nav', 'aria-label': 'Main' },
       // A driver or admin keeps a way back to their workspace, and sees no heading with nothing under it.
-      !isPatient && home !== '/dashboard/' ? h('div', { class: 'nav-group' }, h('a', { href: home }, icon('back'), user.role === 'admin' ? 'Admin portal' : 'Driver workspace')) : null,
+      !isPatient && home !== '/dashboard/' ? h('div', { class: 'nav-group' }, h('a', { href: home, 'aria-current': nav === 'driver' ? 'page' : false }, icon(user.role === 'admin' ? 'back' : 'ambulance'), user.role === 'admin' ? 'Admin portal' : 'Driver workspace')) : null,
       NAV.map((g) => {
-        const items = g.items.filter((i) => isPatient || ['explore', 'hospitals', 'medicines', 'diagnostics', 'settings', 'account'].includes(i.id));
+        // A driver has one workspace and an account page; an admin may also browse the listings.
+        const items = g.items.filter((i) => isPatient || (user.role === 'driver' ? ['account'] : ['explore', 'hospitals', 'medicines', 'diagnostics', 'settings', 'account']).includes(i.id));
         return items.length ? h('div', { class: 'nav-group' },
           h('span', { class: 'nav-label' }, g.group),
           items.map((i) => h('a', { href: i.href, 'aria-current': i.id === nav ? 'page' : false }, icon(i.icon), i.label))) : null;
@@ -138,6 +139,7 @@ export async function shell({ nav, title }) {
   );
 
   const tabbar = document.getElementById('tabbar');
+  if (user.role === 'driver') tabbar.hidden = true;
   tabbar.replaceChildren(...(isPatient ? TABS : TABS.filter((t) => ['hospitals', 'medicines'].includes(t.id)))
     .map((t) => h('a', { href: t.href, 'aria-current': t.id === nav ? 'page' : false }, icon(t.icon, 22), t.label)));
 

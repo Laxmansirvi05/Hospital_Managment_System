@@ -17,8 +17,8 @@ async function signUp(page) {
 }
 
 async function capture(page, name) {
-  mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
-  await page.screenshot({ path: `docs/audit/evidence-codex-2026-11-06/${name}.png`, fullPage: true });
+  mkdirSync('test-results/evidence', { recursive: true });
+  await page.screenshot({ path: `test-results/evidence/${name}.png`, fullPage: true });
 }
 
 test('the assistant badge stays keyboard-operable without WebGL', async ({ browser }) => {

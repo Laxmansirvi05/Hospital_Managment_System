@@ -69,7 +69,7 @@ test.describe('Discovery source and provider disclosures', () => {
       if (item.source) await expect(page.getByText(/Source: .*\. Checked on /).first()).toBeVisible();
       else await expect(page.getByText(/Listed price, checked /).first()).toBeVisible();
       outboundCount += await expectSafeOutboundLinks(page);
-      if (item.screenshot) await page.screenshot({ path: `docs/audit/evidence-codex-2026-11-06/${item.screenshot}`, fullPage: true });
+      if (item.screenshot) await page.screenshot({ path: `test-results/evidence/${item.screenshot}`, fullPage: true });
     }
 
     expect(outboundCount).toBeGreaterThan(0);
@@ -87,6 +87,6 @@ test.describe('Discovery source and provider disclosures', () => {
     await expect(page.getByRole('link', { name: /Directions to .*Google Maps/ })).toBeVisible();
     await expect(page.locator('a[href^="tel:"]')).toHaveCount(0);
     expect(await page.locator('main').innerText()).not.toMatch(/(^|\n)null(\n|$)/i);
-    await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/discovery-no-phone-fallback-mobile.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/evidence/discovery-no-phone-fallback-mobile.png', fullPage: true });
   });
 });

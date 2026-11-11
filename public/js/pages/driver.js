@@ -210,13 +210,13 @@ async function start() {
     if (a.status === 'available' && state.watchId === null && !state.chosen && !state.last) startWatching();
   }
   function paintOffer(offer) {
-    offerBody.replaceChildren(
+    offerBody.replaceChildren(...[
       dim('Situation', TYPE_WORDS[offer.emergencyType] || offer.emergencyType),
       dim('People', String(offer.patientCount)),
       dim('Conscious', offer.conscious === null ? 'Not sure' : offer.conscious ? 'Yes' : 'No'),
       dim('Pickup', offer.address || `${offer.location.lat.toFixed(4)}, ${offer.location.lng.toFixed(4)}`),
       offer.notes ? dim('Notes', offer.notes) : null,
-      offer.medicalId ? dim('Shared medical ID', [offer.medicalId.fullName, offer.medicalId.bloodGroup].filter(Boolean).join(', ')) : null);
+      offer.medicalId ? dim('Shared medical ID', [offer.medicalId.fullName, offer.medicalId.bloodGroup].filter(Boolean).join(', ')) : null].filter(Boolean));
   }
   let countdownTimer = null;
   function showOffer(offer) {

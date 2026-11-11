@@ -3,13 +3,16 @@ import { test, expect } from '@playwright/test';
 
 const baseURL = process.env.CAREROUTE_BASE_URL || 'http://127.0.0.1:4402';
 
+// The emergency page now asks for the device location itself and will not send a request without a place.
+test.use({ permissions: ['geolocation'], geolocation: { latitude: 17.4435, longitude: 78.4676 } });
+
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', (route) => route.abort());
 });
 
 async function capture(page, name) {
-  mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
-  await page.screenshot({ path: `docs/audit/evidence-codex-2026-11-06/${name}.png`, fullPage: true });
+  mkdirSync('test-results/evidence', { recursive: true });
+  await page.screenshot({ path: `test-results/evidence/${name}.png`, fullPage: true });
 }
 
 async function api(page, path, method = 'GET', body) {
@@ -152,7 +155,7 @@ test('guest SOS offers keyboard undo; tracking stays within the public field all
   });
   expect(noMatch.status).toBe(201);
   await page.goto(`${baseURL}/track/?token=${encodeURIComponent(noMatch.body.trackingToken)}`);
-  await expect(page.getByRole('status')).toContainText('No demo crew accepted');
+  await expect(page.getByRole('status')).toContainText('No crew accepted yet');
   await expect(page.getByText('Demo: no real ambulance is sent.')).toBeVisible();
   await capture(page, 'guest-tracking-no-match');
   const publicResult = await api(page, `/track/${noMatch.body.trackingToken}`);

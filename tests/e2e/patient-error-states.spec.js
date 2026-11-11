@@ -81,7 +81,7 @@ test('patient pages show a clear recovery path for empty, auth, HTTP and network
         await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
         await expect(page.locator('main').getByText(/This service could not complete|offline|connection/i)).toBeVisible();
         if (entry.path === '/search/hospitals/' && status === 500) {
-          await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/patient-search-error-desktop.png', fullPage: true });
+          await page.screenshot({ path: 'test-results/evidence/patient-search-error-desktop.png', fullPage: true });
         }
       } else if (entry.assistant) {
         await expect(page.locator('main').getByText(/This service could not complete|offline|connection/i).last()).toBeVisible();

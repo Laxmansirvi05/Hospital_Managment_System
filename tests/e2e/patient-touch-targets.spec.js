@@ -55,9 +55,9 @@ test('audit patient touch target sizes across public and signed-in phone screens
   for (const path of paths) {
     await page.goto(`${baseURL}${path}`);
     await page.waitForTimeout(80);
-    if (path === '/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-home-mobile.png', fullPage: true });
-    if (path === '/dashboard/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-dashboard-mobile.png', fullPage: true });
-    if (path === '/search/hospitals/') await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/touch-target-hospitals-mobile.png', fullPage: true });
+    if (path === '/') await page.screenshot({ path: 'test-results/evidence/touch-target-home-mobile.png', fullPage: true });
+    if (path === '/dashboard/') await page.screenshot({ path: 'test-results/evidence/touch-target-dashboard-mobile.png', fullPage: true });
+    if (path === '/search/hospitals/') await page.screenshot({ path: 'test-results/evidence/touch-target-hospitals-mobile.png', fullPage: true });
     const found = await page.locator('a,button,input,select,textarea,[role="button"],[role="radio"],[role="tab"]').evaluateAll((elements) =>
       elements.filter((el) => {
         const style = getComputedStyle(el);

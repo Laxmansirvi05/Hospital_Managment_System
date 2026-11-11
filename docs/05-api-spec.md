@@ -70,7 +70,7 @@ The driver reject handler is registered but remains **PROPOSED under P-20 and is
 | POST | `/auth/refresh` | public | none | 200 {token,user{id,role,name}} |
 | POST | `/auth/logout` | patient|driver|admin | none | 204 empty |
 | POST | `/auth/password` | patient|driver|admin | currentPassword, newPassword | 204 empty |
-| GET | `/areas/centroids` | patient|driver|admin | none | 200 {areas:[{name,places,lat,lng}]} |
+| GET | `/areas/centroids` | public | none | 200 {areas:[{name,places,lat,lng}]} |
 | GET | `/hospitals/nearby` | patient|driver|admin | lat, lng, radiusKm?, limit?, offset?, emergencyOnly?, speciality?, type?, area?, q? | 200 {hospitals:[hospital],total} |
 | POST | `/assistant/triage` | patient | message (1..2000), age? (0..120), language? (en) | 200 {urgency,sosRecommended,suggestedSpecialty,advice,disclaimer} |
 | POST | `/assistant/conversations` | patient | text (1..2000), documentIds? (up to 3 UUIDs), near? {lat,lng} | 201 {conversation,messages} |

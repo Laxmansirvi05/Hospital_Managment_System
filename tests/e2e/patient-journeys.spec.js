@@ -36,8 +36,8 @@ test('patient account and care records work in sample mode at phone, tablet and 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${baseURL}/search/medicines/`);
   await expect(page.locator('#mode-banner')).toContainText('Listings and prices are examples only, not current provider information.');
-  mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/sample-price-warning-desktop.png', fullPage: true });
+  mkdirSync('test-results/evidence', { recursive: true });
+  await page.screenshot({ path: 'test-results/evidence/sample-price-warning-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${baseURL}/medical-id/`);
 
@@ -126,8 +126,8 @@ test('patient account and care records work in sample mode at phone, tablet and 
       await expect(page.locator('main')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       if (width === 1440) {
-        mkdirSync('docs/audit/evidence-codex-2026-11-06', { recursive: true });
-        await page.screenshot({ path: `docs/audit/evidence-codex-2026-11-06/${path.slice(1, -1)}-desktop.png`, fullPage: true });
+        mkdirSync('test-results/evidence', { recursive: true });
+        await page.screenshot({ path: `test-results/evidence/${path.slice(1, -1)}-desktop.png`, fullPage: true });
       }
     }
   }

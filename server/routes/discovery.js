@@ -123,9 +123,9 @@ const ROUTES = [
   {
     // Area centre points (2026-11-04): the browser names the patient's area and places a chosen area
     // itself, so a live location never has to leave the device except with a search.
-    method: 'GET', path: '/areas/centroids', roles: SIGNED_IN,
+    method: 'GET', path: '/areas/centroids', roles: 'public',
     async handler() {
-      return { body: { areas: await getStore().listings.areaCentroids() }, headers: { 'Cache-Control': 'private, max-age=3600' } };
+      return { body: { areas: await getStore().listings.areaCentroids() }, headers: { 'Cache-Control': 'public, max-age=3600' } };
     },
   },
 

@@ -50,15 +50,18 @@
           </label>
         </div>
         <fieldset class="emergency-location">
-          <legend>Where should the demo crew go?</legend>
-          <p id="location-help" class="emergency-muted">Allow location or enter an address. If location is unavailable, the demo uses an approximate Hyderabad map point.</p>
+          <legend>Where should the ambulance go?</legend>
+          <p id="location-help" class="emergency-muted">Allow location so the driver can find you. If you cannot, choose your area and add an address or landmark.</p>
           <button class="btn btn-secondary emergency-control" id="locate" type="button">Use my location</button>
           <p id="location-status" class="emergency-muted" aria-live="polite">Location has not been checked.</p>
+          <label id="area-wrap" hidden>Or choose your area
+            <select id="area-choice"><option value="">Choose your area</option></select>
+          </label>
           <label>Address or landmark
             <input name="address" type="text" maxlength="300" autocomplete="street-address" aria-describedby="location-help">
           </label>
         </fieldset>
-        <label>Notes for the demo crew
+        <label>Notes for the driver
           <textarea name="notes" maxlength="500" rows="3"></textarea>
         </label>
         <p id="form-error" class="emergency-error" role="alert" hidden></p>

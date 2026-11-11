@@ -26,7 +26,7 @@ test('patient can upload, open the short-lived private download and delete a rep
   await page.getByRole('button', { name: 'Upload' }).click();
   await expect(page.getByText('Private synthetic report')).toBeVisible();
   await expect(page.getByText(/Files open with short-lived links and are never public/)).toBeVisible();
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/documents-private-mobile.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/evidence/documents-private-mobile.png', fullPage: true });
 
   await page.evaluate(() => {
     window.__carerouteOpenedFile = null;
@@ -61,5 +61,5 @@ test('patient can upload, open the short-lived private download and delete a rep
   await page.getByRole('dialog').getByRole('button', { name: /delete/i }).click();
   await expect(page.getByText('Private synthetic report')).toHaveCount(0);
   await expect(page.getByText('No documents yet')).toBeVisible();
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/documents-empty-after-delete-mobile.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/evidence/documents-empty-after-delete-mobile.png', fullPage: true });
 });

@@ -29,13 +29,13 @@ test('assistant consent, fake reply, rule-layer emergency and saved conversation
   await expect(log.getByText(/not a diagnosis or a prescription/i)).toBeVisible();
   const conversation = page.locator('.astp-item').filter({ hasText: 'Mild headache for one day' });
   await expect(conversation).toBeVisible();
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/assistant-fake-reply.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/evidence/assistant-fake-reply.png', fullPage: true });
 
   await input.fill('I have severe chest pain');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(log.getByRole('alert').getByRole('link', { name: /Call 112/ })).toBeVisible();
   await expect(log.getByText(/heart attack/i)).toBeVisible();
-  await page.screenshot({ path: 'docs/audit/evidence-codex-2026-11-06/assistant-rule-emergency.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/evidence/assistant-rule-emergency.png', fullPage: true });
 
   await conversation.click();
   await expect(log.getByText('I have severe chest pain')).toBeVisible();

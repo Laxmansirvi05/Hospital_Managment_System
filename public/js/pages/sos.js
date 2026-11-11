@@ -8,7 +8,6 @@ const live = document.querySelector('#live');
 const undoPanel = document.querySelector('#undo-panel');
 const cancelButton = document.querySelector('#cancel-request');
 const accountLink = document.querySelector('#account-link');
-const HYDERABAD_APPROX = { lat: 17.385, lng: 78.4867 };
 let currentUser = null;
 let currentLocation = null;
 let currentRequest = null;
@@ -21,31 +20,52 @@ try { currentUser = await api('/auth/me'); } catch { currentUser = null; }
 document.querySelector('#send-request').disabled = false;
 if (currentUser) { accountLink.href = currentUser.role === 'driver' ? '/driver/' : currentUser.role === 'admin' ? '/admin/' : '/dashboard/'; accountLink.textContent = 'Account'; document.querySelector('#guest-phone-wrap').hidden = true; }
 
-locateButton.addEventListener('click', () => {
-  if (!navigator.geolocation) { locationStatus.textContent = 'Location is not available in this browser. Enter an address to continue.'; return; }
+const areaWrap = document.querySelector('#area-wrap');
+const areaChoice = document.querySelector('#area-choice');
+
+// Asked for as soon as the page opens, so nobody has to find a button in an emergency.
+function locate() {
+  if (!navigator.geolocation) { needArea('Location is not available in this browser. Choose your area and add an address or landmark.'); return; }
   locateButton.disabled = true;
   locationStatus.textContent = 'Checking your location…';
   navigator.geolocation.getCurrentPosition((position) => {
     currentLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+    areaWrap.hidden = true;
     locationStatus.textContent = `Location ready, accuracy about ${Math.round(position.coords.accuracy)} metres.`;
     locateButton.disabled = false;
   }, () => {
-    currentLocation = null;
-    locationStatus.textContent = 'Location was not shared. Enter an address or landmark. Demo routing uses an approximate Hyderabad point.';
     locateButton.disabled = false;
-  }, { enableHighAccuracy: true, timeout: 8_000, maximumAge: 30_000 });
+    if (!currentLocation) needArea('Location was not shared. Choose your area and add an address or landmark, so the driver can find you.');
+  }, { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 });
+}
+function needArea(text) {
+  locationStatus.textContent = text;
+  areaWrap.hidden = false;
+}
+let areas = [];
+fetch('/api/v1/areas/centroids').then((r) => (r.ok ? r.json() : { areas: [] })).then((r) => {
+  areas = r.areas;
+  areaChoice.append(...areas.map((a) => Object.assign(document.createElement('option'), { value: a.name, textContent: a.name })));
+}).catch(() => { areas = []; });
+areaChoice.addEventListener('change', () => {
+  const area = areas.find((a) => a.name === areaChoice.value);
+  if (!area) return;
+  currentLocation = { lat: area.lat, lng: area.lng };
+  locationStatus.textContent = `Using the middle of ${area.name}. Add an address or landmark so the driver can find you.`;
 });
+locateButton.addEventListener('click', locate);
+locate();
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault(); error.hidden = true;
   if (!form.reportValidity()) return;
   const data = new FormData(form);
   const address = String(data.get('address') || '').trim();
-  if (!currentLocation && !address) { error.textContent = 'Allow location or enter an address to continue.'; error.hidden = false; return; }
+  if (!currentLocation) { error.textContent = 'Allow location, or choose your area, so the driver knows where to go.'; error.hidden = false; areaWrap.hidden = false; return; }
   const body = {
     emergencyType: data.get('emergencyType'), forSelf: data.get('forSelf') === 'true',
     conscious: data.get('conscious') === '' ? null : data.get('conscious') === 'true', patientCount: Number(data.get('patientCount')),
-    ambulanceType: data.get('ambulanceType'), notes: String(data.get('notes') || '').trim(), location: currentLocation || HYDERABAD_APPROX,
+    ambulanceType: data.get('ambulanceType'), notes: String(data.get('notes') || '').trim(), location: currentLocation,
     address, ...(currentUser ? {} : { guestPhone: String(data.get('guestPhone') || '').trim() }),
   };
   const send = document.querySelector('#send-request'); send.disabled = true; send.textContent = 'Sending request…';

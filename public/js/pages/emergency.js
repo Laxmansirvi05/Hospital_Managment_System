@@ -20,7 +20,7 @@ const map = createRealMap({ height: 280, label: 'Map of the demo ambulance locat
 document.querySelector('#map-slot').append(map);
 const path = `/emergencies/${encodeURIComponent(id || '')}`;
 const stepsList = ['matching', 'assigned', 'en_route', 'arrived', 'picked_up', 'at_hospital', 'completed'];
-const labels = { matching: 'Finding a demo crew', assigned: 'Crew accepted', en_route: 'Crew travelling', arrived: 'Crew arrived', picked_up: 'Patient picked up', at_hospital: 'Trip at hospital', completed: 'Demo trip complete', cancelled: 'Request cancelled', no_match: 'No demo crew accepted' };
+const labels = { matching: 'Finding a crew', assigned: 'Crew accepted', en_route: 'Crew travelling', arrived: 'Crew arrived', picked_up: 'Patient picked up', at_hospital: 'Trip at hospital', completed: 'Demo trip complete', cancelled: 'Request cancelled', no_match: 'No crew accepted yet' };
 let delay = 3000; let timer = null; let lastStatus = null; let stopped = false; let currentState = null;
 
 const trackingUrl = trackingToken ? `${location.origin}/track/?token=${encodeURIComponent(trackingToken)}` : '';
@@ -38,9 +38,9 @@ function render(emergency) {
   eta.textContent = Number.isFinite(seconds) && seconds >= 0 ? `${emergency.etaIsEstimate ? 'Estimated arrival' : 'Route ETA'}: about ${Math.max(1, Math.ceil(seconds / 60))} min${emergency.etaIsEstimate ? ' (estimate)' : ''}.` : '';
   const p = emergency.ambulance?.position;
   if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
-    position.textContent = `Demo crew position: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}. The map is illustrative.`;
-    map.update({ pins: [{ ...p, label: 'Demo crew', kind: 'emergency' }] });
-  } else { position.textContent = 'Demo crew location is not available yet. Status updates will continue.'; map.update({ pins: [] }); }
+    position.textContent = `Ambulance position: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}.`;
+    map.update({ pins: [{ ...p, label: 'Ambulance', kind: 'emergency' }] });
+  } else { position.textContent = 'The ambulance location is not available yet. Status updates will continue.'; map.update({ pins: [] }); }
   const beforePickup = ['matching', 'assigned', 'en_route', 'arrived'].includes(status);
   cancel.hidden = !beforePickup;
   noMatch.hidden = status !== 'no_match';

@@ -8,7 +8,7 @@ const positionNode = document.querySelector('#tracking-position');
 const errorNode = document.querySelector('#tracking-error');
 const map = createRealMap({ height: 300, label: 'Map showing the demo ambulance position' });
 document.querySelector('#tracking-map').append(map);
-const statusText = { matching: 'Finding a demo crew', assigned: 'Crew accepted', en_route: 'Crew travelling', arrived: 'Crew arrived', picked_up: 'Patient picked up', at_hospital: 'Trip at hospital', completed: 'Demo trip complete', cancelled: 'Request cancelled', no_match: 'No demo crew accepted' };
+const statusText = { matching: 'Finding a crew', assigned: 'Crew accepted', en_route: 'Crew travelling', arrived: 'Crew arrived', picked_up: 'Patient picked up', at_hospital: 'Trip at hospital', completed: 'Demo trip complete', cancelled: 'Request cancelled', no_match: 'No crew accepted yet' };
 let delay = 3000; let timer = null; let stopped = false;
 
 async function refresh() {
@@ -20,9 +20,9 @@ async function refresh() {
     etaNode.textContent = Number.isFinite(data.etaSeconds) ? `${data.etaIsEstimate ? 'Estimated arrival' : 'Route ETA'}: about ${Math.max(1, Math.ceil(data.etaSeconds / 60))} min${data.etaIsEstimate ? ' (estimate)' : ''}.` : '';
     const p = data.ambulance;
     if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
-      map.update({ pins: [{ lat: p.lat, lng: p.lng, label: 'Demo crew', kind: 'emergency' }] });
-      positionNode.textContent = `Demo crew position: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}.`;
-    } else { map.update({ pins: [] }); positionNode.textContent = 'Demo crew position is not available yet.'; }
+      map.update({ pins: [{ lat: p.lat, lng: p.lng, label: 'Ambulance', kind: 'emergency' }] });
+      positionNode.textContent = `Ambulance position: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}.`;
+    } else { map.update({ pins: [] }); positionNode.textContent = 'The ambulance position is not available yet.'; }
     errorNode.hidden = true; delay = 3000;
     if (['completed', 'cancelled', 'no_match'].includes(data.status)) { stopped = true; return; }
     timer = setTimeout(refresh, delay);

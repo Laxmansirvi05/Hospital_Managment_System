@@ -359,7 +359,11 @@ function render(mode) {
   for (const [role, label] of [['patient', 'Patient'], ['driver', 'Driver']]) {
     const button = h('button', { class: `auth-mode-tab${role === authRole ? ' is-active' : ''}`, type: 'button', 'aria-pressed': String(role === authRole), 'data-role': role }, label);
     button.addEventListener('click', () => {
-      if (role === authRole || modeTransitioning) return;
+      if (role === authRole) return;
+      // A switch during the sign in or create account slide ends that slide at once.
+      window.clearTimeout(modeTransitionTimer);
+      modeTransitioning = false;
+      modeStage.style.height = '';
       authRole = role;
       roleSwitcher.classList.toggle('is-signup', role === 'driver');
       roleSwitcher.querySelectorAll('.auth-mode-tab').forEach((t) => { t.classList.toggle('is-active', t.dataset.role === role); t.setAttribute('aria-pressed', String(t.dataset.role === role)); });
