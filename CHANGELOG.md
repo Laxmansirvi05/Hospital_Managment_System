@@ -4,9 +4,9 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-12
 
-### Admin account moved to the owner's own account (D-90)
+### Admin account restored (D-90)
 
-- `lakshmansirvi1812@gmail.com` is now the admin; the temporary `admin1234@gmail.com` account was deleted from production and careroute-dev.
+- `admin1234@gmail.com` is the admin again; `lakshmansirvi1812@gmail.com` remains a patient account.
 
 ### Driver approval, password reset, admin account, database cleanup (D-87 to D-89)
 
