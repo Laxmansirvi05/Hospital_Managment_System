@@ -36,8 +36,17 @@ export function validationError(err) {
   return new HttpError(422, 'invalid_input', `Check these fields: ${Object.keys(fields).join(', ')}.`, fields);
 }
 
+// Postgres refuses a text value with a NUL byte and the driver raises it as a server error, so a
+// request carrying one is answered as bad input before it can reach a query.
+function hasNul(value, depth = 0) {
+  if (typeof value === 'string') return value.includes('\u0000');
+  if (!value || typeof value !== 'object' || depth > 20) return false;
+  return Object.entries(value).some(([k, v]) => k.includes('\u0000') || hasNul(v, depth + 1));
+}
+
 /** @param {import('zod').ZodTypeAny} schema */
 export function parse(schema, value) {
+  if (hasNul(value)) throw new HttpError(422, 'invalid_input', 'Remove the null characters from your input.', { body: 'Contains a null character.' });
   const result = schema.safeParse(value);
   if (!result.success) throw validationError(result.error);
   return result.data;
@@ -50,9 +59,16 @@ export async function readJson(req) {
   // Checked before anything else: on Vercel the platform has already parsed the body, so the
   // streaming limit below would never run.
   if (Number(req.headers['content-length'] || 0) > MAX_BODY) throw new HttpError(413, 'too_large', 'The request is too large.');
-  if (req.body !== undefined) {
-    if (Buffer.byteLength(JSON.stringify(req.body ?? {})) > MAX_BODY) throw new HttpError(413, 'too_large', 'The request is too large.');
-    return req.body;
+  // Vercel's body parser throws from this getter when the JSON is malformed, so reading it is guarded.
+  let parsed;
+  try {
+    parsed = req.body;
+  } catch {
+    throw new HttpError(400, 'invalid_json', 'The request body is not valid JSON.');
+  }
+  if (parsed !== undefined) {
+    if (Buffer.byteLength(JSON.stringify(parsed ?? {})) > MAX_BODY) throw new HttpError(413, 'too_large', 'The request is too large.');
+    return parsed;
   }
   const chunks = [];
   let size = 0;

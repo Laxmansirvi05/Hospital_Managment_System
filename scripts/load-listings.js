@@ -13,7 +13,14 @@ import { distanceKm } from '../server/db/geo.js';
 
 const point = (sql, x) => sql`extensions.st_setsrid(extensions.st_makepoint(${x.lng}, ${x.lat}), 4326)::extensions.geography`;
 
-async function upsertPlaces(sql, table, rows, extra) {
+// Map entries named with one generic word ("hospital", "ground", "hs") tell a patient nothing, so
+// they are left out of hospital listings. Each source hides what it no longer lists, so a
+// previously loaded one is hidden at the next load.
+const GENERIC_PLACE_NAME = /^(hospital|clinic|dental|ground|medical|diagnostics?|lab|hs|na)$/i;
+export const isUsablePlaceName = (name) => /[A-Za-z]{3}/.test(String(name || '')) && !GENERIC_PLACE_NAME.test(String(name).trim());
+
+async function upsertPlaces(sql, table, allRows, extra) {
+  const rows = table === 'hospitals' ? allRows.filter((r) => isUsablePlaceName(r.name)) : allRows;
   for (const r of rows) {
     const cols = {
       source_ref: r.sourceRef, name: r.name, area: r.area, address: r.address, phone: r.phone, email: r.email, website: r.website,

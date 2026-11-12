@@ -83,3 +83,12 @@ describe('route input contract (memory store and fakes)', () => {
     expect(Object.keys(reports.body).sort()).toEqual(['reports']);
   });
 });
+
+describe('null characters in search text (found by fuzzing the live site)', () => {
+  it.each(['/doctors', '/pharmacies', '/diagnostic-centres', '/hospitals', '/medicines'])('%s answers 422, not a server error', async (path) => {
+    const r = await app.api(`${path}?area=%00`, { token: patient.token });
+    expect(r.status).toBe(422);
+    expect(r.body.error.code).toBe('invalid_input');
+  });
+});
+
