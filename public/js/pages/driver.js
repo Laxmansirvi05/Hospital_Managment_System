@@ -149,6 +149,9 @@ async function start() {
       if (Date.now() - state.lastPing >= 8000) ping({ lat, lng, heading: Number.isFinite(heading) ? Math.round(heading) : null, speed: speed ? Math.round(speed * 3.6) : null });
       state.last = { lat, lng };
     }, (err) => {
+      // A denial can arrive after the driver already chose a place. Stopping then would cancel
+      // that place's keep-alive pings and replace its confirmation with a warning.
+      if (state.chosen) return;
       stopWatching();
       needPlace(err.code === 1 ? 'Location is blocked for this site. Choose where you are, or allow location in the browser settings.' : 'Your location could not be found. Choose where you are instead.');
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
@@ -164,6 +167,9 @@ async function start() {
     if (!area) { toast('Choose where you are first.'); return; }
     state.chosen = area;
     state.last = { lat: area.lat, lng: area.lng };
+    // The chosen place replaces any location watch, so nothing it reports later can undo this.
+    if (state.watchId !== null) navigator.geolocation.clearWatch(state.watchId);
+    state.watchId = null;
     await ping({ lat: area.lat, lng: area.lng });
     clearInterval(state.heartbeat);
     state.heartbeat = setInterval(() => ping({ lat: area.lat, lng: area.lng }), PING_MS);
