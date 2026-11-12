@@ -45,6 +45,7 @@ Production users now: 1 admin and 1 patient (the owner's own account).
 
 - Malformed JSON returned 500 on Vercel instead of 400 (the platform parser throws before our code). Fixed in `server/http.js`, test `tests/http-body.test.js`.
 - A NUL byte in search text (for example `?area=%00`) returned 500 on five list routes. Every request input is now checked in `parse`, so it answers 422. Tests in `tests/http-body.test.js` and `tests/route-inputs.test.js`.
+- Driver page: after choosing a place, a late "location blocked" callback from the browser could replace the confirmation and stop the place's keep-alive pings, so the driver could drop out of matching. Found while testing the live driver trip with the owner signed in; fixed in `public/js/pages/driver.js`. The existing browser tests pass; no new test, because it needs an unlucky browser timing.
 - Four hospital entries named with one generic word ("hospital", "ground", "dental", "hs") were hidden in production, and the loader now skips such names.
 
 ## Found and not changed
@@ -54,7 +55,8 @@ Production users now: 1 admin and 1 patient (the owner's own account).
 - Signup is limited to 10 accounts per hour per address. Many people behind one shared mobile address could hit it.
 - One 20 second client timeout happened once in about 600 live requests. Server logs showed no slow request and no 5xx, so the cause is unconfirmed and probably the network on the test computer.
 - `tests/e2e/admin-portal.spec.js` "finds available crews near an area" expects crews, so it fails against a real database with none online. It passes on sample data. It was not changed.
-- Admin screens could not be driven live because the owner changed the admin password; they were checked by the browser tests and by a local server on careroute-dev.
+- Admin screens: first checked only by browser tests and a local server, then driven live in a real browser with the owner signed in (overview, driver requests, people, listings with hide and show, data quality, reviews, audit log, live emergencies, phone width). Creating or editing a listing and disabling an account were not done live, to keep production data clean.
+- Driver trip: driven live in a real browser with the owner signed in as an approved driver and a throwaway patient: place choice, offer with alert, accept, five trip steps with the patient seeing each state, complete, back to waiting.
 
 ## Known gaps in the code
 

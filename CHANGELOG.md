@@ -10,6 +10,7 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 - NUL bytes in any request input answer 422, not 500.
 - Generic one-word hospital names are skipped by the loader and four were hidden in production.
 - Runbook entries R-11 to R-14.
+- Driver page: choosing a place can no longer be undone by a late location-denied callback.
 
 ### Admin account restored (D-90)
 
