@@ -4,6 +4,13 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-12
 
+### Final audit fixes (2026-11-12)
+
+- Malformed JSON now answers 400, not 500, on Vercel.
+- NUL bytes in any request input answer 422, not 500.
+- Generic one-word hospital names are skipped by the loader and four were hidden in production.
+- Runbook entries R-11 to R-14.
+
 ### Admin account restored (D-90)
 
 - `admin1234@gmail.com` is the admin again; `lakshmansirvi1812@gmail.com` remains a patient account.

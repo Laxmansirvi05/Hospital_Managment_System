@@ -21,7 +21,8 @@ Live site: https://careroute-vert.vercel.app
 | Medicine prices | Official Jan Aushadhi list loaded into production today (for example Indomethacin now 13.41). 2,100 active medicines, 1,608 active hospitals. | Compared with the official list; loader run against production |
 | Links | 63 listing websites whose domain no longer exists were cleared in production. Other failures in the sample were mostly bot blocks or timeouts and were left. | `check-websites.js` against production |
 | Database | Migrations applied to production and careroute-dev: offer grant, Google column removed, approval and reset tables, 7 foreign key indexes. Simulated crews and test accounts removed from production. Row Level Security is on for every table, with no policy for `anon` or `authenticated` by design (D-49). | Supabase advisors; table counts after cleanup |
-| Tests | 487 unit and API tests pass. 49 browser tests pass on a sample-data server (no retries). | Run on 2026-11-11 |
+| Final audit (2026-11-12) | Every one of the 110 routes: 401 without a token and 403 for each wrong role (live, patient and driver tokens; local against careroute-dev, all three roles). About 2,000 hostile requests (bad ids, NUL bytes, odd query values, odd bodies) against every route locally: no 5xx after the fixes below. Live: 1,608 hospitals, 2,100 medicines, 1,558 doctors, 242 pharmacies and 145 diagnostic centres list and open with no errors; no listing has a bad location or website. Live patient run in a real browser (profile, medical ID, contacts, reminders, appointments, search, nearby, prices, SOS, deletion), new driver run (pending, refused, deleted), assistant run (consent, real model reply in about 1 s, emergency rule). Public Supabase key is refused on every table and bucket. | Scripts against the live site and a real browser; see the changelog |
+| Tests | 497 unit and API tests pass. 49 browser tests pass on a sample-data server (no retries), run again after the final code change. | Run on 2026-11-12 |
 
 Production users now: 1 admin and 1 patient (the owner's own account).
 
@@ -40,6 +41,21 @@ Production users now: 1 admin and 1 patient (the owner's own account).
 3. Driver "reject" of an offered trip (P-20) exists in the code and is still marked proposed.
 4. The landing page was out of scope for this round.
 
+## Found and fixed in the final audit
+
+- Malformed JSON returned 500 on Vercel instead of 400 (the platform parser throws before our code). Fixed in `server/http.js`, test `tests/http-body.test.js`.
+- A NUL byte in search text (for example `?area=%00`) returned 500 on five list routes. Every request input is now checked in `parse`, so it answers 422. Tests in `tests/http-body.test.js` and `tests/route-inputs.test.js`.
+- Four hospital entries named with one generic word ("hospital", "ground", "dental", "hs") were hidden in production, and the loader now skips such names.
+
+## Found and not changed
+
+- Vercel showed its Security Checkpoint (403 for scripts, a short checking page for browsers) for about 40 minutes after a burst of test traffic from one computer, including to another address. It cleared by itself. Whether that was automatic protection or a setting could not be read with the access this session has, so the owner should look at the project's Firewall page (runbook R-13). Ordinary browsers pass the checkpoint.
+- Signed-out visitors see a red 401 in the browser console from the session check on every page. It is harmless and expected, and it was left alone because removing it touches every page's sign-in handling.
+- Signup is limited to 10 accounts per hour per address. Many people behind one shared mobile address could hit it.
+- One 20 second client timeout happened once in about 600 live requests. Server logs showed no slow request and no 5xx, so the cause is unconfirmed and probably the network on the test computer.
+- `tests/e2e/admin-portal.spec.js` "finds available crews near an area" expects crews, so it fails against a real database with none online. It passes on sample data. It was not changed.
+- Admin screens could not be driven live because the owner changed the admin password; they were checked by the browser tests and by a local server on careroute-dev.
+
 ## Known gaps in the code
 
 - A driver deleting an account in the same instant as another accept could leave a trip without an ambulance (rare race; the guard checks first but does not lock).
@@ -51,7 +67,7 @@ Production users now: 1 admin and 1 patient (the owner's own account).
 ## Suggested plan
 
 1. Owner changes the admin password and decides on the older production account.
-2. Choose a free email service and send reset links and driver approval notices by email.
+2. Look at the Vercel Firewall page (runbook R-13) and choose a free email service and send reset links and driver approval notices by email.
 3. Add a way to be alerted with the page closed.
 4. Reproduce and fix the intermittent guest SOS browser test.
 5. Re-check listing websites monthly with `check-websites.js`, and prices with `collect-medicines.js` then the loader.
