@@ -12,7 +12,7 @@ Live site: https://careroute-vert.vercel.app
 | Sign up and sign in | Email and password only. Google removed from code, database and docs. | Browser tests (sample data); live on production with throwaway accounts |
 | Driver approval (D-87) | A new driver registers with a vehicle and waits as pending. The admin sees the request in Driver requests, approves or rejects it. Only approved drivers can go online or receive requests. A rejected or withdrawn driver's ambulance goes offline. Each decision is in the audit log. | Unit tests, browser test, same flow through the real server against careroute-dev; live on production (pending driver refused with `driver_not_approved`, approved driver then received a request) |
 | Password reset (D-88) | No email service yet. A person asks on the sign-in page, the admin sees the request, issues a one-time link valid for 2 hours and hands it over. Using it sets the password and signs out every session. Only a hash of the link is stored. | Unit tests; live on production (link worked once, second use refused, old password refused) |
-| Admin account (D-89) | `admin1234@gmail.com` exists in production and careroute-dev with the starting password the owner chose. The account is flagged, so the admin portal shows a banner and the owner should change the password. | Signed in live; flag confirmed through the API |
+| Admin account (D-90) | `lakshmansirvi1812@gmail.com` is the admin in production (the owner's own account, promoted, own password). The temporary `admin1234@gmail.com` account was deleted from production and careroute-dev. | Role and user list read back from the database; sign-in as this admin not tried (password is the owner's) |
 | Two accounts at once | A patient and two drivers were signed in at the same time, and one driver signed in on a second device without ending the first. | Live on production |
 | Driver | Goes online with live location or a chosen area, is alerted, accepts or declines, drives the trip step by step, can delete the account. | Unit tests; two-browser test on sample data; same test through the real server against careroute-dev |
 | Ambulance request | The patient's page asks for location by itself and will not send without a place. The request reaches the nearest online approved driver only. | Unit and browser tests; live on production |
@@ -23,7 +23,7 @@ Live site: https://careroute-vert.vercel.app
 | Database | Migrations applied to production and careroute-dev: offer grant, Google column removed, approval and reset tables, 7 foreign key indexes. Simulated crews and test accounts removed from production. Row Level Security is on for every table, with no policy for `anon` or `authenticated` by design (D-49). | Supabase advisors; table counts after cleanup |
 | Tests | 487 unit and API tests pass. 49 browser tests pass on a sample-data server (no retries). | Run on 2026-11-11 |
 
-Production users now: 1 admin and 1 patient (the owner's own account, `laks...@gmail.com`, see below).
+Production users now: 1 account, the owner's, with the admin role. It still holds the patient profile and medical data it had before.
 
 ## Not done, and why
 
@@ -31,8 +31,7 @@ Production users now: 1 admin and 1 patient (the owner's own account, `laks...@g
 | --- | --- | --- |
 | Alert when the driver page is closed | There is no push service. Alerts work while the driver page is open, including in a background tab | Web Push or SMS to the driver (SMS needs a paid or verified Twilio setup) |
 | Password reset by email | No email service is chosen. The admin hands out reset links | Pick a free-tier email service, then send the link automatically |
-| One older production account | A patient account created earlier through Google, which also has a password and holds medical data copied into it. It was kept because the owner earlier said it is theirs. | If it is not wanted: `delete from public.users where email ilike 'laks%@gmail.com';` (check the exact email first) |
-| Admin password | The starting password the owner chose is weak, and it is deliberately not written in this repository | Change it on first sign-in in the admin portal; the banner stays until then |
+| The admin account was made earlier through Google | It also has a password and holds patient profile and medical data. It is now the admin account (D-90) | None unless the owner wants a separate account for patient use |
 
 ## Open decisions for the owner
 

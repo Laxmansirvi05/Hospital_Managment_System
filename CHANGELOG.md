@@ -4,6 +4,10 @@ Every change to a LOCKED decision, the API contract or a document's meaning is r
 
 ## 2026-11-12
 
+### Admin account moved to the owner's own account (D-90)
+
+- `lakshmansirvi1812@gmail.com` is now the admin; the temporary `admin1234@gmail.com` account was deleted from production and careroute-dev.
+
 ### Driver approval, password reset, admin account, database cleanup (D-87 to D-89)
 
 - New drivers are `pending` until an admin approves them in the admin portal (Driver requests, with who, phone and vehicle). A pending or rejected driver can sign in and see their state but cannot go online or get requests. Rejecting gives a reason; withdrawing an approval takes the driver offline.
