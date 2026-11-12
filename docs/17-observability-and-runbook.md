@@ -88,6 +88,30 @@ Each entry: how you notice, what to do, how to confirm it worked.
 - Do: hide the listing. Check `admin_audit` for who changed it and when. If an admin account may be compromised, disable it and follow R-08. Correct the data from the official source and record the new checked date.
 - Confirm: the listing shows the corrected data and checked date, and the audit trail explains the change.
 
+### R-11 Someone cannot sign in or forgot their password
+
+- Notice: the person tells the owner, or a request appears under Password resets in the admin portal (there is no email service yet, D-88).
+- Do: check who is asking, then issue a one-time link from the admin portal (valid 2 hours, shown once) and hand it over through a channel you trust. If the person cannot be recognised, do not issue it. An account that cannot be recovered through the portal: `node --env-file=.env.local scripts/set-account-password.js --email ...`.
+- Confirm: the link was used once, the person signs in, and old sessions are gone.
+
+### R-12 A driver says they cannot go online
+
+- Notice: the driver sees "waiting for approval" or "not approved" on the driver page.
+- Do: open Driver requests in the admin portal, check the name, phone and vehicle number against what the driver tells you, then approve or turn down with a short reason. Every decision is in the audit log.
+- Confirm: the driver page changes by itself within a few seconds and the driver can go online.
+
+### R-13 Visitors see a "Vercel Security Checkpoint" page, or scripts get 403
+
+- Notice: a first visit shows a short checking page, or health checks and scripts get 403 with `x-vercel-mitigated: challenge`.
+- Do: in the Vercel dashboard open the project's Firewall page and see whether Attack Challenge Mode is on, or whether automatic protection reacted to a burst of traffic. Switch attack mode off when there is no attack. Ordinary browsers pass the checkpoint after a moment, but monitors and scripts do not.
+- Confirm: `curl -i https://<site>/api/v1/health` returns 200 without the mitigation header.
+
+### R-14 Many requests fail with 500 after a deploy
+
+- Notice: `server_error` in the logs with a database "max clients" or XX000 message.
+- Do: the API keeps one database connection per instance on the session pooler (port 5432) so deploys do not use up the pooler's slots. Wait a minute for old instances to end. If it continues, check that `DATABASE_URL` is the session pooler address and nothing else (scripts, a second app) is holding connections.
+- Confirm: `/api/v1/health` and one signed-in request return normally.
+
 ## 4. Incident record template
 
 Create `docs/incidents/YYYY-MM-DD-short-name.md` with:
